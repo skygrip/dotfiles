@@ -1,6 +1,8 @@
 #!/bin/bash
 # Creates links for config files
 
+# Vim
+#########
 if [ -e "$HOME/.vimrc" ]; then
 	echo "~/.vimrc" exists. Did not create link
 else
@@ -8,6 +10,8 @@ else
 	ln -s $PWD/vimrc ~/.vimrc
 fi
 
+# Tmux
+#########
 if [ -e "$HOME/.tmux.conf" ]; then
 	echo "~/.tmux.con" exists. Did not create link
 else
@@ -15,6 +19,8 @@ else
 	ln -s $PWD/tmux.conf ~/.tmux.conf
 fi
 
+# Nano
+#########
 if [ -e "$HOME/.nanorc" ]; then
 	echo "~/.tmux.con" exists. Did not create link
 else
