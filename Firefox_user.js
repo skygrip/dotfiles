@@ -127,7 +127,7 @@ user_pref("browser.fixup.alternate.enabled",			false);
 // https://trac.torproject.org/projects/tor/wiki/doc/TorifyHOWTO/WebBrowsers
 user_pref("network.proxy.socks_remote_dns",			true);
 
-// We not want to monitoring the connection state of users 
+// We not want to monitoring the connection state of users
 // https://trac.torproject.org/projects/tor/ticket/18945
 user_pref("network.manage-offline-status",		false);
 
@@ -185,7 +185,7 @@ user_pref("general.buildID.override",				"20100101");
 // Prevent font fingerprinting
 // http://www.browserleaks.com/fonts
 // https://github.com/pyllyukko/user.js/issues/120
-user_pref("browser.display.use_document_fonts",			0);
+//user_pref("browser.display.use_document_fonts",			0);
 
 /******************************************************************************
  * extensions / plugins                                                       *
@@ -524,10 +524,10 @@ user_pref("browser.newtab.url",					"about:blank");
 
 // CIS Version 1.2.0 October 21st, 2011 2.1.2 Enable Auto Notification of Outdated Plugins
 // https://wiki.mozilla.org/Firefox3.6/Plugin_Update_Awareness_Security_Review
-user_pref("plugins.update.notifyUser",				true);
+//user_pref("plugins.update.notifyUser",				true);
 
 // CIS Version 1.2.0 October 21st, 2011 2.1.3 Enable Information Bar for Outdated Plugins
-user_pref("plugins.hide_infobar_for_outdated_plugin",		false);
+//user_pref("plugins.hide_infobar_for_outdated_plugin",		false);
 
 // CIS Mozilla Firefox 24 ESR v1.0.0 - 3.6 Enable IDN Show Punycode
 // http://kb.mozillazine.org/Network.IDN_show_punycode
