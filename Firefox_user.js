@@ -313,7 +313,7 @@ user_pref("browser.safebrowsing.enabled",			true);
 
 // CIS 2.3.5 Block Reported Attack Sites
 // http://kb.mozillazine.org/Browser.safebrowsing.malware.enabled
-user_pref("browser.safebrowsing.malware.enabled",		true);
+user_pref("browser.safebrowsing.malware.enabled",		false);
 
 // Disable safe browsing remote lookups for downloaded files.
 // This leaks information to google.
