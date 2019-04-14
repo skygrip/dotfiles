@@ -39,7 +39,7 @@ Autocomplete packages
 
 Linter packages
 
-    apm install linterlinter-ui-defaultlinter-clanglinter-flake8linter-lintrlinter-markdownlinter-phplinter-pydocstylelinter-shellchecklinter-stylelintlinter-xmllint
+    apm install linter linter-ui-default linter-clang linter-flake8 linter-lintr linter-markdown linter-php linter-pydocstyle linter-shellcheck linter-stylelint linter-xmllint
 
 Hydrogen code run
 
