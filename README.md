@@ -49,11 +49,6 @@ Additional tools
 
     apm install platformio-ide-terminal emmet
 
+User Interface
 
-
-
-
-
-
-pop-syntax
-pop-ui
+    apm install pop-syntax pop-ui
