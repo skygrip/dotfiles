@@ -15,9 +15,10 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'kien/ctrlp.vim' " fuzzy find files
 Plugin 'scrooloose/nerdtree' " file drawer, open with :NERDTreeToggle
 Plugin 'scrooloose/syntastic' " Syntax checking
+Plugin 'rhysd/vim-grammarous' " Gramar checking
 
 " Visual Plugins
-Plugin 'chriskempson/base16-vim'
+"Plugin" 'chriskempson/base16-vim'
 Plugin 'vim-airline/vim-airline' " statusline
 Plugin 'vim-airline/vim-airline-themes'
 
@@ -29,12 +30,13 @@ call vundle#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Setup tab settings
-set noexpandtab " Use tabs
-set tabstop=4 " the visible width of tabs
-set softtabstop=4 " edit as if the tabs are 4 characters wide
-set shiftwidth=4 " number of spaces to use for indent and unindent
-set shiftround " round indent to a multiple of 'shiftwidth'
+"set noexpandtab " Use tabs
+"set tabstop=4 " the visible width of tabs
+"set softtabstop=4 " edit as if the tabs are 4 characters wide
+"set shiftwidth=4 " number of spaces to use for indent and unindent
+"set shiftround " round indent to a multiple of 'shiftwidth'
 
+" Indent Settings
 set smartindent
 set autoindent
 
@@ -104,7 +106,7 @@ set mat=2 " how many tenths of a second to blink
 set number
 
 " Spell checking and auto complete bad spell
-set complete+=kspell
+"set complete+=aspell
 setlocal spell spelllang=en_au
 set spell!
 
@@ -124,20 +126,20 @@ set guioptions-=L
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Colour Settings
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" manual workaround for issues with xterm and screen
-set t_ut=
-
 " syntax highlighting
 syntax on
-let base16colorspace=256  " Access colours present in 256 colour space"
-set t_Co=256 " Explicitly tell vim that the terminal supports 256 colours"
-set background=dark
+"let base16colorspace=256  " Access colours present in 256 colour space
+"set t_Co=256 " Explicitly tell vim that the terminal supports 256 colours
+"set background=dark
 
-" Use Gruvbox Theme
-colorscheme base16-ocean
+set termguicolors
 
 " Enable Italis on gnome-terminal
 let g:gruvbox_italic=1
+
+" Use Gruvbox Theme
+"colorscheme base16-ocean
+colorscheme desert
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Plug-in Settings
@@ -171,7 +173,7 @@ endif
 " Python "
 """"""""""
 " Use tabs for python
-au FileType python setl tabstop=4 softtabstop=4 shiftwidth=4 textwidth=79 noexpandtab autoindent
+au FileType python setl "tabstop=4 softtabstop=4 shiftwidth=4 textwidth=79 noexpandtab autoindent
 
 " Ignore tabs as warnings
 let g:syntastic_python_flake8_args='--ignore=W191'
@@ -190,4 +192,3 @@ au FileType ruby setl tabstop=4 shiftwidth=2 softtabstop=2 expandtab autoindent
 """"""""""""
 " Enable Spell Checking
 au FileType markdown setl spell
-
