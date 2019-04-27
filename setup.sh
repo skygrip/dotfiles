@@ -22,7 +22,7 @@ fi
 # Nano
 #########
 if [ -e "$HOME/.nanorc" ]; then
-	echo "~/.tmux.con" exists. Did not create link
+	echo "~/.nanorc" exists. Did not create link
 else
 	echo Creating link for nano
 	ln -s $PWD/nanorc ~/.nanorc
