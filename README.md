@@ -11,7 +11,7 @@ Use the ZSH shell
 
 ## Firefox configuration
 
-link Firefox_user.js to ~/.mozilla/firefox/\*.default/user.js.
+link Firefox_user.js to ```~/.mozilla/firefox/\*.default/user.js```.
 
 <!-- Based upon [This](https://github.com/pyllyukko/user.js) user.js file -->
 
@@ -21,10 +21,10 @@ with some tweaks.
 
 The following Firefox addons are also installed for security:
 
--   Decentraleyes
--   HTTPS-Everywhere
--   uBlock Origin
--   NoScript
+-   [Decentraleyes](https://addons.mozilla.org/en-US/firefox/addon/decentraleyes/)
+-   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
+-   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
+-   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
 
 ## Atom configuration
 
@@ -51,17 +51,6 @@ Additional tools
 User Interface
 
     apm install pop-syntax pop-ui
-
-# Darktable script config
-
-    cd ~/.config/darktable/
-    git clone https://github.com/darktable-org/lua-scripts.git lua
-    echo 'require "contrib/gimp"
-    require "contrib/hugin"
-    require "contrib/image_stack"
-    require "contrib/rate_group"
-    require "contrib/select_untagged"
-    require "contrib/enfuseAdvanced"' > ~/.config/darktable/luarc
 
 # Gnome Theme
 
