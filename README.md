@@ -2,30 +2,29 @@
 
 A collection of configuration files stored here for convenience only.
 
-## Setup
+# Zsh
 
-The included script can be used to install the configs using a softlink.
+Use the ZSH shell
+
+    wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    chsh -s /bin/zsh
 
 ## Firefox configuration
 
 link Firefox_user.js to ~/.mozilla/firefox/\*.default/user.js.
 
-Based upon [This](https://github.com/pyllyukko/user.js) user.js file
-with some tweaks to make it easier to use bookmarks.
+<!-- Based upon [This](https://github.com/pyllyukko/user.js) user.js file -->
+
+with some tweaks.
 
 ### Firefox Addons
 
-The following firefox addons are also installed for security
+The following Firefox addons are also installed for security:
 
-- Certificate Patrol
-- Decentraleyes
-- HTTPS-Everywhere
-- No Resource URI Leak
-- NoScript
-- uBlock Origin
-- CanvasBlocker
-
-Combined all these things will break most websites, NoScript mostly.
+-   Decentraleyes
+-   HTTPS-Everywhere
+-   uBlock Origin
+-   NoScript
 
 ## Atom configuration
 
@@ -52,3 +51,39 @@ Additional tools
 User Interface
 
     apm install pop-syntax pop-ui
+
+# Darktable script config
+
+    cd ~/.config/darktable/
+    git clone https://github.com/darktable-org/lua-scripts.git lua
+    echo 'require "contrib/gimp"
+    require "contrib/hugin"
+    require "contrib/image_stack"
+    require "contrib/rate_group"
+    require "contrib/select_untagged"
+    require "contrib/enfuseAdvanced"' > cd ~/.config/darktable/luarc
+
+# Gnome Theme
+
+Install the theme
+
+    yay -S pop-icon-theme-git pop-gtk-theme-git
+
+Set the font sizes in Tweak Tool
+
+| Name                 | Font                | Size |
+| -------------------- | ------------------- | ---- |
+| Interface Font       | Fira Sans Book      | 10   |
+| Document Text        | Roboto Slab Regular | 11   |
+| Monospace Text       | Fira Mono Regular   | 11   |
+| Legacy Window Titles | Fira Sans Medium    | 10   |
+
+Install the terminal theme. If you have problems with the script create an additional terminal profile and run the script again.
+
+    git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
+    ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
+
+# Windows Theme
+Use the base16 Ocean command prompt theme: <https://github.com/iamthad/base16-windows-command-prompt/blob/master/windows-command-prompt/base16-ocean.reg>
+
+Use the base16 ocean putty theme: <https://github.com/benjojo/base-16-putty/blob/master/base16-ocean.reg>
