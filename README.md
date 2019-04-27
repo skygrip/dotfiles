@@ -61,7 +61,7 @@ User Interface
     require "contrib/image_stack"
     require "contrib/rate_group"
     require "contrib/select_untagged"
-    require "contrib/enfuseAdvanced"' > cd ~/.config/darktable/luarc
+    require "contrib/enfuseAdvanced"' > ~/.config/darktable/luarc
 
 # Gnome Theme
 
