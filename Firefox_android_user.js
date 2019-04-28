@@ -2,6 +2,20 @@
  * SECTION: HTML5 / APIs / DOM                                                *
  ******************************************************************************/
 
+ // PREF: Disable web notifications
+ // https://support.mozilla.org/en-US/questions/1140439
+ user_pref("dom.webnotifications.enabled", false);
+
+ // PREF: Disable DOM timing API
+ // https://wiki.mozilla.org/Security/Reviews/Firefox/NavigationTimingAPI
+ // https://www.w3.org/TR/navigation-timing/#privacy
+ user_pref("dom.enable_performance", false);
+
+ // PREF: Make sure the User Timing API does not provide a new high resolution timestamp
+ // https://trac.torproject.org/projects/tor/ticket/16336
+ // https://www.w3.org/TR/2013/REC-user-timing-20131212/#privacy-security
+ user_pref("dom.enable_user_timing", false);
+
 // PREF: Disable WebRTC entirely to prevent leaking internal IP addresses (Firefox < 42)
 // NOTICE: Disabling WebRTC breaks peer-to-peer file sharing tools (reep.io ...)
 user_pref("media.peerconnection.enabled", false);
@@ -29,16 +43,11 @@ user_pref("webgl.enable-debug-renderer-info", false);
 
 // PREF: Set Accept-Language HTTP header to en-US regardless of Firefox localization
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Language
-user_pref("intl.accept_languages", "en-US, en");
+user_pref("intl.accept_languages", "en-US,en");
 
-// PREF: Don't use OS values to determine locale, force using Firefox locale setting
-// http://kb.mozillazine.org/Intl.locale.matchOS
-user_pref("intl.locale.matchOS", false);
-
-// PREF: Prevent leaking application locale/date format using JavaScript
-// https://bugzilla.mozilla.org/show_bug.cgi?id=867501
-// https://hg.mozilla.org/mozilla-central/rev/52d635f2b33d
-user_pref("javascript.use_us_english_locale", true);
+// PREF: Don't try to guess domain names when entering an invalid domain name in URL bar
+// http://www-archive.mozilla.org/docs/end-user/domain-guessing.html
+user_pref("browser.fixup.alternate.enabled", false);
 
 /******************************************************************************
  * SECTION: Firefox (anti-)features / components                              *                            *
@@ -91,9 +100,6 @@ user_pref("network.predictor.enabled", false);
 // PREF: Disable search suggestions in the search bar
 // http://kb.mozillazine.org/Browser.search.suggest.enabled
 user_pref("browser.search.suggest.enabled", false);
-
-// PREF: Disable "Show search suggestions in location bar results"
-user_pref("browser.urlbar.suggest.searches", false);
 
 // PREF: Disable speculative pre-connections
 // https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_speculative-pre-connections
@@ -148,3 +154,11 @@ user_pref("privacy.sanitize.sanitizeOnShutdown", true);
 // PREF: Delete temporary files on exit
 // https://bugzilla.mozilla.org/show_bug.cgi?id=238789
 user_pref("browser.helperApps.deleteTempFileOnExit", true);
+
+/*******************************************************************************
+ * SECTION: UI related                                                         *
+ *******************************************************************************/
+
+ // PREF: Disable inline autocomplete in URL bar
+ // http://kb.mozillazine.org/Inline_autocomplete
+ user_pref("browser.urlbar.autoFill", false);
