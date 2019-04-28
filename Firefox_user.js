@@ -970,7 +970,7 @@ user_pref("browser.offline-apps.notify", true);
 // https://blog.mozilla.org/security/2012/11/01/preloading-hsts/
 // https://wiki.mozilla.org/Privacy/Features/HSTS_Preload_List
 // https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
-//user_pref("network.stricttransportsecurity.preloadlist", true);
+user_pref("network.stricttransportsecurity.preloadlist", true);
 
 // PREF: Enable Online Certificate Status Protocol
 // https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol
@@ -1014,7 +1014,7 @@ user_pref("browser.offline-apps.notify", true);
 // https://media.blackhat.com/us-13/US-13-Daigniere-TLS-Secrets-WP.pdf
 // https://bugzilla.mozilla.org/show_bug.cgi?id=917049
 // https://bugzilla.mozilla.org/show_bug.cgi?id=967977
-//user_pref("security.ssl.disable_session_identifiers", true);
+user_pref("security.ssl.disable_session_identifiers", true);
 
 // PREF: Only allow TLS 1.[0-3]
 // http://kb.mozillazine.org/Security.tls.version.*
@@ -1063,7 +1063,7 @@ user_pref("security.ssl.errorReporting.automatic", false);
 // PREF: Pre-populate the current URL but do not pre-fetch the certificate in the "Add Security Exception" dialog
 // http://kb.mozillazine.org/Browser.ssl_override_behavior
 // https://github.com/pyllyukko/user.js/issues/210
-u//ser_pref("browser.ssl_override_behavior", 1);
+//user_pref("browser.ssl_override_behavior", 1);
 
 /******************************************************************************
  * SECTION: Cipher suites                                                     *
