@@ -11,11 +11,6 @@
  // https://www.w3.org/TR/navigation-timing/#privacy
  user_pref("dom.enable_performance", false);
 
- // PREF: Make sure the User Timing API does not provide a new high resolution timestamp
- // https://trac.torproject.org/projects/tor/ticket/16336
- // https://www.w3.org/TR/2013/REC-user-timing-20131212/#privacy-security
- user_pref("dom.enable_user_timing", false);
-
 // PREF: Disable WebRTC entirely to prevent leaking internal IP addresses (Firefox < 42)
 // NOTICE: Disabling WebRTC breaks peer-to-peer file sharing tools (reep.io ...)
 user_pref("media.peerconnection.enabled", false);
@@ -91,7 +86,6 @@ user_pref("network.prefetch-next", false);
 // http://kb.mozillazine.org/Network.dns.disablePrefetch
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Controlling_DNS_prefetching
 user_pref("network.dns.disablePrefetch", true);
-user_pref("network.dns.disablePrefetchFromHTTPS", true);
 
 // PREF: Disable the predictive service (Necko)
 // https://wiki.mozilla.org/Privacy/Reviews/Necko
@@ -159,6 +153,6 @@ user_pref("browser.helperApps.deleteTempFileOnExit", true);
  * SECTION: UI related                                                         *
  *******************************************************************************/
 
- // PREF: Disable inline autocomplete in URL bar
- // http://kb.mozillazine.org/Inline_autocomplete
- user_pref("browser.urlbar.autoFill", false);
+ // PREF: Disable URL bar autocomplete and history/bookmarks suggestions dropdown
+ // http://kb.mozillazine.org/Disabling_autocomplete_-_Firefox#Firefox_3.5
+ user_pref("browser.urlbar.autocomplete.enabled", false);
