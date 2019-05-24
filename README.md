@@ -43,9 +43,12 @@ Install the terminal theme. If you have problems with the script create an new t
 
 Install the following programs
 
--   Speedcrunch
--   7zip
--   Atom
+-   [Speedcrunch](https://speedcrunch.org/)
+-   [7zip](https://www.7-zip.org/download.html)
+-   [KeepassXC](https://keepassxc.org/)
+-   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+-   [Atom](https://atom.io/)
+-   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 
 ## Windows Theming
 
