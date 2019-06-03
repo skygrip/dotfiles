@@ -2,12 +2,6 @@
 
 A collection of configuration files stored here for convenience.
 
-##### Table of Contents
-[Linux Setup](<#Linux Setup>)
-[Windows Setup](<#Windows Setup>)
-[Firefox Setup](<#Firefox Setup>)
-[Atom Setup](<#Atom Setup>)
-
 # Linux Setup
 
 Run the Setup.sh file to setup and link configurations to git
@@ -41,14 +35,22 @@ Install the terminal theme. If you have problems with the script create an new t
 
 # Windows Setup
 
-Install the following programs
+Install the following programs:
 
 -   [Speedcrunch](https://speedcrunch.org/)
 -   [7zip](https://www.7-zip.org/download.html)
 -   [KeepassXC](https://keepassxc.org/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+-   [WinSCP](https://winscp.net/eng/download.php)
 -   [Atom](https://atom.io/)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
+-   [VLC](https://www.videolan.org/vlc/download-windows.html)
+-   [LibreOffice](https://www.libreoffice.org/)
+-   [GIMP](https://www.gimp.org/)
+-   [Blender](https://www.blender.org/)
+-   [Inkscape](https://inkscape.org/)
+-   [OpenSCAD](https://www.openscad.org/)
+-   [FreeCAD](https://www.freecadweb.org/)
 
 ## Windows Theming
 
@@ -91,7 +93,7 @@ Hydrogen code run
 
     apm install hydrogen hydrogen-python data-explorer
 
-Additional tools
+Extra tools
 
     apm install platformio-ide-terminal emmet
 
