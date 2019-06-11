@@ -51,6 +51,11 @@ Install the following programs:
 -   [Inkscape](https://inkscape.org/)
 -   [OpenSCAD](https://www.openscad.org/)
 -   [FreeCAD](https://www.freecadweb.org/)
+-   [Nmap](https://nmap.org/download.html)
+-   [Wireshark](https://www.wireshark.org/)
+-   [Python](https://www.python.org/)
+-   [R](https://www.r-project.org/)
+-   [RStudio](https://www.rstudio.com/)
 
 ## Windows Theming
 
