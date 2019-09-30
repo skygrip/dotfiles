@@ -35,27 +35,50 @@ Install the terminal theme. If you have problems with the script create an new t
 
 # Windows Setup
 
-Install the following programs:
+Install the following applications:
 
--   [Speedcrunch](https://speedcrunch.org/)
 -   [7zip](https://www.7-zip.org/download.html)
--   [KeepassXC](https://keepassxc.org/)
--   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
--   [WinSCP](https://winscp.net/eng/download.php)
+-   [Anaconda3](https://www.anaconda.com/)
 -   [Atom](https://atom.io/)
--   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
--   [VLC](https://www.videolan.org/vlc/download-windows.html)
+-   [Chrome](https://www.google.com/chrome/)
+-   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
+-   [KeepassXC](https://keepassxc.org/)
 -   [LibreOffice](https://www.libreoffice.org/)
--   [GIMP](https://www.gimp.org/)
+-   [Nmap](https://nmap.org/download.html)
+-   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
+-   [Wireshark](https://www.wireshark.org/)
+
+
+## Scoop
+
+Install the following using Scoop
+
 -   [Blender](https://www.blender.org/)
+-   [FreeCAD](https://www.freecadweb.org/)
+-   [GIMP](https://www.gimp.org/)
 -   [Inkscape](https://inkscape.org/)
 -   [OpenSCAD](https://www.openscad.org/)
--   [FreeCAD](https://www.freecadweb.org/)
--   [Nmap](https://nmap.org/download.html)
--   [Wireshark](https://www.wireshark.org/)
--   [Python](https://www.python.org/)
--   [R](https://www.r-project.org/)
--   [RStudio](https://www.rstudio.com/)
+-   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+-   [Speedcrunch](https://speedcrunch.org/)
+-   [VLC](https://www.videolan.org/vlc/download-windows.html)
+-   [WinSCP](https://winscp.net/eng/download.php)
+
+Install scoop. Note: if you get an error you might need to change the execution policy
+
+    iwr -useb get.scoop.sh | iex
+    scoop bucket add extras
+
+Install some utilities common on Linux
+
+    scoop install git curl aria2 busybox
+
+Install some tools used by Atom Text editor
+
+    scoop install shellcheck
+
+Install the programs
+
+    scoop install blender freecad gimp inkscape openscad putty speedcrunch vlc winscp
 
 ## Windows Theming
 
@@ -79,12 +102,15 @@ The following Firefox addons are also installed for security:
 -   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
 -   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
 -   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
+-   [Firefox Multi-Account Containers](https://addons.mozilla.org/en-GB/firefox/addon/multi-account-containers/)
+-   [Certainly Something (Certificate Viewer)](https://addons.mozilla.org/en-GB/firefox/addon/certainly-something/)
+-   [KeePassXC-Browser](https://addons.mozilla.org/en-US/firefox/addon/keepassxc-browser/)
 
 # Atom Setup
 
 Good packages
 
-    apm install atom-language-r atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal minimap minimap-highlight-selected highlight-selected intentions intentions-colorpicker split-diff todo-show
+    apm install atom-language-r atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal minimap minimap-highlight-selected highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection
 
 Autocomplete packages
 
