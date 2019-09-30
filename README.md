@@ -40,33 +40,37 @@ Install the following applications:
 -   [7zip](https://www.7-zip.org/download.html)
 -   [Anaconda3](https://www.anaconda.com/)
 -   [Atom](https://atom.io/)
+-   [Blender](https://www.blender.org/)
 -   [Chrome](https://www.google.com/chrome/)
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
--   [KeepassXC](https://keepassxc.org/)
--   [LibreOffice](https://www.libreoffice.org/)
--   [Nmap](https://nmap.org/download.html)
--   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
--   [Wireshark](https://www.wireshark.org/)
-
-
-## Scoop
-
-Install the following using Scoop
-
--   [Blender](https://www.blender.org/)
 -   [FreeCAD](https://www.freecadweb.org/)
 -   [GIMP](https://www.gimp.org/)
+-   [GitHub Desktop](https://desktop.github.com/)
+-   [Gpg4win](https://www.gpg4win.org/)
 -   [Inkscape](https://inkscape.org/)
+-   [KeepassXC](https://keepassxc.org/)
+-   [LibreOffice](https://www.libreoffice.org/)
+-   [Mozilla Thunderbird](https://www.thunderbird.net/en-US/)
+-   [Nmap](https://nmap.org/download.html)
 -   [OpenSCAD](https://www.openscad.org/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 -   [Speedcrunch](https://speedcrunch.org/)
+-   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
+-   [Visual Studio Code](https://code.visualstudio.com/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
+-   [Wireshark](https://www.wireshark.org/)
+
+Some additional Development packages
+
+-   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
+-   [PostgreSQL](https://www.postgresql.org/download/)
+
+## Scoop
 
 Install scoop. Note: if you get an error you might need to change the execution policy
 
     iwr -useb get.scoop.sh | iex
-    scoop bucket add extras
 
 Install some utilities common on Linux
 
@@ -75,10 +79,6 @@ Install some utilities common on Linux
 Install some tools used by Atom Text editor
 
     scoop install shellcheck
-
-Install the programs
-
-    scoop install blender freecad gimp inkscape openscad putty speedcrunch vlc winscp
 
 ## Windows Theming
 
@@ -98,13 +98,13 @@ with some tweaks.
 
 The following Firefox addons are also installed for security:
 
--   [Decentraleyes](https://addons.mozilla.org/en-US/firefox/addon/decentraleyes/)
--   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
--   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
--   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
--   [Firefox Multi-Account Containers](https://addons.mozilla.org/en-GB/firefox/addon/multi-account-containers/)
 -   [Certainly Something (Certificate Viewer)](https://addons.mozilla.org/en-GB/firefox/addon/certainly-something/)
+-   [Decentraleyes](https://addons.mozilla.org/en-US/firefox/addon/decentraleyes/)
+-   [Firefox Multi-Account Containers](https://addons.mozilla.org/en-GB/firefox/addon/multi-account-containers/)
+-   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
 -   [KeePassXC-Browser](https://addons.mozilla.org/en-US/firefox/addon/keepassxc-browser/)
+-   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
+-   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
 
 # Atom Setup
 
