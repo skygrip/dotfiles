@@ -42,6 +42,7 @@ Install the following applications:
 -   [Atom](https://atom.io/)
 -   [Blender](https://www.blender.org/)
 -   [Chrome](https://www.google.com/chrome/)
+-   [Dropbox](https://www.dropbox.com/install)
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
 -   [FreeCAD](https://www.freecadweb.org/)
 -   [GIMP](https://www.gimp.org/)
@@ -50,22 +51,21 @@ Install the following applications:
 -   [Inkscape](https://inkscape.org/)
 -   [KeepassXC](https://keepassxc.org/)
 -   [LibreOffice](https://www.libreoffice.org/)
--   [Mozilla Thunderbird](https://www.thunderbird.net/en-US/)
+-   [Microsoft Teams](https://teams.microsoft.com/downloads)
 -   [Nmap](https://nmap.org/download.html)
 -   [OpenSCAD](https://www.openscad.org/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 -   [Speedcrunch](https://speedcrunch.org/)
+-   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 -   [Visual Studio Code](https://code.visualstudio.com/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
 -   [Wireshark](https://www.wireshark.org/)
--   []()
 
 Some Development packages
 
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
--   [PostgreSQL](https://www.postgresql.org/download/)
 -   [Postman](https://www.getpostman.com/downloads/)
 
 ## Scoop
@@ -104,7 +104,6 @@ with some tweaks.
 
 The following Firefox addons are also installed for security:
 
--   [Certainly Something (Certificate Viewer)](https://addons.mozilla.org/en-GB/firefox/addon/certainly-something/)
 -   [Decentraleyes](https://addons.mozilla.org/en-US/firefox/addon/decentraleyes/)
 -   [Firefox Multi-Account Containers](https://addons.mozilla.org/en-GB/firefox/addon/multi-account-containers/)
 -   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
@@ -116,7 +115,7 @@ The following Firefox addons are also installed for security:
 
 Good packages
 
-    apm install atom-language-r atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal minimap minimap-highlight-selected highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection
+    apm install atom-language-r atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal minimap minimap-highlight-selected highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection sort-lines
 
 Autocomplete packages
 
