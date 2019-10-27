@@ -60,11 +60,13 @@ Install the following applications:
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
 -   [Wireshark](https://www.wireshark.org/)
+-   []()
 
-Some additional Development packages
+Some Development packages
 
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
 -   [PostgreSQL](https://www.postgresql.org/download/)
+-   [Postman](https://www.getpostman.com/downloads/)
 
 ## Scoop
 
@@ -79,6 +81,10 @@ Install some utilities common on Linux
 Install some tools used by Atom Text editor
 
     scoop install shellcheck
+
+## Windows Privacy tweaks
+
+Run reclaimWindows10-modified.ps1
 
 ## Windows Theming
 
