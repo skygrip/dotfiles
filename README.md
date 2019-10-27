@@ -68,6 +68,14 @@ Some Development packages
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
 -   [Postman](https://www.getpostman.com/downloads/)
 
+Video Game Launchers
+
+-   [Discord](https://discordapp.com/)
+-   [Steam](https://store.steampowered.com/about/)
+-   [Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)
+-   [Origin](https://www.origin.com/aus/en-us/store/download)
+-   [Twitch](https://www.twitch.tv/downloads)
+
 ## Scoop
 
 Install scoop. Note: if you get an error you might need to change the execution policy
