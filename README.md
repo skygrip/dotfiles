@@ -63,10 +63,34 @@ Install the following applications:
 -   [WinSCP](https://winscp.net/eng/download.php)
 -   [Wireshark](https://www.wireshark.org/)
 
-Some Development packages
+Forensics Tools:
 
+-   [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)
+-   [FTK Imager](https://accessdata.com/product-download/ftk-imager-version-4-2-1)
+-   [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)
+-   [HxD Hex Editor](https://mh-nexus.de/en/hxd/)
+-   [Zimmerman Tools](https://ericzimmerman.github.io/)
+-   [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
+-   [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
+-   [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)
+-   [RegRipper](https://github.com/keydet89/RegRipper2.8)
+-   [Foremost](http://foremost.sourceforge.net/)
+-   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
+-   [Volatility](https://github.com/volatilityfoundation/volatility3)
+-   [Rekall](https://github.com/google/rekall)
+-   [Plaso](https://github.com/log2timeline/plaso)
+-   [TimeSketch](https://github.com/google/timesketch)
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
+
+Network Security Tools:
+
+-   [Nmap](https://nmap.org/)
+-   [Wireshark](https://www.wireshark.org/)
+-   [Zeek](https://www.zeek.org/)
+-   [Snort](https://www.snort.org/)
+-   [MITMProxy](https://github.com/mitmproxy/mitmproxy)
 -   [Postman](https://www.getpostman.com/downloads/)
+-   [ZAProxy](https://github.com/zaproxy/zaproxy)
 
 Video Game Launchers
 
@@ -84,11 +108,11 @@ Install scoop. Note: if you get an error you might need to change the execution 
 
 Install some utilities common on Linux
 
-    scoop install git curl aria2 busybox
+    scoop install git curl aria2 busybox xpdf-tools shellcheck diffutils bind dirhash exiftool file findutils gawk hashcat imagemagick openssl perl which yara
 
-Install some tools used by Atom Text editor
+## Python
 
-    scoop install shellcheck
+    pip install pdfx peepdf
 
 ## Windows Privacy tweaks
 
