@@ -50,7 +50,7 @@ user_pref("geo.wifi.logging.enabled", false);
 // https://trac.torproject.org/projects/tor/ticket/18863
 // https://www.mozilla.org/en-US/security/advisories/mfsa2015-97/
 // https://developer.mozilla.org/docs/Mozilla/B2G_OS/API/TCPSocket
-user_pref("dom.mozTCPSocket.enabled",				false);
+//user_pref("dom.mozTCPSocket.enabled",				false);
 
 // PREF: Disable DOM storage (disabled)
 // http://kb.mozillazine.org/Dom.storage.enabled
@@ -68,7 +68,7 @@ user_pref("dom.netinfo.enabled",				false);
 // PREF: Disable network API (Firefox < 32)
 // https://developer.mozilla.org/en-US/docs/Web/API/Connection/onchange
 // https://www.torproject.org/projects/torbrowser/design/#fingerprinting-defenses
-user_pref("dom.network.enabled",				false);
+//user_pref("dom.network.enabled",				false);
 
 // PREF: Disable WebRTC entirely to prevent leaking internal IP addresses (Firefox < 42)
 // NOTICE: Disabling WebRTC breaks peer-to-peer file sharing tools (reep.io ...)
@@ -100,7 +100,7 @@ user_pref("dom.telephony.enabled",				false);
 
 // PREF: Disable "beacon" asynchronous HTTP transfers (used for analytics)
 // https://developer.mozilla.org/en-US/docs/Web/API/navigator.sendBeacon
-user_pref("beacon.enabled",					false);
+//user_pref("beacon.enabled",					false);
 
 // PREF: Disable clipboard event detection (onCut/onCopy/onPaste) via Javascript
 // NOTICE: Disabling clipboard events breaks Ctrl+C/X/V copy/cut/paste functionaility in JS-based web applications (Google Docs...)
@@ -318,7 +318,7 @@ user_pref("browser.urlbar.filter.javascript",			true);
 // PREF: Prevent font fingerprinting
 // https://browserleaks.com/fonts
 // https://github.com/pyllyukko/user.js/issues/120
-user_pref("browser.display.use_document_fonts",			0);
+//user_pref("browser.display.use_document_fonts",			0);
 
 // PREF: Enable only whitelisted URL protocol handlers
 // http://kb.mozillazine.org/Network.protocol-handler.external-default
@@ -618,35 +618,35 @@ user_pref("browser.newtabpage.activity-stream.feeds.section.topstories",	false);
 // PREF: Disable prefetching of <link rel="next"> URLs
 // http://kb.mozillazine.org/Network.prefetch-next
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#Is_there_a_preference_to_disable_link_prefetching.3F
-user_pref("network.prefetch-next",				false);
+//user_pref("network.prefetch-next",				false);
 
 // PREF: Disable DNS prefetching
 // http://kb.mozillazine.org/Network.dns.disablePrefetch
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Controlling_DNS_prefetching
-user_pref("network.dns.disablePrefetch",			true);
-user_pref("network.dns.disablePrefetchFromHTTPS",		true);
+//user_pref("network.dns.disablePrefetch",			true);
+//user_pref("network.dns.disablePrefetchFromHTTPS",		true);
 
 // PREF: Disable the predictive service (Necko)
 // https://wiki.mozilla.org/Privacy/Reviews/Necko
-user_pref("network.predictor.enabled",				false);
+//user_pref("network.predictor.enabled",				false);
 
 // PREF: Reject .onion hostnames before passing the to DNS
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1228457
 // RFC 7686
-user_pref("network.dns.blockDotOnion",				true);
+//user_pref("network.dns.blockDotOnion",				true);
 
 // PREF: Disable search suggestions in the search bar
 // http://kb.mozillazine.org/Browser.search.suggest.enabled
 user_pref("browser.search.suggest.enabled",			false);
 
 // PREF: Disable "Show search suggestions in location bar results"
-user_pref("browser.urlbar.suggest.searches",			false);
+//user_pref("browser.urlbar.suggest.searches",			false);
 // PREF: When using the location bar, don't suggest URLs from browsing history
 user_pref("browser.urlbar.suggest.history",			false);
 
 // PREF: Disable SSDP
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1111967
-user_pref("browser.casting.enabled",				false);
+//user_pref("browser.casting.enabled",				false);
 
 // PREF: Disable automatic downloading of OpenH264 codec
 // https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_media-capabilities
@@ -657,7 +657,7 @@ user_pref("browser.casting.enabled",				false);
 // PREF: Disable speculative pre-connections
 // https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_speculative-pre-connections
 // https://bugzilla.mozilla.org/show_bug.cgi?id=814169
-user_pref("network.http.speculative-parallel-limit",		0);
+//user_pref("network.http.speculative-parallel-limit",		0);
 
 // PREF: Disable downloading homepage snippets/messages from Mozilla
 // https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_mozilla-content
@@ -666,7 +666,7 @@ user_pref("browser.aboutHomeSnippets.updateUrl",		"");
 
 // PREF: Never check updates for search engines
 // https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_auto-update-checking
-user_pref("browser.search.update",				false);
+//user_pref("browser.search.update",				false);
 
 // PREF: Disable automatic captive portal detection (Firefox >= 52.0)
 // https://support.mozilla.org/en-US/questions/1157121
@@ -735,7 +735,7 @@ user_pref("network.captive-portal-service.enabled",		false);
 // https://feeding.cloud.geek.nz/posts/tweaking-cookies-for-privacy-in-firefox/
 // http://kb.mozillazine.org/Network.cookie.thirdparty.sessionOnly
 // https://developer.mozilla.org/en-US/docs/Cookies_Preferences_in_Mozilla#network.cookie.thirdparty.sessionOnly
-user_pref("network.cookie.thirdparty.sessionOnly",		true);
+//user_pref("network.cookie.thirdparty.sessionOnly",		true);
 
 // PREF: Spoof User-agent (disabled)
 ////user_pref("general.useragent.override",				"Mozilla/5.0 (Windows NT 6.1; rv:45.0) Gecko/20100101 Firefox/45.0");
@@ -803,7 +803,7 @@ user_pref("browser.cache.disk.enable",				false);
 // PREF: Disable Caching of SSL Pages
 // CIS Version 1.2.0 October 21st, 2011 2.5.8
 // http://kb.mozillazine.org/Browser.cache.disk_cache_ssl
-user_pref("browser.cache.disk_cache_ssl",			false);
+//user_pref("browser.cache.disk_cache_ssl",			false);
 
 // PREF: Disable download history
 // CIS Version 1.2.0 October 21st, 2011 2.5.5
@@ -921,10 +921,10 @@ user_pref("browser.helperApps.deleteTempFileOnExit",		true);
 // https://gecko.readthedocs.org/en/latest/browser/browser/DirectoryLinksProvider.html#browser-newtabpage-directory-source
 // https://gecko.readthedocs.org/en/latest/browser/browser/DirectoryLinksProvider.html#browser-newtabpage-directory-ping
 // TODO: deprecated? not in DXR, some dead links
-user_pref("browser.newtabpage.enhanced",			false);
-user_pref("browser.newtab.preload",				false);
-user_pref("browser.newtabpage.directory.ping",			"");
-user_pref("browser.newtabpage.directory.source",		"data:text/plain,{}");
+//user_pref("browser.newtabpage.enhanced",			false);
+//user_pref("browser.newtab.preload",				false);
+//user_pref("browser.newtabpage.directory.ping",			"");
+//user_pref("browser.newtabpage.directory.source",		"data:text/plain,{}");
 
 // PREF: Enable Auto Notification of Outdated Plugins (Firefox < 50)
 // https://wiki.mozilla.org/Firefox3.6/Plugin_Update_Awareness_Security_Review
