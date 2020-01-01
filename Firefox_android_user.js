@@ -45,7 +45,7 @@ user_pref("browser.fixup.alternate.enabled", false);
 
 // PREF: Do not submit invalid URIs entered in the address bar to the default search engine
 // http://kb.mozillazine.org/Keyword.enabled
-user_pref("keyword.enabled", false);
+//user_pref("keyword.enabled", false);
 
 // PREF: Disable Mozilla telemetry/experiments
 // https://wiki.mozilla.org/Platform/Features/Telemetry
@@ -90,28 +90,9 @@ user_pref("browser.safebrowsing.downloads.remote.enabled", false);
  * SECTION: Automatic connections                                             *
  ******************************************************************************/
 
-// PREF: Disable prefetching of <link rel="next"> URLs
-// http://kb.mozillazine.org/Network.prefetch-next
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Link_prefetching_FAQ#Is_there_a_preference_to_disable_link_prefetching.3F
-user_pref("network.prefetch-next", false);
-
-// PREF: Disable DNS prefetching
-// http://kb.mozillazine.org/Network.dns.disablePrefetch
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Controlling_DNS_prefetching
-user_pref("network.dns.disablePrefetch", true);
-
-// PREF: Disable the predictive service (Necko)
-// https://wiki.mozilla.org/Privacy/Reviews/Necko
-user_pref("network.predictor.enabled", false);
-
-// PREF: Disable search suggestions in the search bar
-// http://kb.mozillazine.org/Browser.search.suggest.enabled
-user_pref("browser.search.suggest.enabled", false);
-
-// PREF: Disable speculative pre-connections
-// https://support.mozilla.org/en-US/kb/how-stop-firefox-making-automatic-connections#w_speculative-pre-connections
-// https://bugzilla.mozilla.org/show_bug.cgi?id=814169
-user_pref("network.http.speculative-parallel-limit", 0);
+// PREF: Disable SSDP
+// https://bugzilla.mozilla.org/show_bug.cgi?id=1111967
+user_pref("browser.casting.enabled",				false);
 
 /*******************************************************************************
  * SECTION: Caching                                                            *
