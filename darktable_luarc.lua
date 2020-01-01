@@ -15,3 +15,9 @@ require "contrib/select_untagged"
 
 -- Merge multiple images into Dynamic Range Increase (DRI) or Depth From Focus (DFF) images
 require "contrib/enfuseAdvanced"
+
+-- A toolbox of geo functions
+require "contrib/geoToolbox"
+
+-- Identify and tag images using facial recognition
+require "contrib/face_recognition"

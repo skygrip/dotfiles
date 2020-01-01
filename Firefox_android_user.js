@@ -6,11 +6,6 @@
  // https://support.mozilla.org/en-US/questions/1140439
  user_pref("dom.webnotifications.enabled", false);
 
- // PREF: Disable DOM timing API
- // https://wiki.mozilla.org/Security/Reviews/Firefox/NavigationTimingAPI
- // https://www.w3.org/TR/navigation-timing/#privacy
- user_pref("dom.enable_performance", false);
-
 // PREF: Disable WebRTC entirely to prevent leaking internal IP addresses (Firefox < 42)
 // NOTICE: Disabling WebRTC breaks peer-to-peer file sharing tools (reep.io ...)
 user_pref("media.peerconnection.enabled", false);
@@ -38,7 +33,7 @@ user_pref("webgl.enable-debug-renderer-info", false);
 
 // PREF: Set Accept-Language HTTP header to en-US regardless of Firefox localization
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Language
-user_pref("intl.accept_languages", "en-US,en");
+//user_pref("intl.accept_languages", "en-US,en");
 
 // PREF: Don't try to guess domain names when entering an invalid domain name in URL bar
 // http://www-archive.mozilla.org/docs/end-user/domain-guessing.html
@@ -51,6 +46,24 @@ user_pref("browser.fixup.alternate.enabled", false);
 // PREF: Do not submit invalid URIs entered in the address bar to the default search engine
 // http://kb.mozillazine.org/Keyword.enabled
 user_pref("keyword.enabled", false);
+
+// PREF: Disable Mozilla telemetry/experiments
+// https://wiki.mozilla.org/Platform/Features/Telemetry
+// https://wiki.mozilla.org/Privacy/Reviews/Telemetry
+// https://wiki.mozilla.org/Telemetry
+// https://www.mozilla.org/en-US/legal/privacy/firefox.html#telemetry
+// https://support.mozilla.org/t5/Firefox-crashes/Mozilla-Crash-Reporter/ta-p/1715
+// https://wiki.mozilla.org/Security/Reviews/Firefox6/ReviewNotes/telemetry
+// https://gecko.readthedocs.io/en/latest/browser/experiments/experiments/manifest.html
+// https://wiki.mozilla.org/Telemetry/Experiments
+// https://support.mozilla.org/en-US/questions/1197144
+// https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/internals/preferences.html#id1
+user_pref("toolkit.telemetry.enabled",				false);
+//user_pref("toolkit.telemetry.unified",				false);
+//user_pref("toolkit.telemetry.archive.enabled",			false);
+//user_pref("experiments.supported",				false);
+//user_pref("experiments.enabled",				false);
+//user_pref("experiments.manifest.uri",				"");
 
 // PREF: Enable Firefox Tracking Protection
 // https://wiki.mozilla.org/Security/Tracking_protection
@@ -66,7 +79,7 @@ user_pref("privacy.trackingprotection.pbmode.enabled", true);
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1333933
 // https://wiki.mozilla.org/Security/Fingerprinting
 // NOTICE: RFP breaks some keyboard shortcuts used in certain websites (see #443)
-user_pref("privacy.resistFingerprinting", true);
+//user_pref("privacy.resistFingerprinting", true);
 
 // PREF: Disable querying Google Application Reputation database for downloaded binary files
 // https://www.mozilla.org/en-US/firefox/39.0/releasenotes/
@@ -100,22 +113,6 @@ user_pref("browser.search.suggest.enabled", false);
 // https://bugzilla.mozilla.org/show_bug.cgi?id=814169
 user_pref("network.http.speculative-parallel-limit", 0);
 
-/******************************************************************************
- * SECTION: HTTP                                                              *
- ******************************************************************************/
-
- // PREF: Accept Only 1st Party Cookies
- // http://kb.mozillazine.org/Network.cookie.cookieBehavior#1
- // NOTICE: Blocking 3rd-party cookies breaks a number of payment gateways
- // CIS 2.5.1
- user_pref("network.cookie.cookieBehavior", 1);
-
-// PREF: Make sure that third-party cookies (if enabled) never persist beyond the session.
-// https://feeding.cloud.geek.nz/posts/tweaking-cookies-for-privacy-in-firefox/
-// http://kb.mozillazine.org/Network.cookie.thirdparty.sessionOnly
-// https://developer.mozilla.org/en-US/docs/Cookies_Preferences_in_Mozilla#network.cookie.thirdparty.sessionOnly
-user_pref("network.cookie.thirdparty.sessionOnly", true);
-
 /*******************************************************************************
  * SECTION: Caching                                                            *
  ******************************************************************************/
@@ -138,12 +135,8 @@ user_pref("privacy.clearOnShutdown.offlineApps", true);
 user_pref("privacy.clearOnShutdown.sessions", true);
 user_pref("privacy.clearOnShutdown.openWindows", true);
 
-// PREF: Clear history when Firefox closes
-// https://support.mozilla.org/en-US/kb/Clear%20Recent%20History#w_how-do-i-make-firefox-clear-my-history-automatically
-// NOTICE: Installing user.js will remove your browsing history, caches and local storage.
-// NOTICE: Installing user.js **will remove your saved passwords** (https://github.com/pyllyukko/user.js/issues/27)
-// NOTICE: Clearing open windows on Firefox exit causes 2 windows to open when Firefox starts https://bugzilla.mozilla.org/show_bug.cgi?id=1334945
-user_pref("privacy.sanitize.sanitizeOnShutdown", true);
+// PREF: Disable form autofill, don't save information entered in web page forms and the Search Bar
+user_pref("browser.formfill.enable",				false);
 
 // PREF: Delete temporary files on exit
 // https://bugzilla.mozilla.org/show_bug.cgi?id=238789
