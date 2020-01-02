@@ -56,6 +56,7 @@ Install the following applications:
 -   [OpenSCAD](https://www.openscad.org/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 -   [Speedcrunch](https://speedcrunch.org/)
+-   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 -   [Visual Studio Code](https://code.visualstudio.com/)
@@ -116,7 +117,7 @@ Install some utilities common on Linux
 
 ## Windows Privacy tweaks
 
-Run reclaimWindows10-modified.ps1
+Run Win10-Initial-Setup-Script-master/Default.cmd
 
 ## Windows Theming
 
@@ -132,6 +133,10 @@ link Firefox_user.js to `~/.mozilla/firefox/\*.default/user.js`.
 
 with some tweaks.
 
+Optionally enable resist fingerprinting in about:config
+
+    privacy.resistFingerprinting = true
+
 ## Firefox Addons
 
 The following Firefox addons are also installed for security:
@@ -145,9 +150,12 @@ The following Firefox addons are also installed for security:
 
 # Atom Setup
 
+Language packages
+    apm install atom-language-r
+
 Good packages
 
-    apm install atom-language-r atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal minimap minimap-highlight-selected highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection sort-lines
+    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal highlight-selected minimap minimap-highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection
 
 Autocomplete packages
 
@@ -163,7 +171,7 @@ Hydrogen code run
 
 Extra tools
 
-    apm install platformio-ide-terminal emmet
+    apm install terminal-plus emmet
 
 User Interface
 
