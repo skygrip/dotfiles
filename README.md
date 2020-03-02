@@ -38,6 +38,7 @@ Install the terminal theme. If you have problems with the script create an new t
 Install the following applications:
 
 -   [7zip](https://www.7-zip.org/download.html)
+-   [Adobe Reader](https://get.adobe.com/reader/)
 -   [Anaconda3](https://www.anaconda.com/)
 -   [Atom](https://atom.io/)
 -   [Blender](https://www.blender.org/)
