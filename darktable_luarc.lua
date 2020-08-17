@@ -20,4 +20,7 @@ require "contrib/enfuseAdvanced"
 require "contrib/geoToolbox"
 
 -- Identify and tag images using facial recognition
-require "contrib/face_recognition"
+--require "contrib/face_recognition"
+
+-- Automatic tag suggestions for your images
+require "contrib/photils"
