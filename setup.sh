@@ -30,18 +30,20 @@ fi
 
 # Firefox
 #########
-firefox_path=`echo $HOME/.mozilla/firefox/*.default-release/user.js`
-if [ -e $firefox_path ]; then
-	echo "Firefox: $firefox_path" exists. Did not create link.
+firefox_profile=`echo $HOME/.mozilla/firefox/*.default-release/`
+if [ -e $firefox_path/user.js ]; then
+	echo Firefox: $firefox_profile/user.js exists. Did not create link.
 else
 	echo "Firefox: Creating link for Firefox."
-	ln -s $PWD/Firefox_user.js ~/.mozilla/firefox/*.default/user.js
+	ln -s $PWD/Firefox_user.js $firefox_profile/user.js
 fi
 
 # Darktable Scripts
 #########
 if [ -e "$HOME/.config/darktable/luarc" ]; then
 	echo 'Darktable: ~/.config/darktable/luarc" exists. Did not create link'
+  echo "Fetching latest scripts"
+	git fetch ~/.config/darktable/lua
 else
 	echo "Darktable: Fetching darktable scripts"
 	git clone https://github.com/darktable-org/lua-scripts.git ~/.config/darktable/lua
