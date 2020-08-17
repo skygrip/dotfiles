@@ -137,7 +137,7 @@ HideTaskView                    # ShowTaskView
 # SetTaskbarCombineWhenFull       # SetTaskbarCombineNever        # SetTaskbarCombineAlways
 HideTaskbarPeopleIcon           # ShowTaskbarPeopleIcon
 # ShowTrayIcons                   # HideTrayIcons
-ShowSecondsInTaskbar          # HideSecondsFromTaskbar
+# ShowSecondsInTaskbar          # HideSecondsFromTaskbar
 DisableSearchAppInStore         # EnableSearchAppInStore
 # DisableNewAppPrompt             # EnableNewAppPrompt
 HideRecentlyAddedApps         # ShowRecentlyAddedApps
