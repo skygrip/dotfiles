@@ -45,6 +45,7 @@ General Tools:
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
 -   [Gpg4win](https://www.gpg4win.org/)
 -   [KeepassXC](https://keepassxc.org/)
+-   [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)
 -   [LibreOffice](https://www.libreoffice.org/)
 -   [Microsoft Teams](https://teams.microsoft.com/downloads)
 -   [Power Toys](https://github.com/microsoft/PowerToys)
@@ -52,6 +53,7 @@ General Tools:
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
+-   [Zoom](https://zoom.us/support/download)
 
 Creative Tools:
 
@@ -75,6 +77,7 @@ Development Tools:
 -   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 -   [Visual Studio Code](https://code.visualstudio.com/)
+-   [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
 
 Forensics Tools:
@@ -86,6 +89,7 @@ Forensics Tools:
 -   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
 -   [HxD Hex Editor](https://mh-nexus.de/en/hxd/)
 -   [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
+-   [Maltego](https://www.maltego.com/downloads/)
 -   [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)
 -   [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
 -   [Plaso](https://github.com/log2timeline/plaso)
@@ -114,30 +118,74 @@ Video Game Launchers:
 
 Drivers
 
--    [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
--    [Logitech Options](https://www.logitech.com/en-au/product/options)
+-   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
+-   [Logitech Options](https://www.logitech.com/en-au/product/options)
+-   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
 
-## Powershell Setup
+## Winget
+
+    TODO This section
+
+## Powershell Setup of additional tools
 
     Install-Module -Name ExchangeOnlineManagement
+    Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+    Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
+    Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
+    Enable-WindowsOptionalFeature -FeatureName "Containers-DisposableClientVM" -All -Online
+    Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -All -Online
 
-## SSH on Windows
+Then enable the following manually
+
+    Core Isolation
+
+## OpenSSH client on Windows
 
     # Install OpenSSH
     Add-WindowsCapability -Online -Name OpenSSH.Client*
     Set-Service ssh-agent -StartupType Automatic
     Start-Service ssh-agent
 
-## Winget
+## Windows Terminal Configuration
 
-    TODO This section
+    Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
 
-## WSL (alternative to running scoop)
+    Add some profiles
+
+        {
+          "name": "Debian AWS Cloud Shell",
+          "commandline": "wsl -d debian aws-shell",
+          "hidden": false,
+          "suppressApplicationTitle": true
+        },
+        {
+          "name": "SSH - server",
+          "commandline": "ssh server",
+          "hidden": false,
+          "suppressApplicationTitle": true
+        },
+        {
+          "name": "O365 Exchange Online",
+          "commandline": "powershell.exe -NoExit Connect-ExchangeOnline",
+          "hidden": false,
+          "suppressApplicationTitle": true
+        },
+        {
+          "name": "O365 Security & Compliance Centre",
+          "commandline": "powershell.exe -NoExit Connect-IPPSSession",
+          "hidden": false,
+          "suppressApplicationTitle": true
+        },
+
+## WSL2
 
 Install WSL2
 
     dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
     dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+Restart
+
     wsl --set-default-version 2
 
 Open Windows store to install Debian or Ubuntu:
@@ -181,10 +229,6 @@ Install Didier Stevens Tools
     # PDFID
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
-
-## Windows Terminal Configuration
-
-Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
 
 # Firefox Setup
 

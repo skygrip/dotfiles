@@ -23,4 +23,4 @@ require "contrib/geoToolbox"
 --require "contrib/face_recognition"
 
 -- Automatic tag suggestions for your images
-require "contrib/photils"
+--require "contrib/photils"
