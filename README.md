@@ -64,6 +64,7 @@ Install the following applications:
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
 -   [Wireshark](https://www.wireshark.org/)
+-   [Power Toys](https://github.com/microsoft/PowerToys)
 
 Forensics Tools:
 
@@ -102,6 +103,14 @@ Video Game Launchers
 -   [Origin](https://www.origin.com/aus/en-us/store/download)
 -   [Twitch](https://www.twitch.tv/downloads)
 
+Apps from the Windows Store
+
+-   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
+
+## Winget
+
+    TODO This section
+
 ## Scoop
 
 Install scoop. Note: if you get an error you might need to change the execution policy
@@ -112,9 +121,55 @@ Install some utilities common on Linux
 
     scoop install git curl aria2 busybox xpdf-tools shellcheck diffutils bind dirhash exiftool file findutils gawk hashcat imagemagick openssl perl which yara
 
+## WSL (alternative to running scoop)
+
+Install WSL2
+
+    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+    wsl --set-default-version 2
+
+Open Windows store to install Debian or Ubuntu:
+
+    [Ubuntu 20.04 LTS](https://www.microsoft.com/en-au/p/ubuntu-2004-lts/9n6svws3rx71)
+    [Debian](https://www.microsoft.com/en-au/p/debian/9msvkqc78pk6)
+
+Install
+
+    # Update system
+    sudo apt update && sudo apt dist-upgrade
+    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick
+
+    # Fix PIP paths
+    echo "export PATH=\"${HOME}/.local/bin:$PATH\"" >>"${HOME}"/.bashrc
+    echo "alias pip=pip3" >> ~/.bashrc
+    sudo ln -s /usr/bin/python3 /usr/bin/python
+
+    # Fix the bell
+    echo "set bell-style none" >> ~/.inputrc
+
+    # ZSH config
+    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    sudo chsh -s /bin/zsh
+
+Didier Stevens Tools
+
+    # PDF-Parser
+    wget -O ~/.local/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/.local/bin/pdf-parser.py
+    ln -s ~/.local/bin/pdf-parser.py ~/.local/bin/pdf-parser
+
+    # OleDump
+    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_60.zip && unzip -e -d ~/.local/bin /tmp/oledump.zip && chmod +x ~/.local/bin/oledump.py
+    ln -s ~/.local/bin/oledump.py ~/.local/bin/oledump
+
+    # PDFID
+    wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
+    ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
+
+
 ## Python
 
-    pip install pdfx peepdf
+    pip install pdfx peepdf olefile
 
 ## Windows Privacy tweaks
 
