@@ -80,7 +80,6 @@ Forensics Tools:
 -   [Foremost](http://foremost.sourceforge.net/)
 -   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
 -   [Volatility](https://github.com/volatilityfoundation/volatility3)
--   [Rekall](https://github.com/google/rekall)
 -   [Plaso](https://github.com/log2timeline/plaso)
 -   [TimeSketch](https://github.com/google/timesketch)
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
@@ -134,7 +133,7 @@ Open Windows store to install Debian or Ubuntu:
     [Ubuntu 20.04 LTS](https://www.microsoft.com/en-au/p/ubuntu-2004-lts/9n6svws3rx71)
     [Debian](https://www.microsoft.com/en-au/p/debian/9msvkqc78pk6)
 
-Install
+Post Installation configuration
 
     # Update system
     sudo apt update && sudo apt dist-upgrade
@@ -152,7 +151,7 @@ Install
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh
 
-Didier Stevens Tools
+Install Didier Stevens Tools
 
     # PDF-Parser
     wget -O ~/.local/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/.local/bin/pdf-parser.py
@@ -166,8 +165,7 @@ Didier Stevens Tools
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
 
-
-## Python
+Python Tools
 
     pip install pdfx peepdf olefile
 
@@ -177,6 +175,9 @@ Run Win10-Initial-Setup-Script-master/Default.cmd
 
 ## Windows Theming
 
+Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
+
+### Old way
 Use the base16 Ocean command prompt theme: <https://github.com/iamthad/base16-windows-command-prompt/blob/master/windows-command-prompt/base16-ocean.reg>
 
 Use the base16 ocean putty theme: <https://github.com/benjojo/base-16-putty/blob/master/base16-ocean.reg>
@@ -206,29 +207,14 @@ The following Firefox addons are also installed for security:
 
 # Atom Setup
 
-Language packages
-    apm install atom-language-r
-
 Good packages
 
-    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal highlight-selected minimap minimap-highlight-selected intentions intentions-colorpicker split-diff todo-show sort-lines sublime-style-column-selection
+    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal highlight-selected minimap minimap-highlight-selected intentions intentions-colorpicker split-diff sort-lines sublime-style-column-selection
 
 Autocomplete packages
 
-    apm install autocomplete-python autocomplete-xml autocomplete-r autocomplete-math
+    apm install autocomplete-python autocomplete-xml autocomplete-math
 
 Linter packages
 
     apm install linter linter-ui-default linter-clang linter-flake8 linter-lintr linter-markdown linter-php linter-pydocstyle linter-shellcheck linter-stylelint linter-xmllint
-
-Hydrogen code run
-
-    apm install hydrogen hydrogen-python data-explorer
-
-Extra tools
-
-    apm install terminal-plus emmet
-
-User Interface
-
-    apm install pop-syntax pop-ui
