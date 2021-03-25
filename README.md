@@ -35,96 +35,102 @@ Install the terminal theme. If you have problems with the script create an new t
 
 # Windows Setup
 
-Install the following applications:
+General Tools:
 
 -   [7zip](https://www.7-zip.org/download.html)
--   [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
 -   [Adobe Reader](https://get.adobe.com/reader/)
--   [Anaconda3](https://www.anaconda.com/)
--   [Atom](https://atom.io/)
--   [Blender](https://www.blender.org/)
 -   [Chrome](https://www.google.com/chrome/)
--   [Docker Desktop](https://www.docker.com/products/docker-desktop)
+-   [Discord](https://discordapp.com/)
 -   [Dropbox](https://www.dropbox.com/install)
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
--   [FreeCAD](https://www.freecadweb.org/)
--   [GIMP](https://www.gimp.org/)
--   [GitHub Desktop](https://desktop.github.com/)
 -   [Gpg4win](https://www.gpg4win.org/)
--   [Inkscape](https://inkscape.org/)
 -   [KeepassXC](https://keepassxc.org/)
 -   [LibreOffice](https://www.libreoffice.org/)
 -   [Microsoft Teams](https://teams.microsoft.com/downloads)
--   [Nmap](https://nmap.org/download.html)
--   [OpenSCAD](https://www.openscad.org/)
 -   [Power Toys](https://github.com/microsoft/PowerToys)
--   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
--   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
 -   [Speedcrunch](https://speedcrunch.org/)
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
+-   [VLC](https://www.videolan.org/vlc/download-windows.html)
+-   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
+
+Creative Tools:
+
+-   [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
+-   [Blender](https://www.blender.org/)
+-   [FreeCAD](https://www.freecadweb.org/)
+-   [GIMP](https://www.gimp.org/)
+-   [Inkscape](https://inkscape.org/)
+-   [OpenSCAD](https://www.openscad.org/)
+
+Development Tools:
+
+-   [Anaconda3](https://www.anaconda.com/)
+-   [Atom](https://atom.io/)
+-   [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)
+-   [AWS Shell](https://github.com/awslabs/aws-shell)
+-   [Docker Desktop](https://www.docker.com/products/docker-desktop)
+-   [Git](https://git-scm.com/downloads)
+-   [GitHub Desktop](https://desktop.github.com/)
+-   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+-   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 -   [Visual Studio Code](https://code.visualstudio.com/)
--   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
--   [Wireshark](https://www.wireshark.org/)
 
 Forensics Tools:
 
--   [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)
--   [FTK Imager](https://accessdata.com/product-download/ftk-imager-version-4-2-1)
 -   [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)
+-   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
+-   [Foremost](http://foremost.sourceforge.net/)
+-   [FTK Imager](https://accessdata.com/product-download/ftk-imager-version-4-2-1)
+-   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
 -   [HxD Hex Editor](https://mh-nexus.de/en/hxd/)
--   [Zimmerman Tools](https://ericzimmerman.github.io/)
--   [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
 -   [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
 -   [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)
--   [RegRipper](https://github.com/keydet89/RegRipper2.8)
--   [Foremost](http://foremost.sourceforge.net/)
--   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
--   [Volatility](https://github.com/volatilityfoundation/volatility3)
+-   [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
 -   [Plaso](https://github.com/log2timeline/plaso)
+-   [RegRipper](https://github.com/keydet89/RegRipper2.8)
+-   [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)
 -   [TimeSketch](https://github.com/google/timesketch)
--   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
+-   [Volatility](https://github.com/volatilityfoundation/volatility3)
+-   [Zimmerman Tools](https://ericzimmerman.github.io/)
 
 Network Security Tools:
 
--   [Nmap](https://nmap.org/)
--   [Wireshark](https://www.wireshark.org/)
--   [Zeek](https://www.zeek.org/)
--   [Snort](https://www.snort.org/)
 -   [MITMProxy](https://github.com/mitmproxy/mitmproxy)
+-   [Nmap](https://nmap.org/)
 -   [Postman](https://www.getpostman.com/downloads/)
+-   [Snort](https://www.snort.org/)
+-   [Wireshark](https://www.wireshark.org/)
 -   [ZAProxy](https://github.com/zaproxy/zaproxy)
+-   [Zeek](https://www.zeek.org/)
 
-Video Game Launchers
+Video Game Launchers:
 
--   [Discord](https://discordapp.com/)
--   [Steam](https://store.steampowered.com/about/)
 -   [Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)
 -   [Origin](https://www.origin.com/aus/en-us/store/download)
+-   [Steam](https://store.steampowered.com/about/)
 -   [Twitch](https://www.twitch.tv/downloads)
-
-Apps from the Windows Store
-
--   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
 
 Drivers
 
 -    [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
+-    [Logitech Options](https://www.logitech.com/en-au/product/options)
+
+## Powershell Setup
+
+    Install-Module -Name ExchangeOnlineManagement
+
+## SSH on Windows
+
+    # Install OpenSSH
+    Add-WindowsCapability -Online -Name OpenSSH.Client*
+    Set-Service ssh-agent -StartupType Automatic
+    Start-Service ssh-agent
 
 ## Winget
 
     TODO This section
-
-## Scoop
-
-Install scoop. Note: if you get an error you might need to change the execution policy
-
-    iwr -useb get.scoop.sh | iex
-
-Install some utilities common on Linux
-
-    scoop install git curl aria2 busybox xpdf-tools shellcheck diffutils bind dirhash exiftool file findutils gawk hashcat imagemagick openssl perl which yara
 
 ## WSL (alternative to running scoop)
 
@@ -143,7 +149,7 @@ Post Installation configuration
 
     # Update system
     sudo apt update && sudo apt dist-upgrade
-    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick
+    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli aws-shell
 
     # Fix PIP paths
     echo "export PATH=\"${HOME}/.local/bin:$PATH\"" >>"${HOME}"/.bashrc
@@ -155,7 +161,8 @@ Post Installation configuration
 
     # ZSH config
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    sudo chsh -s /bin/zsh
+    sudo chsh -s /bin/zsh $USER
+    sudo chsh -s /bin/zsh root
 
 Python Tools
 
@@ -175,8 +182,7 @@ Install Didier Stevens Tools
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
 
-
-## Windows Terminal Theme
+## Windows Terminal Configuration
 
 Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
 
@@ -206,7 +212,7 @@ The following Firefox addons are also installed for security:
 
 Good packages
 
-    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation busy-signal highlight-selected minimap minimap-highlight-selected intentions intentions-colorpicker split-diff sort-lines sublime-style-column-selection
+    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation highlight-selected minimap minimap-highlight-selected split-diff sort-lines sublime-style-column-selection
 
 Autocomplete packages
 
