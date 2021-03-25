@@ -153,9 +153,15 @@ Add the workaround for ssh-agent, details [here](https://github.com/PowerShell/W
 
 ## Windows Terminal Configuration
 
-    Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
+Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
 
-    Add some profiles
+    "profiles": {
+      "defaults": {
+        // Put settings here that you want to apply to all profiles.
+        "colorScheme": "One Half Dark"
+      },
+
+Add some profiles
 
         {
           "name": "Debian AWS Cloud Shell",
