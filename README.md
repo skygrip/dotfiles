@@ -146,6 +146,11 @@ Then enable the following manually
     Set-Service ssh-agent -StartupType Automatic
     Start-Service ssh-agent
 
+Add the workaround for ssh-agent, details [here](https://github.com/PowerShell/Win32-OpenSSH/issues/1234):
+
+    Add-WindowsCapability -Online -Name OpenSSH.Server*
+    Set-Service sshd -StartupType Disabled
+
 ## Windows Terminal Configuration
 
     Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
