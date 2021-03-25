@@ -38,11 +38,13 @@ Install the terminal theme. If you have problems with the script create an new t
 Install the following applications:
 
 -   [7zip](https://www.7-zip.org/download.html)
+-   [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
 -   [Adobe Reader](https://get.adobe.com/reader/)
 -   [Anaconda3](https://www.anaconda.com/)
 -   [Atom](https://atom.io/)
 -   [Blender](https://www.blender.org/)
 -   [Chrome](https://www.google.com/chrome/)
+-   [Docker Desktop](https://www.docker.com/products/docker-desktop)
 -   [Dropbox](https://www.dropbox.com/install)
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
 -   [FreeCAD](https://www.freecadweb.org/)
@@ -55,16 +57,16 @@ Install the following applications:
 -   [Microsoft Teams](https://teams.microsoft.com/downloads)
 -   [Nmap](https://nmap.org/download.html)
 -   [OpenSCAD](https://www.openscad.org/)
+-   [Power Toys](https://github.com/microsoft/PowerToys)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
--   [Speedcrunch](https://speedcrunch.org/)
 -   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
+-   [Speedcrunch](https://speedcrunch.org/)
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
 -   [Visual Studio Code](https://code.visualstudio.com/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinSCP](https://winscp.net/eng/download.php)
 -   [Wireshark](https://www.wireshark.org/)
--   [Power Toys](https://github.com/microsoft/PowerToys)
 
 Forensics Tools:
 
@@ -105,6 +107,10 @@ Video Game Launchers
 Apps from the Windows Store
 
 -   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
+
+Drivers
+
+-    [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
 
 ## Winget
 
@@ -151,6 +157,10 @@ Post Installation configuration
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh
 
+Python Tools
+
+    pip install pdfx peepdf olefile
+
 Install Didier Stevens Tools
 
     # PDF-Parser
@@ -165,22 +175,10 @@ Install Didier Stevens Tools
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
 
-Python Tools
 
-    pip install pdfx peepdf olefile
-
-## Windows Privacy tweaks
-
-Run Win10-Initial-Setup-Script-master/Default.cmd
-
-## Windows Theming
+## Windows Terminal Theme
 
 Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
-
-### Old way
-Use the base16 Ocean command prompt theme: <https://github.com/iamthad/base16-windows-command-prompt/blob/master/windows-command-prompt/base16-ocean.reg>
-
-Use the base16 ocean putty theme: <https://github.com/benjojo/base-16-putty/blob/master/base16-ocean.reg>
 
 # Firefox Setup
 
@@ -200,7 +198,6 @@ The following Firefox addons are also installed for security:
 
 -   [Decentraleyes](https://addons.mozilla.org/en-US/firefox/addon/decentraleyes/)
 -   [Firefox Multi-Account Containers](https://addons.mozilla.org/en-GB/firefox/addon/multi-account-containers/)
--   [HTTPS-Everywhere](https://addons.mozilla.org/en-US/firefox/addon/https-everywhere/)
 -   [KeePassXC-Browser](https://addons.mozilla.org/en-US/firefox/addon/keepassxc-browser/)
 -   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
 -   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
