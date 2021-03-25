@@ -142,8 +142,8 @@ Install WSL2
 
 Open Windows store to install Debian or Ubuntu:
 
-    [Ubuntu 20.04 LTS](https://www.microsoft.com/en-au/p/ubuntu-2004-lts/9n6svws3rx71)
-    [Debian](https://www.microsoft.com/en-au/p/debian/9msvkqc78pk6)
+-   [Ubuntu 20.04 LTS](https://www.microsoft.com/en-au/p/ubuntu-2004-lts/9n6svws3rx71)
+-   [Debian](https://www.microsoft.com/en-au/p/debian/9msvkqc78pk6)
 
 Post Installation configuration
 
