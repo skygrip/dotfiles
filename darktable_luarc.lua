@@ -1,3 +1,6 @@
+-- Manage (install, update, enable, disable) the lua scripts
+require "tools/script_manager"
+
 -- Open an image in GIMP for editing and return the result
 require "contrib/gimp"
 
@@ -24,3 +27,6 @@ require "contrib/geoToolbox"
 
 -- Automatic tag suggestions for your images
 --require "contrib/photils"
+
+-- Group images together by time
+require "contrib/AutoGrouper"
