@@ -64,6 +64,8 @@ Creative Tools:
 -   [GIMP](https://www.gimp.org/)
 -   [Inkscape](https://inkscape.org/)
 -   [OpenSCAD](https://www.openscad.org/)
+-   [Luminance HDR](http://qtpfsgui.sourceforge.net)
+-   [Hugin](http://hugin.sourceforge.net/download/)
 
 Development Tools:
 
@@ -226,8 +228,6 @@ Post Installation configuration
 
     # Fix the bell
     echo "set bell-style none" >> ~/.inputrc
-
-
 
 Python Tools
 
