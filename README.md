@@ -52,6 +52,7 @@ General Tools:
 -   [Speedcrunch](https://speedcrunch.org/)
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
+-   [WinDirStat](https://windirstat.net/)
 -   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
 -   [Zoom](https://zoom.us/support/download)
 
@@ -121,6 +122,7 @@ Drivers
 -   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
 -   [Logitech Options](https://www.logitech.com/en-au/product/options)
 -   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
+-   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
 
 ## Winget
 
@@ -210,18 +212,22 @@ Post Installation configuration
     sudo apt update && sudo apt dist-upgrade
     sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli aws-shell
 
+    # ZSH config
+    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    sudo chsh -s /bin/zsh $USER
+    sudo chsh -s /bin/zsh root
+    zsh
+
     # Fix PIP paths
     echo "export PATH=\"${HOME}/.local/bin:$PATH\"" >>"${HOME}"/.bashrc
     echo "alias pip=pip3" >> ~/.bashrc
+    echo "alias pip=pip3" >> ~/.zshrc
     sudo ln -s /usr/bin/python3 /usr/bin/python
 
     # Fix the bell
     echo "set bell-style none" >> ~/.inputrc
 
-    # ZSH config
-    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    sudo chsh -s /bin/zsh $USER
-    sudo chsh -s /bin/zsh root
+
 
 Python Tools
 
