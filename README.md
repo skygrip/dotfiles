@@ -2,38 +2,14 @@
 
 A collection of configuration files stored here for convenience.
 
-# Linux Setup
-
-Run the Setup.sh file to setup and link configurations to git
-
-## Zsh
-
-Use the ZSH shell
-
-    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    sudo chsh -s /bin/zsh
-
-# Gnome Theme
-
-Install the theme
-
-    yay -S pop-icon-theme-git pop-gtk-theme-git
-
-Set the font sizes in Tweak Tool
-
-| Name                 | Font                | Size |
-| -------------------- | ------------------- | ---- |
-| Interface Font       | Fira Sans Book      | 10   |
-| Document Text        | Roboto Slab Regular | 11   |
-| Monospace Text       | Fira Mono Regular   | 11   |
-| Legacy Window Titles | Fira Sans Medium    | 10   |
-
-Install the terminal theme. If you have problems with the script create an new terminal profile and run the script again.
-
-    git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
-    ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
-
 # Windows Setup
+
+## Debloat 
+Also run the functions in Win10-Setup.ps1
+
+    iwr -useb https://git.io/debloat|iex
+
+## Software
 
 General Tools:
 
@@ -53,7 +29,8 @@ General Tools:
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinDirStat](https://windirstat.net/)
--   [Windows Terminal](https://www.microsoft.com/en-au/p/windows-terminal/9n0dx20hk701)
+-   [Windows Terminal](https://aka.ms/terminal)
+-   [Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps?activetab=pivot:overviewtab)
 -   [Zoom](https://zoom.us/support/download)
 
 Creative Tools:
@@ -121,9 +98,10 @@ Video Game Launchers:
 
 Drivers
 
+-   [AMD Chipset Drivers](https://www.amd.com/en/support)
+-   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
 -   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
 -   [Logitech Options](https://www.logitech.com/en-au/product/options)
--   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
 -   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
 
 ## Winget
@@ -136,8 +114,8 @@ Drivers
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
-    Enable-WindowsOptionalFeature -FeatureName "Containers-DisposableClientVM" -All -Online
-    Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -All -Online
+    Enable-WindowsOptionalFeature -FeatureName "Containers-DisposableClientVM" -All -Online -NoRestart
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
 
 Then enable the following manually
 
@@ -246,6 +224,38 @@ Install Didier Stevens Tools
     # PDFID
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
+
+# Linux Setup
+
+Run the Setup.sh file to setup and link configurations to git
+
+## Zsh
+
+Use the ZSH shell
+
+    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    sudo chsh -s /bin/zsh
+
+# Gnome Theme
+
+Install the theme
+
+    yay -S pop-icon-theme-git pop-gtk-theme-git
+
+Set the font sizes in Tweak Tool
+
+| Name                 | Font                | Size |
+| -------------------- | ------------------- | ---- |
+| Interface Font       | Fira Sans Book      | 10   |
+| Document Text        | Roboto Slab Regular | 11   |
+| Monospace Text       | Fira Mono Regular   | 11   |
+| Legacy Window Titles | Fira Sans Medium    | 10   |
+
+Install the terminal theme. If you have problems with the script create an new terminal profile and run the script again.
+
+    git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
+    ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
+
 
 # Firefox Setup
 
