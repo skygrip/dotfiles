@@ -100,6 +100,7 @@ Drivers
 
 -   [AMD Chipset Drivers](https://www.amd.com/en/support)
 -   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
+-   [WinBtrfs](https://github.com/maharmstone/btrfs)
 -   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
 -   [Logitech Options](https://www.logitech.com/en-au/product/options)
 -   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
@@ -132,6 +133,8 @@ This script will fetch the latest sysinternals and places it in the build direct
     Invoke-WebRequest -Uri https://download.sysinternals.com/files/SysinternalsSuite.zip -OutFile SysinternalsSuite.zip
     Expand-Archive -Path SysinternalsSuite.zip -DestinationPath .
     Remove-Item SysinternalsSuite.zip
+    $SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
+    Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
 
 ## OpenSSH client on Windows
 
