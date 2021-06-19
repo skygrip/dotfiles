@@ -280,6 +280,25 @@ link Firefox_user.js to `~/.mozilla/firefox/\*.default/user.js`.
 
 with some tweaks.
 
+At minimum make the following changes:
+
+    browser.cache.disk.enable = False
+    browser.fixup.alternate.enabled = False
+    browser.formfill.enable = False
+    browser.safebrowsing.downloads.remote.enabled = False
+    browser.urlbar.trimURLs = False
+    device.sensors.enabled = False
+    dom.battery.enabled =  False
+    dom.enable_performance = False
+    dom.vibrator.enabled = False
+    dom.webnotifications.enabled = False
+    extensions.pocket.enabled = False
+    geo.enabled = False
+    keyword.enabled = False
+    media.peerconnection.enabled = False
+    network.captive-portal-service.enabled = False
+    webgl.enable-debug-renderer-info = False
+
 Optionally enable resist fingerprinting in about:config
 
     privacy.resistFingerprinting = true
