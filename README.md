@@ -121,6 +121,18 @@ Then enable the following manually
 
     Core Isolation
 
+## Sysinternals
+
+This script will fetch the latest sysinternals and places it in the build directory. Doubles as an updater too.
+
+    New-Item -Path $HOME\Build -ItemType directory
+    New-Item -Path $HOME\Build\SysInternals -ItemType directory
+    cd $HOME\Build\SysInternals
+    Remove-Item $HOME\Build\SysInternals\*
+    Invoke-WebRequest -Uri https://download.sysinternals.com/files/SysinternalsSuite.zip -OutFile SysinternalsSuite.zip
+    Expand-Archive -Path SysinternalsSuite.zip -DestinationPath .
+    Remove-Item SysinternalsSuite.zip
+
 ## OpenSSH client on Windows
 
     # Install OpenSSH
