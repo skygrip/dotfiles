@@ -68,7 +68,7 @@ Function Hide3DObjectsFromExplorer {
 
 # Hide Creative Cloud Shell Folder
 Function HideCreativeCloudFromThisPC {
-  Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{0E270DAA-1BE6-48F2-AC49-FCA69971F5C4}" -Recurse -ErrorAction SilentlyContinue
+	Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{0E270DAA-1BE6-48F2-AC49-FCA69971F5C4}" -Recurse -ErrorAction SilentlyContinue
 }
 
 # Enable receiving updates for other Microsoft products via Windows Update
@@ -252,6 +252,7 @@ Hide3DObjectsFromThisPC
 HideCreativeCloudFromThisPC
 HideDesktopIcons
 HideMusicFromExplorer
+HideMusicFromThisPC
 HidePicturesFromExplorer
 HidePicturesFromThisPC
 HideRecentlyAddedApps
@@ -262,7 +263,6 @@ HideVideosFromExplorer
 HideVideosFromThisPC
 SetBIOSTimeUTC
 SetExplorerThisPC
-ShowHiddenFiles
 ShowHiddenFiles
 ShowKnownExtensions
 

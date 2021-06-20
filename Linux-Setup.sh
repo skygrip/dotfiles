@@ -30,7 +30,7 @@ fi
 
 # Firefox
 #########
-firefox_profile=`echo $HOME/.mozilla/firefox/*.default-release/`
+firefox_profile=$(echo $HOME/.mozilla/firefox/*.default-release/)
 if [ -e $firefox_path/user.js ]; then
 	echo Firefox: $firefox_profile/user.js exists. Did not create link.
 else
@@ -42,7 +42,7 @@ fi
 #########
 if [ -e "$HOME/.config/darktable/luarc" ]; then
 	echo 'Darktable: ~/.config/darktable/luarc" exists. Did not create link'
-  echo "Fetching latest scripts"
+	echo 'Fetching latest scripts'
 	git fetch ~/.config/darktable/lua
 else
 	echo "Darktable: Fetching darktable scripts"
