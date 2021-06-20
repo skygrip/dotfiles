@@ -15,6 +15,7 @@ General Tools:
 
 -   [7zip](https://www.7-zip.org/download.html)
 -   [Adobe Reader](https://get.adobe.com/reader/)
+-   [Calibre Ebook](https://calibre-ebook.com/download_windows64)
 -   [Chrome](https://www.google.com/chrome/)
 -   [Discord](https://discordapp.com/)
 -   [Dropbox](https://www.dropbox.com/install)
@@ -29,8 +30,8 @@ General Tools:
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinDirStat](https://windirstat.net/)
+-   [Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)
 -   [Windows Terminal](https://aka.ms/terminal)
--   [Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps?activetab=pivot:overviewtab)
 -   [Zoom](https://zoom.us/support/download)
 
 Creative Tools:
@@ -273,12 +274,6 @@ Install the terminal theme. If you have problems with the script create an new t
 
 
 # Firefox Setup
-
-link Firefox_user.js to `~/.mozilla/firefox/\*.default/user.js`.
-
-<!-- Based upon [This](https://github.com/pyllyukko/user.js) user.js file -->
-
-with some tweaks.
 
 At minimum make the following changes:
 
