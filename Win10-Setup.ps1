@@ -63,6 +63,7 @@ Function Hide3DObjectsFromExplorer {
 # Hide Creative Cloud Shell Folder
 Function HideCreativeCloudFromThisPC {
 	Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{0E270DAA-1BE6-48F2-AC49-FCA69971F5C4}" -Recurse -ErrorAction SilentlyContinue
+	Remove-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{0E270DAA-1BE6-48F2-AC49-FCA69971F5C4}" -Recurse -ErrorAction SilentlyContinue
 }
 
 # Hide Desktop icon from This PC - The icon remains in personal folders and open/save dialogs
