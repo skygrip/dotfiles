@@ -5,7 +5,6 @@ Function HideMusicFromThisPC {
 	Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{1CF1260C-4DD0-4ebb-811F-33C572699FDE}" -Recurse -ErrorAction SilentlyContinue
 }
 
-
 # Hide Music icon from Explorer namespace - Hides the icon also from personal folders and open/save dialogs
 Function HideMusicFromExplorer {
 	Write-Output "Hiding Music icon from Explorer namespace..."

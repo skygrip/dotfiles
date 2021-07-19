@@ -5,7 +5,7 @@ A collection of configuration files stored here for convenience.
 # Windows Setup
 
 ## Debloat 
-Also run the functions in Win10-Setup.ps1
+Run the following debloat too then also run the functions in Win10-Setup.ps1
 
     iwr -useb https://git.io/debloat|iex
 
@@ -240,6 +240,12 @@ Install Didier Stevens Tools
     # PDFID
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
+
+# AWS CLI Config
+
+Enable auto prompt mode
+
+    aws configure set cli_auto_prompt on 
 
 # Linux Setup
 
