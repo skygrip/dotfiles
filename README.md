@@ -53,7 +53,6 @@ Development Tools:
 -   [AWS Shell](https://github.com/awslabs/aws-shell)
 -   [Docker Desktop](https://www.docker.com/products/docker-desktop)
 -   [Git](https://git-scm.com/downloads)
--   [GitHub Desktop](https://desktop.github.com/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 -   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
 -   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
@@ -206,7 +205,11 @@ Post Installation configuration
 
     # Update system
     sudo apt update && sudo apt dist-upgrade
-    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli aws-shell
+    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli podman
+
+    # TODO
+    # Make the WSL subnet static so it doesnt collide with real ips
+    # Also fix the issues with VPN's
 
     # ZSH config
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
@@ -220,8 +223,19 @@ Post Installation configuration
     echo "alias pip=pip3" >> ~/.zshrc
     sudo ln -s /usr/bin/python3 /usr/bin/python
 
+    # Disable including windows paths
+    sudo sh -c 'echo "[interop]" >> /etc/wsl.conf'
+    sudo sh -c 'echo  "enabled=false" >> /etc/wsl.conf'
+    sudo sh -c 'echo  "appendWindowsPath=false" >> /etc/wsl.conf'
+
     # Fix the bell
     echo "set bell-style none" >> ~/.inputrc
+
+    # Fix Podman
+    echo -e "[registries.search]\nregistries = ['docker.io', 'quay.io']" | sudo tee /etc/containers/registries.conf
+    sudo sh -c 'echo "events_logger = \"file\"" >> /etc/containers/containers.conf'
+    sudo sh -c 'echo "net.ipv4.ip_unprivileged_port_start=0" >> /etc/sysctl.conf'
+    sudo sysctl -p
 
 Python Tools
 
