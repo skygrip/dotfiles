@@ -45,6 +45,10 @@ Creative Tools:
 -   [Luminance HDR](http://qtpfsgui.sourceforge.net)
 -   [Hugin](http://hugin.sourceforge.net/download/)
 
+Audio Tools:
+-   [Equalizer APO](https://equalizerapo.com/download.html)
+-   [Lisp VST Plugin](https://plugins4free.com/plugin/1662/)
+
 Development Tools:
 
 -   [Anaconda3](https://www.anaconda.com/)
@@ -65,7 +69,7 @@ Forensics Tools:
 -   [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)
 -   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
 -   [Foremost](http://foremost.sourceforge.net/)
--   [FTK Imager](https://accessdata.com/product-download/ftk-imager-version-4-2-1)
+-   [FTK Imager](https://accessdata.com/product-download/)
 -   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
 -   [HxD Hex Editor](https://mh-nexus.de/en/hxd/)
 -   [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
