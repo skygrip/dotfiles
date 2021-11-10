@@ -48,6 +48,7 @@ Creative Tools:
 Audio Tools:
 -   [Equalizer APO](https://equalizerapo.com/download.html)
 -   [Lisp VST Plugin](https://plugins4free.com/plugin/1662/)
+-   [ReaPlugs](https://www.reaper.fm/reaplugs/)
 
 Development Tools:
 
