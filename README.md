@@ -220,6 +220,7 @@ Post Installation configuration
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh $USER
     sudo chsh -s /bin/zsh root
+    ln -s ~/.profile ~/.zprofile
     zsh
 
     # Fix PIP paths
@@ -244,7 +245,7 @@ Post Installation configuration
 
 Python Tools
 
-    pip install pdfx peepdf olefile
+    pip install pdfx peepdf olefile mupdf mupdf-tools
 
 Install Didier Stevens Tools
 
@@ -253,12 +254,17 @@ Install Didier Stevens Tools
     ln -s ~/.local/bin/pdf-parser.py ~/.local/bin/pdf-parser
 
     # OleDump
-    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_60.zip && unzip -e -d ~/.local/bin /tmp/oledump.zip && chmod +x ~/.local/bin/oledump.py
+    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/.local/bin /tmp/oledump.zip && chmod +x ~/.local/bin/oledump.py
     ln -s ~/.local/bin/oledump.py ~/.local/bin/oledump
 
     # PDFID
     wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
     ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
+
+    # PDFTool
+    wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/.local/bin/pdftool.py
+    ln -s ~/.local/bin/pdftool.py ~/.local/bin/pdftool
+
 
 # AWS CLI Config
 
