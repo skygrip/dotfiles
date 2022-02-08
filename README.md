@@ -1,10 +1,11 @@
 # dotfiles
 
-A collection of configuration files stored here for convenience.
+A collection of light build guides and configuration files stored here for convenience.
 
 # Operating System Setup
 
 [Windows Desktop Setup](Windows_Desktop.md)
+
 [Linux Setup](Linux.md)
 
 # Application Specific
