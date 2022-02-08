@@ -4,7 +4,11 @@
 
 # Setup BTRFS
 
-Run the Setup.sh file to setup and link configurations to git
+# Setup Static Networking with NetworkManager
+
+Using Network Manager Text User Interface
+
+    nmtui
 
 # Setup Zsh
 
@@ -31,6 +35,14 @@ Debian/Ubuntu Tweaks
 Debian/Ubuntu
 
     sudo apt install fail2ban
+
+
+# Setup Docker
+
+Debian/Ubuntu
+
+
+Backup Cron
 
 # Gnome Theming
 

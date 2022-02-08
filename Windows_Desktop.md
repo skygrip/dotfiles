@@ -1,9 +1,12 @@
-## Debloat 
+# Windows Desktop Setup
+
+
+# Debloat 
 Run the following debloat too then also run the functions in [Win10-Setup.ps1](Win10-Setup.ps1)
 
     iwr -useb https://git.io/debloat|iex
 
-## Software
+# Software
 
 General Tools:
 
@@ -104,11 +107,11 @@ Drivers
 -   [Logitech Options](https://www.logitech.com/en-au/product/options)
 -   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
 
-## Winget
+# Winget
 
     TODO This section
 
-## Powershell Setup of additional tools
+# Powershell Setup of additional tools
 
     Install-Module -Name ExchangeOnlineManagement
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
@@ -121,7 +124,7 @@ Then enable the following manually
 
     Core Isolation
 
-## Sysinternals
+# Sysinternals
 
 This script will fetch the latest sysinternals and places it in the build directory. Doubles as an updater too.
 
@@ -135,7 +138,7 @@ This script will fetch the latest sysinternals and places it in the build direct
     $SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
     Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
 
-## OpenSSH client on Windows
+# OpenSSH client on Windows
 
     # Install OpenSSH
     Add-WindowsCapability -Online -Name OpenSSH.Client*
@@ -147,7 +150,7 @@ Add the workaround for ssh-agent, details [here](https://github.com/PowerShell/W
     Add-WindowsCapability -Online -Name OpenSSH.Server*
     Set-Service sshd -StartupType Disabled
 
-## Windows Terminal Configuration
+# Windows Terminal Configuration
 
 Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
 
@@ -184,7 +187,7 @@ Add some profiles
           "suppressApplicationTitle": true
         },
 
-## WSL2
+# WSL2
 
 Install WSL2
 
