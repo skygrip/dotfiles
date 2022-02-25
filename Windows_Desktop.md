@@ -1,6 +1,5 @@
 # Windows Desktop Setup
 
-
 # Debloat 
 Run the following debloat too then also run the functions in [Win10-Setup.ps1](Win10-Setup.ps1)
 
@@ -14,21 +13,26 @@ General Tools:
 -   [Adobe Reader](https://get.adobe.com/reader/)
 -   [Calibre Ebook](https://calibre-ebook.com/download_windows64)
 -   [Chrome](https://www.google.com/chrome/)
--   [Discord](https://discordapp.com/)
 -   [Dropbox](https://www.dropbox.com/install)
 -   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
--   [Gpg4win](https://www.gpg4win.org/)
 -   [KeepassXC](https://keepassxc.org/)
 -   [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)
 -   [LibreOffice](https://www.libreoffice.org/)
--   [Microsoft Teams](https://teams.microsoft.com/downloads)
 -   [Power Toys](https://github.com/microsoft/PowerToys)
 -   [Speedcrunch](https://speedcrunch.org/)
--   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [VLC](https://www.videolan.org/vlc/download-windows.html)
 -   [WinDirStat](https://windirstat.net/)
 -   [Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)
 -   [Windows Terminal](https://aka.ms/terminal)
+
+Messaging Applications:
+
+-   [Discord](https://discordapp.com/)
+-   [Microsoft Teams](https://teams.microsoft.com/downloads)
+-   [Telegram](https://telegram.org/)
+-   [Gpg4win](https://www.gpg4win.org/)
+-   [Thunderbird](https://www.thunderbird.net/en-US/)
+-   [WhatsApp](https://www.whatsapp.com/download/?lang=en)
 -   [Zoom](https://zoom.us/support/download)
 
 Creative Tools:
@@ -52,7 +56,6 @@ Development Tools:
 -   [Anaconda3](https://www.anaconda.com/)
 -   [Atom](https://atom.io/)
 -   [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)
--   [AWS Shell](https://github.com/awslabs/aws-shell)
 -   [Git](https://git-scm.com/downloads)
 -   [GitHub Desktop](https://desktop.github.com/)
 -   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)

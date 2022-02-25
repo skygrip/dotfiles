@@ -8,6 +8,8 @@ A collection of light build guides and configuration files stored here for conve
 
 [Linux Setup](Linux.md)
 
+[MacOS Setup](MacOS.md)
+
 # Application Specific
 
 ## AWS CLI Config
