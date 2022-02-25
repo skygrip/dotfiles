@@ -28,9 +28,9 @@ General Tools:
 Messaging Applications:
 
 -   [Discord](https://discordapp.com/)
--   [Microsoft Teams](https://teams.microsoft.com/downloads)
--   [Telegram](https://telegram.org/)
 -   [Gpg4win](https://www.gpg4win.org/)
+-   [Microsoft Teams](https://teams.microsoft.com/downloads)
+-   [Telegram](https://desktop.telegram.org/)
 -   [Thunderbird](https://www.thunderbird.net/en-US/)
 -   [WhatsApp](https://www.whatsapp.com/download/?lang=en)
 -   [Zoom](https://zoom.us/support/download)
@@ -41,19 +41,20 @@ Creative Tools:
 -   [Blender](https://www.blender.org/)
 -   [FreeCAD](https://www.freecadweb.org/)
 -   [GIMP](https://www.gimp.org/)
--   [Inkscape](https://inkscape.org/)
--   [OpenSCAD](https://www.openscad.org/)
--   [Luminance HDR](http://qtpfsgui.sourceforge.net)
 -   [Hugin](http://hugin.sourceforge.net/download/)
+-   [Inkscape](https://inkscape.org/)
+-   [Luminance HDR](http://qtpfsgui.sourceforge.net)
+-   [OpenSCAD](https://www.openscad.org/)
 
 Audio Tools:
+
 -   [Equalizer APO](https://equalizerapo.com/download.html)
 -   [Lisp VST Plugin](https://plugins4free.com/plugin/1662/)
 -   [ReaPlugs](https://www.reaper.fm/reaplugs/)
 
 Development Tools:
 
--   [Anaconda3](https://www.anaconda.com/)
+-   [Anaconda3](https://www.anaconda.com/products/individual)
 -   [Atom](https://atom.io/)
 -   [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)
 -   [Git](https://git-scm.com/downloads)
@@ -104,11 +105,11 @@ Video Game Launchers:
 Drivers
 
 -   [AMD Chipset Drivers](https://www.amd.com/en/support)
--   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
--   [WinBtrfs](https://github.com/maharmstone/btrfs)
+-   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
 -   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
 -   [Logitech Options](https://www.logitech.com/en-au/product/options)
--   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
+-   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
+-   [WinBtrfs](https://github.com/maharmstone/btrfs)
 
 # Winget
 
