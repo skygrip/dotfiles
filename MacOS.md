@@ -1,23 +1,24 @@
 # MacOS Setup
 
-Turn on FileVault
-Enable Firewall (with Stealth Mode)
-Disable sending diagnostic and usage data to Apple
-Set Timezone Correctly
+Change the following System Settings:
 
-Disable Sharing
-
- * Disable Screen Sharing
- * Disable File Sharing
- * Disable Media Sharing
- * Disable Printer Sharing
- * Disable Remote Login (SSH)
- * Disable Remote Management (ARD)
- * Disable Remote Apple Events
- * Disable Bluetooth Sharing
- * Disable Internet Sharing
- * Disable Content Caching
- * Disable AirPlay Reciever 
+* Turn on FileVault
+* Enable Firewall (with Stealth Mode)
+* Disable sending diagnostic and usage data to Apple
+* Set Timezone Correctly
+* Swap "Command" and "Control" Modifier keys for attached keyboards
+* Disable Sharing
+  * Disable Screen Sharing
+  * Disable File Sharing
+  * Disable Media Sharing
+  * Disable Printer Sharing
+  * Disable Remote Login (SSH)
+  * Disable Remote Management (ARD)
+  * Disable Remote Apple Events
+  * Disable Bluetooth Sharing
+  * Disable Internet Sharing
+  * Disable Content Caching
+  * Disable AirPlay Reciever 
 
 # Software
 
