@@ -85,6 +85,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop|
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
+|[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
 |[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode|
 |[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
