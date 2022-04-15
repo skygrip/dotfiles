@@ -32,7 +32,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 |Application|Winget ID|
 |-----------|-----------|
-|[LibreOffice](https://www.libreoffice.org/)|winget install --id TheDocumentFoundation.LibreOffice|
+|[LibreOffice](https://www.libreoffice.org/)|winget install -e --id TheDocumentFoundation.LibreOffice|
 |[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams|
 |[Microsoft Office]()|winget install -e --id Microsoft.Office|
 |[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
@@ -41,12 +41,12 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 |Application|Winget ID|
 |-----------|-----------|
-|[Discord](https://discordapp.com/)|winget install -e --id Discord.Discord|
+|[Discord](https://discordapp.com/)|winget install -e --id Discord.Discord  --scope user|
 |[Gpg4win](https://www.gpg4win.org/)|winget install -e --id GnuPG.Gpg4win|
-|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams|
-|[Telegram](https://desktop.telegram.org/)|winget install -e --id Telegram.TelegramDesktop|
+|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams --scope user|
+|[Telegram](https://desktop.telegram.org/)|winget install -e --id Telegram.TelegramDesktop --scope user|
 |[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
-|[WhatsApp](https://www.whatsapp.com/download/?lang=en)|winget install -e --id WhatsApp.WhatsApp|
+|[WhatsApp](https://www.whatsapp.com/download/?lang=en)|winget install -e --id WhatsApp.WhatsApp --scope user|
 |[Zoom](https://zoom.us/support/download)|winget install -e --id Zoom.Zoom|
 
 ## Creative Tools
@@ -78,16 +78,16 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 |Application|Winget ID|
 |-----------|-----------|
-|[Anaconda3](https://www.anaconda.com/products/individual)|winget install -e --id Anaconda.Anaconda3|
-|[Atom](https://atom.io/)|winget install -e --id GitHub.Atom|
+|[Anaconda3](https://www.anaconda.com/products/individual)|winget install -e -i --id Anaconda.Anaconda3|
+|[Atom](https://atom.io/)|winget install -e --id GitHub.Atom --scope user|
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
-|[Git](https://git-scm.com/downloads)|winget install -e --id Git.Git|
-|[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop|
+|[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
+|[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
-|[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS|
+|[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS --scope user|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
-|[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode|
+|[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode --scope user|
 |[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
 |[WinSCP](https://winscp.net/eng/download.php)|winget install -e --id WinSCP.WinSCP|
 
@@ -118,7 +118,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |-----------|-----------|
 |[MITMProxy](https://github.com/mitmproxy/mitmproxy)|winget install -e --id mitmproxy.mitmproxy|
 |[Nmap](https://nmap.org/)|winget install -e --id Insecure.Nmap|
-|[Postman](https://www.getpostman.com/downloads/)|winget install -e --id Postman.Postman|
+|[Postman](https://www.getpostman.com/downloads/)|winget install -e --id Postman.Postman --scope user|
 |[Snort](https://www.snort.org/)
 |[Wireshark](https://www.wireshark.org/)|winget install -e --id WiresharkFoundation.Wireshark|
 |[ZAProxy](https://github.com/zaproxy/zaproxy)|winget install -e --id OWASP.ZAP|
