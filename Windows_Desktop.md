@@ -7,113 +7,148 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 # Software
 
-General Tools:
+## General Tools
 
--   [7zip](https://www.7-zip.org/download.html)
--   [Adobe Reader](https://get.adobe.com/reader/)
--   [Calibre Ebook](https://calibre-ebook.com/download_windows64)
--   [Chrome](https://www.google.com/chrome/)
--   [Dropbox](https://www.dropbox.com/install)
--   [Firefox](https://www.mozilla.org/en-US/firefox/new/)
--   [KeepassXC](https://keepassxc.org/)
--   [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)
--   [LibreOffice](https://www.libreoffice.org/)
--   [Power Toys](https://github.com/microsoft/PowerToys)
--   [Speedcrunch](https://speedcrunch.org/)
--   [VLC](https://www.videolan.org/vlc/download-windows.html)
--   [WinDirStat](https://windirstat.net/)
--   [Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)
--   [Windows Terminal](https://aka.ms/terminal)
+|Application|Winget ID|
+|-----------|-----------|
+|[7zip](https://www.7-zip.org/download.html) |winget install -e --id 7zip.7zip|
+|[Adobe Reader](https://get.adobe.com/reader/)||
+|[Calibre Ebook](https://calibre-ebook.com/download_windows64)|winget install -e --id calibre.calibre|
+|[Chrome](https://www.google.com/chrome/)|winget install -e --id Google.Chrome|
+|[Dropbox](https://www.dropbox.com/install)|winget install -e --id Dropbox.Dropbox|
+|[Firefox](https://www.mozilla.org/en-US/firefox/new/)|winget install -e --id Mozilla.Firefox|
+|[KeepassXC](https://keepassxc.org/)|winget install -e --id KeePassXCTeam.KeePassXC|
+|[Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)||
+|[OBSStudio](https://obsproject.com/)|winget install -e --id OBSProject.OBSStudio|
+|[Power Toys](https://github.com/microsoft/PowerToys)|winget install -e --id Microsoft.PowerToys|
+|[ProtonVPN](https://protonvpn.com/download)|winget install -e --id ProtonTechnologies.ProtonVPN|
+|[Speedcrunch](https://speedcrunch.org/)|winget install -e --id SpeedCrunch.SpeedCrunch|
+|[VLC](https://www.videolan.org/vlc/download-windows.html)|winget install -e --id VideoLAN.VLC|
+|[WinDirStat](https://windirstat.net/)|winget install -e --id WinDirStat.WinDirStat|
+|[Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)|winget install -e --id Microsoft.RemoteDesktop_8wekyb3d8bbwe|
+|[Windows Terminal](https://aka.ms/terminal)|winget install -e --id Microsoft.WindowsTerminal|
 
-Messaging Applications:
+## Office Applications
 
--   [Discord](https://discordapp.com/)
--   [Gpg4win](https://www.gpg4win.org/)
--   [Microsoft Teams](https://teams.microsoft.com/downloads)
--   [Telegram](https://desktop.telegram.org/)
--   [Thunderbird](https://www.thunderbird.net/en-US/)
--   [WhatsApp](https://www.whatsapp.com/download/?lang=en)
--   [Zoom](https://zoom.us/support/download)
+|Application|Winget ID|
+|-----------|-----------|
+|[LibreOffice](https://www.libreoffice.org/)|winget install --id TheDocumentFoundation.LibreOffice|
+|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams|
+|[Microsoft Office]()|winget install -e --id Microsoft.Office|
+|[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
 
-Creative Tools:
+## Messaging Applications
 
--   [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
--   [Blender](https://www.blender.org/)
--   [FreeCAD](https://www.freecadweb.org/)
--   [GIMP](https://www.gimp.org/)
--   [Hugin](http://hugin.sourceforge.net/download/)
--   [Inkscape](https://inkscape.org/)
--   [Luminance HDR](http://qtpfsgui.sourceforge.net)
--   [OpenSCAD](https://www.openscad.org/)
+|Application|Winget ID|
+|-----------|-----------|
+|[Discord](https://discordapp.com/)|winget install -e --id Discord.Discord|
+|[Gpg4win](https://www.gpg4win.org/)|winget install -e --id GnuPG.Gpg4win|
+|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams|
+|[Telegram](https://desktop.telegram.org/)|winget install -e --id Telegram.TelegramDesktop|
+|[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
+|[WhatsApp](https://www.whatsapp.com/download/?lang=en)|winget install -e --id WhatsApp.WhatsApp|
+|[Zoom](https://zoom.us/support/download)|winget install -e --id Zoom.Zoom|
 
-Audio Tools:
+## Creative Tools
 
--   [Equalizer APO](https://equalizerapo.com/download.html)
--   [Lisp VST Plugin](https://plugins4free.com/plugin/1662/)
--   [ReaPlugs](https://www.reaper.fm/reaplugs/)
+|Application|Winget ID|
+|-----------|-----------|
+|[Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)||
+|[Blender](https://www.blender.org/)|winget install -e --id BlenderFoundation.Blender|
+|[Darktabke](https://www.darktable.org/install/)|winget install -e --id darktable.darktable|
+|[FreeCAD](https://www.freecadweb.org/)|winget install -e --id FreeCAD.FreeCAD|
+|[GIMP](https://www.gimp.org/)|winget install -e --id GIMP.GIMP|
+|[Handbrake](https://handbrake.fr/downloads.php)|winget install -e --id HandBrake.HandBrake|
+|[Hugin](http://hugin.sourceforge.net/download/)|winget install -e --id Hugin.Hugin|
+|[Inkscape](https://inkscape.org/)|winget install -e --id Inkscape.Inkscape|
+|[Luminance HDR](http://qtpfsgui.sourceforge.net)||
+|[OpenSCAD](https://www.openscad.org/)|winget install -e --id OpenSCAD.OpenSCAD|
 
-Development Tools:
+## Audio Tools
 
--   [Anaconda3](https://www.anaconda.com/products/individual)
--   [Atom](https://atom.io/)
--   [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)
--   [Git](https://git-scm.com/downloads)
--   [GitHub Desktop](https://desktop.github.com/)
--   [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
--   [Sandboxie](https://www.sandboxie.com/DownloadSandboxie)
--   [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
--   [Visual Studio Code](https://code.visualstudio.com/)
--   [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
--   [WinSCP](https://winscp.net/eng/download.php)
+|Application|Winget ID|
+|-----------|-----------|
+|[Audacity](https://www.audacityteam.org/?ref=winstall)|winget install -e --id=Audacity.Audacity|
+|[Equalizer APO](https://equalizerapo.com/download.html)
+|[Lisp VST Plugin](https://plugins4free.com/plugin/1662/)
+|[Nvidia Broadcast](https://www.nvidia.com/en-au/geforce/broadcasting/broadcast-app/)|winget install -e --id Nvidia.Broadcast|
+|[ReaPlugs](https://www.reaper.fm/reaplugs/)
 
-Forensics Tools:
+## Development Tools
 
--   [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)
--   [DB Browser for SQLite](https://sqlitebrowser.org/dl/)
--   [Foremost](http://foremost.sourceforge.net/)
--   [FTK Imager](https://accessdata.com/product-download/)
--   [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)
--   [HxD Hex Editor](https://mh-nexus.de/en/hxd/)
--   [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
--   [Maltego](https://www.maltego.com/downloads/)
--   [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)
--   [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
--   [Plaso](https://github.com/log2timeline/plaso)
--   [RegRipper](https://github.com/keydet89/RegRipper2.8)
--   [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)
--   [TimeSketch](https://github.com/google/timesketch)
--   [Volatility](https://github.com/volatilityfoundation/volatility3)
--   [Zimmerman Tools](https://ericzimmerman.github.io/)
+|Application|Winget ID|
+|-----------|-----------|
+|[Anaconda3](https://www.anaconda.com/products/individual)|winget install -e --id Anaconda.Anaconda3|
+|[Atom](https://atom.io/)|winget install -e --id GitHub.Atom|
+|[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
+|[Git](https://git-scm.com/downloads)|winget install -e --id Git.Git|
+|[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop|
+|[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
+|[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
+|[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
+|[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode|
+|[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
+|[WinSCP](https://winscp.net/eng/download.php)|winget install -e --id WinSCP.WinSCP|
 
-Network Security Tools:
+## Forensics Tools
 
--   [MITMProxy](https://github.com/mitmproxy/mitmproxy)
--   [Nmap](https://nmap.org/)
--   [Postman](https://www.getpostman.com/downloads/)
--   [Snort](https://www.snort.org/)
--   [Wireshark](https://www.wireshark.org/)
--   [ZAProxy](https://github.com/zaproxy/zaproxy)
--   [Zeek](https://www.zeek.org/)
+|Application|Winget ID|
+|-----------|-----------|
+|[Arsenal Image Mounter](https://arsenalrecon.com/downloads/)
+|[DB Browser for SQLite](https://sqlitebrowser.org/dl/)|winget install -e --id DBBrowserForSQLite.DBBrowserForSQLite|
+|[Foremost](http://foremost.sourceforge.net/)
+|[FTK Imager](https://accessdata.com/product-download/)
+|[GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)|winget install -e --id GSmartControl.GSmartControl|
+|[HxD Hex Editor](https://mh-nexus.de/en/hxd/)
+|[KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape)
+|[Maltego](https://www.maltego.com/downloads/)
+|[pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)
+|[PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
+|[Plaso](https://github.com/log2timeline/plaso)
+|[RegRipper](https://github.com/keydet89/RegRipper2.8)
+|[SysInternals](https://docs.microsoft.com/en-us/sysinternals/)
+|[TimeSketch](https://github.com/google/timesketch)
+|[Volatility](https://github.com/volatilityfoundation/volatility3)
+|[Zimmerman Tools](https://ericzimmerman.github.io/)
 
-Video Game Launchers:
+## Network Security Tools
 
--   [Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)
--   [Origin](https://www.origin.com/aus/en-us/store/download)
--   [Steam](https://store.steampowered.com/about/)
--   [Twitch](https://www.twitch.tv/downloads)
+|Application|Winget ID|
+|-----------|-----------|
+|[MITMProxy](https://github.com/mitmproxy/mitmproxy)|winget install -e --id mitmproxy.mitmproxy|
+|[Nmap](https://nmap.org/)|winget install -e --id Insecure.Nmap|
+|[Postman](https://www.getpostman.com/downloads/)|winget install -e --id Postman.Postman|
+|[Snort](https://www.snort.org/)
+|[Wireshark](https://www.wireshark.org/)|winget install -e --id WiresharkFoundation.Wireshark|
+|[ZAProxy](https://github.com/zaproxy/zaproxy)|winget install -e --id OWASP.ZAP|
+|[Zeek](https://www.zeek.org/)
 
-Drivers
+## Video Game Launchers
 
--   [AMD Chipset Drivers](https://www.amd.com/en/support)
--   [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
--   [Logitech Capture](https://www.logitech.com/en-au/product/capture)
--   [Logitech Options](https://www.logitech.com/en-au/product/options)
--   [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
--   [WinBtrfs](https://github.com/maharmstone/btrfs)
+|Application|Winget ID|
+|-----------|-----------|
+|[Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)
+|[CurseForge](https://download.curseforge.com/)||
+|[Origin](https://www.origin.com/aus/en-us/store/download)|winget install -e --id ElectronicArts.EADesktop|
+|[Steam](https://store.steampowered.com/about/)|winget install -e --id Valve.Steam|
+|[Twitch](https://www.twitch.tv/downloads)|winget install -e --id Twitch.Twitch|
+
+## Drivers
+
+|Application|Winget ID|
+|-----------|-----------|
+|[AMD Chipset Drivers](https://www.amd.com/en/support)
+|[Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
+|[Logitech Capture](https://www.logitech.com/en-au/product/capture)
+|[Logitech Options](https://www.logitech.com/en-au/product/options)|winget install -e --id Logitech.Options|
+|[Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
+|[WinBtrfs](https://github.com/maharmstone/btrfs)
 
 # Winget
 
-    TODO This section
+Update supported apps
+
+    winget upgrade --all
 
 # Powershell Setup of additional tools
 
