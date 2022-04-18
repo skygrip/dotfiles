@@ -20,22 +20,24 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[KeepassXC](https://keepassxc.org/)|winget install -e --id KeePassXCTeam.KeePassXC|
 |[Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)||
 |[OBSStudio](https://obsproject.com/)|winget install -e --id OBSProject.OBSStudio|
-|[Power Toys](https://github.com/microsoft/PowerToys)|winget install -e --id Microsoft.PowerToys|
+|[PowerToys](https://github.com/microsoft/PowerToys)|winget install -e --id Microsoft.PowerToys|
 |[ProtonVPN](https://protonvpn.com/download)|winget install -e --id ProtonTechnologies.ProtonVPN|
 |[Speedcrunch](https://speedcrunch.org/)|winget install -e --id SpeedCrunch.SpeedCrunch|
 |[VLC](https://www.videolan.org/vlc/download-windows.html)|winget install -e --id VideoLAN.VLC|
 |[WinDirStat](https://windirstat.net/)|winget install -e --id WinDirStat.WinDirStat|
 |[Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)|winget install -e --id Microsoft.RemoteDesktop_8wekyb3d8bbwe|
 |[Windows Terminal](https://aka.ms/terminal)|winget install -e --id Microsoft.WindowsTerminal|
+|[Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?WT.mc_id=THOMASMAURER-blog-thmaure&view=powershell-7)|winget install -e --id Microsoft.PowerShell|
 
 ## Office Applications
 
 |Application|Winget ID|
 |-----------|-----------|
 |[LibreOffice](https://www.libreoffice.org/)|winget install -e --id TheDocumentFoundation.LibreOffice|
-|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams|
 |[Microsoft Office]()|winget install -e --id Microsoft.Office|
 |[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
+|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams --scope user|
+|[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
 
 ## Messaging Applications
 
@@ -43,9 +45,8 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |-----------|-----------|
 |[Discord](https://discordapp.com/)|winget install -e --id Discord.Discord  --scope user|
 |[Gpg4win](https://www.gpg4win.org/)|winget install -e --id GnuPG.Gpg4win|
-|[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams --scope user|
+|[Slack](https://slack.com/intl/en-au/downloads/windows)|winget install -e --id SlackTechnologies.Slack|
 |[Telegram](https://desktop.telegram.org/)|winget install -e --id Telegram.TelegramDesktop --scope user|
-|[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
 |[WhatsApp](https://www.whatsapp.com/download/?lang=en)|winget install -e --id WhatsApp.WhatsApp --scope user|
 |[Zoom](https://zoom.us/support/download)|winget install -e --id Zoom.Zoom|
 
