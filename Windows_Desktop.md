@@ -248,23 +248,36 @@ Post Installation configuration
 
     # Update system
     sudo apt update && sudo apt dist-upgrade
-    sudo apt install libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli podman
+    sudo apt install curl libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli ca-certificates gnupg lsb-release
 
     # TODO
     # Make the WSL subnet static so it doesnt collide with real ips
     # Also fix the issues with VPN's
 
+    # Container System
+    sudo apt install podman
+    sudo cp /usr/share/containers/containers.conf /etc/containers/containers.conf
+    sudo vim /etc/containers/containers.conf
+    echo '# Set Poman paths without systemd
+    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
+      export XDG_RUNTIME_DIR=/run/user/$UID
+      if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+        export XDG_RUNTIME_DIR=/tmp/$USER-runtime
+        if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+        mkdir -m 0700 "$XDG_RUNTIME_DIR"
+        fi
+      fi
+    fi
+    ' >> ~/.profile
+
     # ZSH config
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh $USER
     sudo chsh -s /bin/zsh root
-    ln -s ~/.profile ~/.zprofile
+    echo """[[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile'""" >> ~/.zshrc
     zsh
 
-    # Fix PIP paths
-    echo "export PATH=\"${HOME}/.local/bin:$PATH\"" >>"${HOME}"/.bashrc
-    echo "alias pip=pip3" >> ~/.bashrc
-    echo "alias pip=pip3" >> ~/.zshrc
+    # Fix Python version path
     sudo ln -s /usr/bin/python3 /usr/bin/python
 
     # Disable including windows paths
@@ -275,15 +288,9 @@ Post Installation configuration
     # Fix the bell
     echo "set bell-style none" >> ~/.inputrc
 
-    # Fix Podman
-    echo -e "[registries.search]\nregistries = ['docker.io', 'quay.io']" | sudo tee /etc/containers/registries.conf
-    sudo sh -c 'echo "events_logger = \"file\"" >> /etc/containers/containers.conf'
-    sudo sh -c 'echo "net.ipv4.ip_unprivileged_port_start=0" >> /etc/sysctl.conf'
-    sudo sysctl -p
-
 Python Tools
 
-    pip install pdfx peepdf olefile mupdf mupdf-tools
+    pip install pdfx peepdf olefile mupdf
 
 Install Didier Stevens Tools
 
