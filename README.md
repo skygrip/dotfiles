@@ -66,3 +66,15 @@ Autocomplete packages
 Linter packages
 
     apm install linter linter-ui-default linter-clang linter-flake8 linter-lintr linter-markdown linter-php linter-pydocstyle linter-shellcheck linter-stylelint linter-xmllint
+
+## Darktable Setup
+
+recursively import only folders that contain a raw folder.
+
+    $darktable = 'C:\Program Files\darktable\bin\darktable.exe'
+    foreach($folder in Get-ChildItem){
+        if (Test-Path $folder\Raw){
+            & $darktable $folder\Raw
+            Start-Sleep -Seconds 20
+        }
+    }
