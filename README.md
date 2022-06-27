@@ -72,7 +72,7 @@ Linter packages
 recursively import only folders that contain a raw folder.
 
     $darktable = 'C:\Program Files\darktable\bin\darktable.exe'
-    foreach($folder in Get-ChildItem){
+    foreach($folder in ( Get-ChildItem | sort Name)){
         if (Test-Path $folder\Raw){
             & $darktable $folder\Raw
             Start-Sleep -Seconds 20
