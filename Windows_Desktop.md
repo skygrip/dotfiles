@@ -179,6 +179,22 @@ This script will fetch the latest sysinternals and places it in the build direct
     $SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
     Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
 
+# Rclone
+
+This script will fetch the latest rclone and places it in the build directory and C:\Windows. Doubles as an updater too.
+    
+    New-Item -Path $HOME\Build -ItemType directory
+    New-Item -Path $HOME\Build\Rclone -ItemType directory
+    cd $HOME\Build\Rclone
+    Remove-Item $HOME\Build\Rclone\*
+    Invoke-WebRequest -Uri https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone-current-windows-amd64.zip
+    Expand-Archive -Path rclone-current-windows-amd64.zip -DestinationPath .
+    Remove-Item rclone-current-windows-amd64.zip
+    move rclone*\* .
+    Remove-item rclone-v*
+    $rclonePath = "$HOME\Build\Rclone\rclone.exe"
+    Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
+
 # OpenSSH client on Windows
 
     # Install OpenSSH
