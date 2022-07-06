@@ -84,6 +84,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
 |[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
+|[Podman](https://github.com/containers/podman/)|winget install -e --id RedHat.Podman|
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
 |[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS --scope user|
@@ -244,21 +245,25 @@ Add some profiles
           "suppressApplicationTitle": true
         },
 
+# Podman
+
+Setup machine
+
+    podman machine init
+    podman machine start
+
 # WSL2
 
 Install WSL2
 
-    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+    wsl --install
+    wsl --install -d debian
+    wsl --install -d ubuntu
 
-Restart
+Check that WSL is running on version 2 with updates
 
-    wsl --set-default-version 2
-
-Open Windows store to install Debian or Ubuntu:
-
--   [Ubuntu 20.04 LTS](https://www.microsoft.com/en-au/p/ubuntu-2004-lts/9n6svws3rx71)
--   [Debian](https://www.microsoft.com/en-au/p/debian/9msvkqc78pk6)
+    wsl --status
+    wsl --list --all --verbose
 
 Post Installation configuration
 
@@ -269,22 +274,6 @@ Post Installation configuration
     # TODO
     # Make the WSL subnet static so it doesnt collide with real ips
     # Also fix the issues with VPN's
-
-    # Container System
-    sudo apt install podman
-    sudo cp /usr/share/containers/containers.conf /etc/containers/containers.conf
-    sudo vim /etc/containers/containers.conf
-    echo '# Set Poman paths without systemd
-    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
-      export XDG_RUNTIME_DIR=/run/user/$UID
-      if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
-        export XDG_RUNTIME_DIR=/tmp/$USER-runtime
-        if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
-        mkdir -m 0700 "$XDG_RUNTIME_DIR"
-        fi
-      fi
-    fi
-    ' >> ~/.profile
 
     # ZSH config
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
