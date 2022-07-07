@@ -72,7 +72,7 @@ Linter packages
 recursively import only folders that contain a raw folder.
 
     $darktable = 'C:\Program Files\darktable\bin\darktable.exe'
-    foreach($folder in Get-ChildItem){
+    foreach($folder in Get-ChildItem | Sort){
         if ((Get-ChildItem -Path $folder -force | Where-Object Extension -in ('.CR2','.CR3') | Measure-Object).Count -ne 0){
             echo "importing folder: $folder"
             & $darktable $folder
