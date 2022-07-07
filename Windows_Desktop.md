@@ -155,6 +155,7 @@ Update supported apps
 # Powershell Setup of additional tools
 
     Install-Module -Name ExchangeOnlineManagement
+    Install-Module -Name Microsoft.Online.SharePoint.PowerShell
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
