@@ -197,6 +197,19 @@ This script will fetch the latest rclone and places it in the build directory an
     $rclonePath = "$HOME\Build\Rclone\rclone.exe"
     Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
 
+Set rclone to start on user login
+
+    $rclone_path = "C:\Windows\rclone.exe"
+    $rclone_config = "$ENV:AppData\rclone\rclone.conf"
+    $rclone_service_name = "gdrive"
+    $rclone_cachedir = "Q:\$rclone_service_name"
+    $rclone_drive_letter = "Y"
+    $rclone_log = "$ENV:AppData\rclone\rclone.log"
+    $rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --network-mode --cache-dir ${rclone_cachedir} --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h --vfs-cache-max-size 450G --no-console"
+
+    # Check the command makes sense
+    echo ($rclone_path + ' ' + $rclone_arguments)
+
 # OpenSSH client on Windows
 
     # Install OpenSSH
