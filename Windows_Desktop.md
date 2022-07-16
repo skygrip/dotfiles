@@ -253,6 +253,18 @@ Setup machine
     podman machine init
     podman machine start
 
+# R setup
+
+    winget install -e -i --id RProject.R
+    winget install pandoc
+    pip install -U radian
+
+    install.packages(c("languageserver","rmarkdown","httpgd","jsonlite","R6")
+    install.packages(c('ggplot2','scales','lubridate'))
+
+Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
+Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
+
 # WSL2
 
 Install WSL2
