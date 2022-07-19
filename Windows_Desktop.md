@@ -205,7 +205,7 @@ Set rclone to start on user login
     $rclone_cachedir = "Q:\$rclone_service_name"
     $rclone_drive_letter = "Y"
     $rclone_log = "$ENV:AppData\rclone\rclone.log"
-    $rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --network-mode --cache-dir ${rclone_cachedir} --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h --vfs-cache-max-size 450G --no-console"
+    $rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --cache-dir ${rclone_cachedir} --no-console --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h --vfs-cache-max-size 450G --file-perms 0777 --network-mode"
 
     # Check the command makes sense
     echo ($rclone_path + ' ' + $rclone_arguments)
