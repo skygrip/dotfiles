@@ -131,7 +131,27 @@ Debian/Ubuntu
 
     https://docs.docker.com/engine/install/debian/
 
-Optionally link the
+Change the location of the docker storage location
+
+    nano /lib/systemd/system/docker.service
+
+Add -g /mnt/docker to the end of the exec start line. You could also just use a symlink.
+
+# HDD Spindown
+
+Get the disk ID
+
+    blkid /dev/sda
+
+Add something like the following to hdparm.conf
+
+    }
+    /dev/disk/by-id/XXXXXXXXXX {
+        apm = 127
+        spindown_time = 120
+        write_cache = off
+    }
+
 # Gnome Theming
 
 Install the theme

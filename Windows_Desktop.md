@@ -210,6 +210,10 @@ Set rclone to start on user login
     # Check the command makes sense
     echo ($rclone_path + ' ' + $rclone_arguments)
 
+Preload a VFS Cache
+
+    rclone hashsum crc32 --checkers 8 /rclonepath
+
 # OpenSSH client on Windows
 
     # Install OpenSSH
