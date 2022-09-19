@@ -80,12 +80,13 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |Application|Winget ID|
 |-----------|-----------|
 |[Anaconda3](https://www.anaconda.com/products/individual)|winget install -e -i --id Anaconda.Anaconda3|
-|[Atom](https://atom.io/)|winget install -e --id GitHub.Atom --scope user|
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
 |[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
+|[Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)|winget install -e --id Notepad++.Notepad++|
 |[Podman](https://github.com/containers/podman/)|winget install -e --id RedHat.Podman|
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
+|[Python](https://www.python.org/downloads/windows/)|winget install -e -i --id Python.Python.3.10|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
 |[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS --scope user|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
