@@ -19,7 +19,9 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Firefox](https://www.mozilla.org/en-US/firefox/new/)|winget install -e --id Mozilla.Firefox|
 |[KeepassXC](https://keepassxc.org/)|winget install -e --id KeePassXCTeam.KeePassXC|
 |[Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)||
+|[Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows)|winget install -e --id Microsoft.PowerShell|
 |[OBSStudio](https://obsproject.com/)|winget install -e --id OBSProject.OBSStudio|
+|[Parsec](https://parsec.app/)| winget install -e -id Parsec.Parsec|
 |[PowerToys](https://github.com/microsoft/PowerToys)|winget install -e --id Microsoft.PowerToys|
 |[ProtonVPN](https://protonvpn.com/download)|winget install -e --id ProtonTechnologies.ProtonVPN|
 |[Speedcrunch](https://speedcrunch.org/)|winget install -e --id SpeedCrunch.SpeedCrunch|
@@ -27,7 +29,6 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[WinDirStat](https://windirstat.net/)|winget install -e --id WinDirStat.WinDirStat|
 |[Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)|winget install -e --id Microsoft.RemoteDesktop_8wekyb3d8bbwe|
 |[Windows Terminal](https://aka.ms/terminal)|winget install -e --id Microsoft.WindowsTerminal|
-|[Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?WT.mc_id=THOMASMAURER-blog-thmaure&view=powershell-7)|winget install -e --id Microsoft.PowerShell|
 
 ## Office Applications
 
@@ -37,6 +38,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Microsoft Office]()|winget install -e --id Microsoft.Office|
 |[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
 |[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams --scope user|
+|[Notion]()|winget install -e -id Notion.Notion|
 |[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
 
 ## Messaging Applications
@@ -64,6 +66,15 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Inkscape](https://inkscape.org/)|winget install -e --id Inkscape.Inkscape|
 |[Luminance HDR](http://qtpfsgui.sourceforge.net)||
 |[OpenSCAD](https://www.openscad.org/)|winget install -e --id OpenSCAD.OpenSCAD|
+|[Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)|winget install -e -id TopazLabs.TopazPhotoAI|
+
+## Manufacturing Tools
+
+|Application|Winget ID|
+|-----------|-----------|
+|[Laser GRBL](https://github.com/arkypita/LaserGRBL)||
+|[SuperSlicer](https://github.com/supermerill/SuperSlicer)||
+|[Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)|winget install -e -id Ultimaker.Cura||
 
 ## Audio Tools
 
@@ -131,8 +142,9 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 |Application|Winget ID|
 |-----------|-----------|
-|[Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)
+|[Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)||
 |[CurseForge](https://download.curseforge.com/)||
+|[Epic Games](https://store.epicgames.com/en-US/)| winget install -e -id EpicGames.EpicGamesLauncher|
 |[Origin](https://www.origin.com/aus/en-us/store/download)|winget install -e --id ElectronicArts.EADesktop|
 |[Steam](https://store.steampowered.com/about/)|winget install -e --id Valve.Steam|
 |[Twitch](https://www.twitch.tv/downloads)|winget install -e --id Twitch.Twitch|
