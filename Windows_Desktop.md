@@ -1,9 +1,12 @@
 # Windows Desktop Setup
 
-# Debloat 
+# Debloat
+## Windows 10
 Run the following debloat too then also run the functions in [Win10-Setup.ps1](Win10-Setup.ps1)
 
     iwr -useb https://git.io/debloat|iex
+## Windows 11
+Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1)
 
 # Software
 
@@ -15,19 +18,17 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Adobe Reader](https://get.adobe.com/reader/)||
 |[Calibre Ebook](https://calibre-ebook.com/download_windows64)|winget install -e --id calibre.calibre|
 |[Chrome](https://www.google.com/chrome/)|winget install -e --id Google.Chrome|
-|[Dropbox](https://www.dropbox.com/install)|winget install -e --id Dropbox.Dropbox|
 |[Firefox](https://www.mozilla.org/en-US/firefox/new/)|winget install -e --id Mozilla.Firefox|
 |[KeepassXC](https://keepassxc.org/)|winget install -e --id KeePassXCTeam.KeePassXC|
 |[Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)||
 |[Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows)|winget install -e --id Microsoft.PowerShell|
 |[OBSStudio](https://obsproject.com/)|winget install -e --id OBSProject.OBSStudio|
-|[Parsec](https://parsec.app/)| winget install -e -id Parsec.Parsec|
+|[Parsec](https://parsec.app/)| winget install -e --id Parsec.Parsec|
 |[PowerToys](https://github.com/microsoft/PowerToys)|winget install -e --id Microsoft.PowerToys|
 |[ProtonVPN](https://protonvpn.com/download)|winget install -e --id ProtonTechnologies.ProtonVPN|
 |[Speedcrunch](https://speedcrunch.org/)|winget install -e --id SpeedCrunch.SpeedCrunch|
 |[VLC](https://www.videolan.org/vlc/download-windows.html)|winget install -e --id VideoLAN.VLC|
 |[WinDirStat](https://windirstat.net/)|winget install -e --id WinDirStat.WinDirStat|
-|[Windows Remote Desktop](https://www.microsoft.com/en-au/p/microsoft-remote-desktop/9wzdncrfj3ps)|winget install -e --id Microsoft.RemoteDesktop_8wekyb3d8bbwe|
 |[Windows Terminal](https://aka.ms/terminal)|winget install -e --id Microsoft.WindowsTerminal|
 
 ## Office Applications
@@ -38,7 +39,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Microsoft Office]()|winget install -e --id Microsoft.Office|
 |[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
 |[Microsoft Teams](https://teams.microsoft.com/downloads)|winget install -e --id Microsoft.Teams --scope user|
-|[Notion]()|winget install -e -id Notion.Notion|
+|[Notion](https://www.notion.so/)|winget install -e --id Notion.Notion|
 |[Thunderbird](https://www.thunderbird.net/en-US/)|winget install -e --id Mozilla.Thunderbird|
 
 ## Messaging Applications
@@ -58,7 +59,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |-----------|-----------|
 |[Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)||
 |[Blender](https://www.blender.org/)|winget install -e --id BlenderFoundation.Blender|
-|[Darktabke](https://www.darktable.org/install/)|winget install -e --id darktable.darktable|
+|[Darktable](https://www.darktable.org/install/)|winget install -e --id darktable.darktable|
 |[FreeCAD](https://www.freecadweb.org/)|winget install -e --id FreeCAD.FreeCAD|
 |[GIMP](https://www.gimp.org/)|winget install -e --id GIMP.GIMP|
 |[Handbrake](https://handbrake.fr/downloads.php)|winget install -e --id HandBrake.HandBrake|
@@ -66,7 +67,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |[Inkscape](https://inkscape.org/)|winget install -e --id Inkscape.Inkscape|
 |[Luminance HDR](http://qtpfsgui.sourceforge.net)||
 |[OpenSCAD](https://www.openscad.org/)|winget install -e --id OpenSCAD.OpenSCAD|
-|[Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)|winget install -e -id TopazLabs.TopazPhotoAI|
+|[Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)|winget install -e --id TopazLabs.TopazPhotoAI|
 
 ## Manufacturing Tools
 
@@ -74,7 +75,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |-----------|-----------|
 |[Laser GRBL](https://github.com/arkypita/LaserGRBL)||
 |[SuperSlicer](https://github.com/supermerill/SuperSlicer)||
-|[Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)|winget install -e -id Ultimaker.Cura||
+|[Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)|winget install -e --id Ultimaker.Cura||
 
 ## Audio Tools
 
@@ -144,7 +145,7 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 |-----------|-----------|
 |[Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)||
 |[CurseForge](https://download.curseforge.com/)||
-|[Epic Games](https://store.epicgames.com/en-US/)| winget install -e -id EpicGames.EpicGamesLauncher|
+|[Epic Games](https://store.epicgames.com/en-US/)| winget install -e --id EpicGames.EpicGamesLauncher|
 |[Origin](https://www.origin.com/aus/en-us/store/download)|winget install -e --id ElectronicArts.EADesktop|
 |[Steam](https://store.steampowered.com/about/)|winget install -e --id Valve.Steam|
 |[Twitch](https://www.twitch.tv/downloads)|winget install -e --id Twitch.Twitch|
@@ -153,12 +154,13 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 |Application|Winget ID|
 |-----------|-----------|
-|[AMD Chipset Drivers](https://www.amd.com/en/support)
-|[Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)
-|[Logitech Capture](https://www.logitech.com/en-au/product/capture)
+|[AMD Chipset Drivers](https://www.amd.com/en/support)||
+|[Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)||
+|[GlosSI](https://github.com/Alia5/GlosSI/releases)||
+|[Logitech Capture](https://www.logitech.com/en-au/product/capture)||
 |[Logitech Options](https://www.logitech.com/en-au/product/options)|winget install -e --id Logitech.Options|
-|[Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)
-|[WinBtrfs](https://github.com/maharmstone/btrfs)
+|[Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)||
+|[WinBtrfs](https://github.com/maharmstone/btrfs)||
 
 # Winget
 
@@ -173,12 +175,11 @@ Update supported apps
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
-    Enable-WindowsOptionalFeature -FeatureName "Containers-DisposableClientVM" -All -Online -NoRestart
-    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
 
 Then enable the following manually
 
     Core Isolation
+    Windows Sandbox
 
 # Sysinternals
 
@@ -226,6 +227,13 @@ Set rclone to start on user login
 Preload a VFS Cache
 
     rclone hashsum crc32 --checkers 8 /rclonepath
+
+# Steamlink GloSI fix
+
+    New-Item -Path $HOME\Build
+    cd $HOME\Build
+    git clone https://github.com/Alia5/GlosSI
+
 
 # OpenSSH client on Windows
 
