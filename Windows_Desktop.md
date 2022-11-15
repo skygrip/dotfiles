@@ -91,7 +91,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1)
 
 |Application|Winget ID|
 |-----------|-----------|
-|[Anaconda3](https://www.anaconda.com/products/individual)|winget install -e -i --id Anaconda.Anaconda3|
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
 |[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
@@ -101,10 +100,12 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1)
 |[Python](https://www.python.org/downloads/windows/)|winget install -e -i --id Python.Python.3.10|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
 |[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS --scope user|
+|[Sublime Text](https://www.sublimetext.com/)| winget install -e --id SublimeHQ.SublimeText.4|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
 |[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode --scope user|
 |[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
 |[WinSCP](https://winscp.net/eng/download.php)|winget install -e --id WinSCP.WinSCP|
+
 
 ## Forensics Tools
 
