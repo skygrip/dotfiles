@@ -20,28 +20,44 @@ Enable auto prompt mode
 
 ## Firefox Setup
 
-At minimum make the following changes:
+Make the following configuration changes in the settings:
+
+ * Add serach bar to toolbar
+ * Disable search suggestions
+ * make DuckDuckGo the default search and search shortcut
+ * Set Browser Privacy to Strict
+ * Disable saved passwords
+ * Disable Firefox Data Collection
+ * Enable HTTPS mode for all windows
+
+Enable the following general settings
 
     browser.cache.disk.enable = False
-    browser.fixup.alternate.enabled = False
-    browser.formfill.enable = False
-    browser.safebrowsing.downloads.remote.enabled = False
-    browser.urlbar.trimURLs = False
-    device.sensors.enabled = False
-    dom.battery.enabled =  False
-    dom.enable_performance = False
-    dom.vibrator.enabled = False
-    dom.webnotifications.enabled = False
     extensions.pocket.enabled = False
-    geo.enabled = False
-    keyword.enabled = False
-    media.peerconnection.enabled = False
-    network.captive-portal-service.enabled = False
-    webgl.enable-debug-renderer-info = False
+    
+Enable the following settings for increased security with minimal user impact    
 
-Optionally enable resist fingerprinting in about:config
+    geo.enabled = False
+    network.captive-portal-service.enabled = False
+    media.peerconnection.enabled = False
+    media.navigator.enabled = False
+    #webgl.enable-debug-renderer-info = False (looks to be masked anyway)
+    #dom.battery.enabled =  False
+    #dom.vibrator.enabled = False
+    #device.sensors.enabled = False
+    #dom.enable_performance = False
+    #browser.safebrowsing.downloads.remote.enabled = False
+
+Optionally enable the following settings for increased security at expense of user experence
 
     privacy.resistFingerprinting = true
+    
+Optionally enable the following settings for different User Experence
+
+    keyword.enabled = False
+    browser.urlbar.trimURLs = False
+    dom.webnotifications.enabled = False
+    browser.formfill.enable = False
 
 ### Firefox Addons
 
