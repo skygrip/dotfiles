@@ -1,12 +1,31 @@
 # Windows Desktop Setup
 
-# Debloat
+# Setup and Debloat
 ## Windows 10
 Run the following debloat too then also run the functions in [Win10-Setup.ps1](Win10-Setup.ps1)
 
     iwr -useb https://git.io/debloat|iex
+
 ## Windows 11
-Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1)
+
+Make the following changes:
+
+ * Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
+ * Disable Taskbar items: Search, Task View, Widgets, Chat
+ * Enable Windows update for other Microsoft products
+ * Uninstall the default bloat apps
+ * Set taskbar time to ISO mode, and UTC clock
+ * In folder settings, disable "show files from office.com"
+ * Disable "Hide extentions for known file types" and Hidden Files
+ * Disable StickyKeys and ToggleKeys
+ * Disable Remote Assistance
+ * Enable RDP (If Applicable)
+ * Enable Core Isolation
+ * Enable Windows Sandbox
+ * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administator
+ * Enable Bitlocker Drive Encryption
+ * Disable "Select the far corner of the taskbar to show the desktop"
+ * Disable Snap Windows and Title Bar Window Shake
 
 # Software
 
@@ -106,7 +125,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1)
 |[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
 |[WinSCP](https://winscp.net/eng/download.php)|winget install -e --id WinSCP.WinSCP|
 
-
 ## Forensics Tools
 
 |Application|Winget ID|
@@ -169,18 +187,13 @@ Update supported apps
 
     winget upgrade --all
 
-# Powershell Setup of additional tools
+# Powershell Setup of administator tools
 
     Install-Module -Name ExchangeOnlineManagement
     Install-Module -Name Microsoft.Online.SharePoint.PowerShell
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
-
-Then enable the following manually
-
-    Core Isolation
-    Windows Sandbox
 
 # Sysinternals
 
@@ -212,7 +225,7 @@ This script will fetch the latest rclone and places it in the build directory an
     $rclonePath = "$HOME\Build\Rclone\rclone.exe"
     Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
 
-Set rclone to start on user login
+Create a Rclone command
 
     $rclone_path = "C:\Windows\rclone.exe"
     $rclone_config = "$ENV:AppData\rclone\rclone.conf"
@@ -229,34 +242,16 @@ Preload a VFS Cache
 
     rclone hashsum crc32 --checkers 8 /rclonepath
 
-# Steamlink GloSI fix
-
-    New-Item -Path $HOME\Build
-    cd $HOME\Build
-    git clone https://github.com/Alia5/GlosSI
-
-
 # OpenSSH client on Windows
 
-    # Install OpenSSH
-    Add-WindowsCapability -Online -Name OpenSSH.Client*
+Enable the SSH-Agent service:
+
     Set-Service ssh-agent -StartupType Automatic
     Start-Service ssh-agent
 
-Add the workaround for ssh-agent, details [here](https://github.com/PowerShell/Win32-OpenSSH/issues/1234):
-
-    Add-WindowsCapability -Online -Name OpenSSH.Server*
-    Set-Service sshd -StartupType Disabled
-
 # Windows Terminal Configuration
 
-Set [Windows Terminal color](https://nerdschalk.com/how-to-change-color-in-windows-terminal/)
-
-    "profiles": {
-      "defaults": {
-        // Put settings here that you want to apply to all profiles.
-        "colorScheme": "One Half Dark"
-      },
+Set Windows terminal theme to "One Half Dark"
 
 Add some profiles
 
@@ -285,7 +280,7 @@ Add some profiles
           "suppressApplicationTitle": true
         },
 
-# Podman
+# Podman Setup
 
 Setup machine
 

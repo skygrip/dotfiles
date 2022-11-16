@@ -69,20 +69,6 @@ The following Firefox addons are also installed for security:
 -   [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
 -   [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
 
-## Atom Editor Setup
-
-Good packages
-
-    apm install atom-beautify indent-guide-improved file-icons auto-detect-indentation highlight-selected minimap minimap-highlight-selected split-diff sort-lines sublime-style-column-selection
-
-Autocomplete packages
-
-    apm install autocomplete-python autocomplete-xml autocomplete-math
-
-Linter packages
-
-    apm install linter linter-ui-default linter-clang linter-flake8 linter-lintr linter-markdown linter-php linter-pydocstyle linter-shellcheck linter-stylelint linter-xmllint
-
 ## Darktable Setup
 
 recursively import only folders that contain a raw folder.
