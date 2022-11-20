@@ -15,17 +15,19 @@ Make the following changes:
  * Enable Windows update for other Microsoft products
  * Uninstall the default bloat apps
  * Set taskbar time to ISO mode, and UTC clock
+ * Fix language settings so the language switcher isnt there
  * In folder settings, disable "show files from office.com"
- * Disable "Hide extentions for known file types" and Hidden Files
+ * Disable "Hide extensions for known file types" and Hidden Files
  * Disable StickyKeys and ToggleKeys
  * Disable Remote Assistance
  * Enable RDP (If Applicable)
  * Enable Core Isolation
  * Enable Windows Sandbox
- * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administator
+ * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
  * Enable Bitlocker Drive Encryption
  * Disable "Select the far corner of the taskbar to show the desktop"
  * Disable Snap Windows and Title Bar Window Shake
+ * Use autoruns to stop certain apps from starting
 
 # Software
 
