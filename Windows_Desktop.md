@@ -244,6 +244,16 @@ Preload a VFS Cache
 
     rclone hashsum crc32 --checkers 8 /rclonepath
 
+# Zimmerman Tools
+
+    New-Item -Path $HOME\Build -ItemType directory
+    New-Item -Path $HOME\Build\ZimmermanTools -ItemType directory
+    cd $HOME\Build\ZimmermanTools
+    Remove-Item $HOME\Build\ZimmermanTools\*
+    Invoke-WebRequest -Uri https://f001.backblazeb2.com/file/EricZimmermanTools/Get-ZimmermanTools.zip -OutFile Get-ZimmermanTools.zip
+    Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
+    ./Get-ZimmermanTools.ps1
+
 # OpenSSH client on Windows
 
 Enable the SSH-Agent service:
