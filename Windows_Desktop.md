@@ -268,12 +268,6 @@ Set Windows terminal theme to "One Half Dark"
 Add some profiles
 
         {
-          "name": "Debian AWS Cloud Shell",
-          "commandline": "wsl -d debian aws-shell",
-          "hidden": false,
-          "suppressApplicationTitle": true
-        },
-        {
           "name": "SSH - server",
           "commandline": "ssh server",
           "hidden": false,
