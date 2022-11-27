@@ -81,3 +81,4 @@ recursively import only folders that contain a raw folder.
             Start-Sleep -Seconds 20
         }
     }
+    & 'C:\Program Files\darktable\bin\darktable-generate-cache.exe' -m 4
