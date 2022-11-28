@@ -13,8 +13,9 @@ Make the following changes:
  * Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
  * Disable Taskbar items: Search, Task View, Widgets, Chat
  * Enable Windows update for other Microsoft products
+ * Open Microsoft Store and force all store apps to update (Currently Fixes Winget)
  * Uninstall the default bloat apps
- * Set taskbar time to ISO mode, and UTC clock
+ * Set taskbar time to ISO mode, and add a UTC clock
  * Fix language settings so the language switcher isnt there
  * In folder settings, disable "show files from office.com"
  * Disable "Hide extensions for known file types" and Hidden Files
@@ -22,7 +23,11 @@ Make the following changes:
  * Disable Remote Assistance
  * Enable RDP (If Applicable)
  * Enable Core Isolation
- * Enable Windows Sandbox
+ * In Windows features Enable:
+    * Virtual Machine Platform
+    * Windows Hypervisor Platform
+    * Windows Sandbox
+    * Windows Subsystem for Linux
  * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
  * Enable Bitlocker Drive Encryption
  * Disable "Select the far corner of the taskbar to show the desktop"
