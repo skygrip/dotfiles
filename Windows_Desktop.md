@@ -258,6 +258,7 @@ Preload a VFS Cache
     Invoke-WebRequest -Uri https://f001.backblazeb2.com/file/EricZimmermanTools/Get-ZimmermanTools.zip -OutFile Get-ZimmermanTools.zip
     Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
     ./Get-ZimmermanTools.ps1 -NetVersion 6
+    mv net6/* .
 
 # OpenSSH client on Windows
 
