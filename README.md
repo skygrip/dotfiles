@@ -22,7 +22,7 @@ Enable auto prompt mode
 
 Make the following configuration changes in the settings:
 
- * Add serach bar to toolbar
+ * Add search bar to toolbar
  * Disable search suggestions
  * make DuckDuckGo the default search and search shortcut
  * Set Browser Privacy to Strict
