@@ -24,7 +24,7 @@ Make the following configuration changes in the settings:
 
  * Add search bar to toolbar
  * Disable search suggestions
- * make DuckDuckGo the default search and search shortcut
+ * Make DuckDuckGo the default search and search shortcut
  * Set Browser Privacy to Strict
  * Disable saved passwords
  * Disable Firefox Data Collection
