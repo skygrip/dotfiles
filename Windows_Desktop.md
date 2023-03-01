@@ -1,4 +1,5 @@
 # Windows Desktop Setup
+Setup of a basic Windows Desktop
 
 # Setup and Debloat
 ## Windows 10
@@ -10,26 +11,30 @@ Run the following debloat too then also run the functions in [Win10-Setup.ps1](W
 
 Make the following changes:
 
- * Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
- * Disable Taskbar items: Search, Task View, Widgets, Chat
  * Enable Windows update for other Microsoft products
+ * Run Windows Update
  * Open Microsoft Store and force all store apps to update (Currently Fixes Winget)
+ * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
+ * Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
  * Uninstall the default bloat apps
- * Set taskbar time to ISO mode, and add a UTC clock
- * Fix language settings so the language switcher isnt there
- * In folder settings, disable "show files from office.com"
- * Disable "Hide extensions for known file types" and Hidden Files
- * Disable StickyKeys and ToggleKeys
  * Disable Remote Assistance
  * Enable RDP (If Applicable)
+    * Disable Sleep and Hybernation from Shutdown Settings
+    * Set sleep timer to off
+    * Set turn monitor off timer to off
  * Enable Core Isolation
+ * Enable Bitlocker Drive Encryption
  * In Windows features Enable:
     * Virtual Machine Platform
     * Windows Hypervisor Platform
     * Windows Sandbox
     * Windows Subsystem for Linux
- * Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
- * Enable Bitlocker Drive Encryption
+ * Set taskbar time to ISO mode, and add a UTC clock
+ * Fix language settings so the language switcher isnt there
+ * Disable Taskbar items: Search, Task View, Widgets, Chat
+ * In folder settings, disable "show files from office.com"
+ * Disable "Hide extensions for known file types" and Hidden Files
+ * Disable StickyKeys and ToggleKeys
  * Disable "Select the far corner of the taskbar to show the desktop"
  * Disable Snap Windows and Title Bar Window Shake
  * Use autoruns to stop certain apps from starting
