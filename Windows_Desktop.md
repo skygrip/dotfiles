@@ -134,7 +134,7 @@ Make the following changes:
 |[Sublime Text](https://www.sublimetext.com/)| winget install -e --id SublimeHQ.SublimeText.4|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
 |[Visual Studio Code](https://code.visualstudio.com/)|winget install -e --id Microsoft.VisualStudioCode --scope user|
-|[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
+|[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)|winget install -e --id VMware.WorkstationPro|
 |[WinSCP](https://winscp.net/eng/download.php)|winget install -e --id WinSCP.WinSCP|
 
 ## Forensics Tools
