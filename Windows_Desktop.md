@@ -254,6 +254,20 @@ Preload a VFS Cache
 
     rclone hashsum crc32 --checkers 8 /rclonepath
 
+# EXIFTOOL
+Download and install the exiftool in a windows PATH
+
+    New-Item -Path $HOME\Build -ItemType directory
+    cd $HOME\Build
+    Remove-Item exiftool-12.57.zip
+    Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.57.zip -OutFile exiftool.zip
+    Expand-Archive -Path exiftool.zip -DestinationPath .
+    move 'exiftool(-k).exe' exiftool.exe
+    $exiftoolPath = "$HOME\Build\exiftool.exe"
+    Start-Process PowerShell.exe -ArgumentList "copy $exiftoolPath C:\Windows\" -Wait -Verb RunAs
+    Remove-item exiftool.exe
+    Remove-item exiftool.zip
+
 # Zimmerman Tools
 
     New-Item -Path $HOME\Build -ItemType directory
