@@ -1,174 +1,210 @@
 # Linux Setup
 
-Install basic tools
-
-Debian/Ubuntu
+# Install Basic Tools
+# Debian/Ubuntu
+Install the following basic tools
 
     apt install dnsutils screen vim nano tree
 
-Disable root account logins, and login without using root (still permits sudo)
+## CentOS/RHEL
+Install the following basic tools
 
-    passwd --lock root
+    dnf config-manager --set-enabled crb
+    dnf install epel-release epel-next-release
+    dnf install screen tmux lm_sensors hddtemp glances
 
-# Setup Static Networking with NetworkManager
+Consider the need to enable the RPM Fusion Repositories
 
-Using Network Manager Text User Interface
+    sudo dnf install --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm -y
+    sudo dnf install https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm -y
+
+# Setup Networking
+
+Using the Network Manager Text User Interface
 
     nmtui
 
-# Setup Zsh
+Validate the hostname set
 
-Debian/Ubuntu
+    hostnamectl
+
+# Setup Zsh
+Use the ZSH shell and setup the GRML setup
+
+
+## Debian/Ubuntu
 
     sudo apt install zsh zsh-autosuggestions linux-headers
+    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    ln -s ~/.profile ~/.zprofile
 
-Arch
+## Centos/RHEL
+
+    sudo yum install zsh
+    sudo wget -O /etc/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    sudo chsh -s /bin/zsh root
+    sudo chsh -s /bin/zsh username
+
+## Arch
 
     pacman -S zsh zsh-completions
-
-Use the ZSH shell
-
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh $USER
     sudo chsh -s /bin/zsh root
 
-Debian/Ubuntu Tweaks
+# SSH
 
-    ln -s ~/.profile ~/.zprofile
+add user to wheel
 
+    usermod -aG wheel username
 
-# Setup ZFS
-## Installation
+Disable root account logins (Does not affect sudo)
 
-Debian/Ubuntu
+    passwd --lock root
 
-    sudo apt install zfs-dkms zfsutils-linux zfs-auto-snapshot
+Locally install a SSH Key
 
-## Scrub Timer
+    mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    touch ~/.ssh/authorized_keys
+    chmod 600 ~/.ssh/authorized_keys
+    cat "Key" > ~/.ssh/authorized_keys
+    # Fix SELinux permissions, CentOS/RHEL only
+    restorecon -R -v ~/.ssh
 
-Check that your OS doesnt already set a default scrub timer in cron. If a scrub timer does not exist you can use the following
-
-Create the file /etc/systemd/system/zfs-scrub@.timer
-
-    [Unit]
-    Description=Monthly zpool scrub on %i
-
-    [Timer]
-    OnCalendar=monthly
-    AccuracySec=1h
-    Persistent=true
-
-    [Install]
-    WantedBy=multi-user.target
-
-Create the file /etc/systemd/system/zfs-scrub@.service
-
-    [Unit]
-    Description=zpool scrub on %i
-
-    [Service]
-    Nice=19
-    IOSchedulingClass=idle
-    KillSignal=SIGINT
-    ExecStart=/usr/bin/zpool scrub %i
-
-    [Install]
-    WantedBy=multi-user.target
-
-Enable and start *zfs-scrub@pool-to-scrub.timer*
-
-    systemctl enable zfs-scrub@pool-to-scrub.timer
-    systemctl start zfs-scrub@pool-to-scrub.timer
-
-## Auto Snapshotting
-
-check the cron configuration for any default snapshot timers, add one of the following if necessary:
-
-    */5 * * * * root /sbin/zfs-auto-snapshot -q -g --label=frequent --keep=24 //
-    00 * * * * root /sbin/zfs-auto-snapshot -q -g --label=hourly --keep=24 //
-    59 23 * * * root /sbin/zfs-auto-snapshot -q -g --label=daily --keep=30 //
-    59 23 * * 0 root /sbin/zfs-auto-snapshot -q -g --label=weekly --keep=6 //
-    00 00 1 * * root /sbin/zfs-auto-snapshot -q -g --label=monthly --keep=12 //
-
-# Setup BTRFS
-
-# Setup smartctl
-
-Debian/Ubuntu
-
-    apt install smartmontools
-
-Substitute this line to smartd.conf to do a short scan weekly, and a long scan montly
-
-    DEVICESCAN -a -o on -S on -s (S/../../1/01|L/../01/./03) -H -m email@example.com -M exec /usr/share/smartmontools/smartd-runner
-
-# Setup SSH
-
-Disable password authentication
+Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
 
     PasswordAuthentication no
-
-only allow SSH for users part of a group
-
     PermitRootLogin no
-    AllowGroups ssh
-
-Permit passwords for select networks only 
-
     Match address 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
         PasswordAuthentication yes
 
+
+# Change sudo to accept SSH Keys as authentication isntead of password
+
+Authenticate sudo with SSH keys instead of setting NOPASSWD in sudoers file. Requires SSH Agent Forwarding.
+
+## CentOS/RHEL
+
+    yum install pam_ssh_agent_auth
+
+Configure sudo to try using public keys, then fall back to normal password authentication:
+
+    sed -i "2i auth    sufficient  pam_ssh_agent_auth.so file=/etc/ssh/sudo_authorized_keys" /etc/pam.d/sudo
+
+Configure sudoers to preserve the environment variable SSH_AUTH_SOCK
+
+    sed -i "81i Defaults    env_keep += "SSH_AUTH_SOCK"" /etc/sudoers
+
+Copy authorised keys that can be used for sudo access
+
+    sudo touch /etc/ssh/sudo_authorized_keys
+    chmod 600 /etc/ssh/sudo_authorized_keys
+    sudo cat ~/.ssh/authorized_keys | sudo tee -a  /etc/ssh/sudo_authorized_keys  >/dev/null
+
+Now connect to the host with Agent Forwarding enabled
+
+    ssh -A user@host
+
 # Setup fail2ban
 
-Debian/Ubuntu
+## CentOS/RHEL
 
-    sudo apt install fail2ban
+    dnf -y install fail2ban
+    systemctl enable fail2ban
+    systemctl start fail2ban
+    cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
+Jails are disabled by default, enable the SSH one, find the line and add enabled = true
 
-# Setup Docker
+    [sshd]
+    enabled = true
 
-Debian/Ubuntu
+Reload fail2ban and check that it works
 
-    https://docs.docker.com/engine/install/debian/
+    fail2ban-client reload
+    fail2ban-client status
 
-Change the location of the docker storage location
+# Setup smartctl disk monitoring
 
-    nano /lib/systemd/system/docker.service
+# CentOS/RHEL
 
-Add -g /mnt/docker to the end of the exec start line. You could also just use a symlink.
+    yum install smartmontools
 
-# HDD Spindown
+Substitute this line to smartd.conf to do a short scan weekly, and a long scan monthly
 
-Get the disk ID
+    rm /etc/smartmontools/smartd.conf
+    echo "DEVICESCAN -H -m root -M exec /usr/libexec/smartmontools/smartdnotify -n standby,10,q -a -o on -S on -s (S/../../1/01|L/../01/./03)" > /etc/smartmontools/smartd.conf
+    systemctl restart smartd.service
 
-    blkid /dev/sda
+# Containers
 
-Add something like the following to hdparm.conf
+## CentOS/RHEL
+Using Podman
 
-    }
-    /dev/disk/by-id/XXXXXXXXXX {
-        apm = 127
-        spindown_time = 120
-        write_cache = off
-    }
+    yum install podman podman-compose
+    systemctl enable podman
 
-# Gnome Theming
+# Virtualisation
+## CentOS/RHEL
 
-Install the theme
+    yum install qemu-kvm libvirt  virt-install
 
-    yay -S pop-icon-theme-git pop-gtk-theme-git
+# Video Acceleration with VA-API
+## CentOS/RHEL AND Intel CPU
+Test to see if VA-API already works
 
-Set the font sizes in Tweak Tool
+    yum install libva-utils
+    vainfo
 
-| Name                 | Font                | Size |
-| -------------------- | ------------------- | ---- |
-| Interface Font       | Fira Sans Book      | 10   |
-| Document Text        | Roboto Slab Regular | 11   |
-| Monospace Text       | Fira Mono Regular   | 11   |
-| Legacy Window Titles | Fira Sans Medium    | 10   |
+If not, try installing the intel driver (requires non-free drivers)
 
-Install the terminal theme. If you have problems with the script create an new terminal profile and run the script again.
+    yum install intel-media-driver
 
-    git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
-    ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
+Optionally enable GuC/HuC loading
 
+    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf 
+    dracut --regenerate-all -f
+
+Reboot and check if GuC/HuC loading worked
+
+    dmesg | grep i915
+    cat /sys/kernel/debug/dri/0/gt/uc/guc_info
+    cat /sys/kernel/debug/dri/0/gt/uc/huc_info
+
+# Power Saving
+
+Review power usage with Powertop
+
+    dnf install powertop
+    powertop
+
+Enable SATA Active Link Power Management (Saves around 1.5w per drive)
+
+    echo 'ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="med_power_with_dipm"' > /etc/udev/rules.d/hd_power_save.rules
+
+Enable USB autosuspend on a Specific USB device, first get the vendor and product ID
+
+    lsusb
+
+Then add a udev rule to enable it
+
+    echo 'ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9205", ATTR{power/control}="auto"' >> /etc/udev/rules.d/50-usb_power_save.rules
+
+Disable NMI watchdog
+
+    echo 'kernel.nmi_watchdog=0' >> /etc/sysctl.conf
+
+Any PCI Runtime or ASCPM settings should be made in BIOS
+
+# Temperature sensing
+
+Install i2c tools to also probe for DIMM temperature sensors
+
+    dnf install i2c-tools lm_sensors hddtemp
+    i2cdetect -l
+
+Note the temp sensors that are on the SMBus adapter and then answer yes to probe that address in sensors-detect
+
+    sensors-detect
+    sensors
+    hddtemp -w
