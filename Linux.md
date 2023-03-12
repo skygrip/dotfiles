@@ -11,7 +11,7 @@ Install the following basic tools
 
     dnf config-manager --set-enabled crb
     dnf install epel-release epel-next-release
-    dnf install screen tmux lm_sensors hddtemp glances
+    dnf install screen tmux lm_sensors hddtemp glances sysfsutils
 
 Consider the need to enable the RPM Fusion Repositories
 
@@ -173,6 +173,8 @@ Reboot and check if GuC/HuC loading worked
 
 # Power Saving
 
+Many of the power saving settings configured in bios are honored. PCI Runtime or ASCPM settings should be configured in BIOS if possible.
+
 Review power usage with Powertop
 
     dnf install powertop
@@ -208,3 +210,24 @@ Note the temp sensors that are on the SMBus adapter and then answer yes to probe
     sensors-detect
     sensors
     hddtemp -w
+
+Rename any misnamed sensors through creating a renaming Label.
+
+    echo 'chip "acpitz-acpi-0"
+        label temp1 "SYS Temp"' > /etc/sensors.d/mobo
+
+For i2c devices, first get their bus location
+
+    sensors --bus-list
+
+    echo 'bus "i2c-11" "SMBus I801 adapter at efa0"
+    
+    chip "*-i2c-11-18"
+        set temp1_crit 100
+        set temp1_crit_alarm 100
+        label temp1 "SODIMM0"
+    
+    chip "*-i2c-11-1a"
+        set temp1_crit 100
+        set temp1_crit_alarm 100
+        label temp1 "SODIMM1"' > /etc/sensors.d/ram
