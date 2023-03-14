@@ -122,6 +122,7 @@ Make the following changes:
 
 |Application|Winget ID|
 |-----------|-----------|
+|[Arduino IDE](https://www.arduino.cc/en/software/)|winget install -e --id ArduinoSA.IDE.stable |
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
 |[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
