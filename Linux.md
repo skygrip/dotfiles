@@ -6,7 +6,7 @@ Install the following basic tools
 
     apt install dnsutils screen vim nano tree
 
-## CentOS/RHEL
+## RHEL-Like
 Install the following basic tools
 
     dnf config-manager --set-enabled crb
@@ -83,7 +83,7 @@ Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
 
 Authenticate sudo with SSH keys instead of setting NOPASSWD in sudoers file. Requires SSH Agent Forwarding.
 
-## CentOS/RHEL
+## RHEL-Like
 
     yum install pam_ssh_agent_auth
 
@@ -107,7 +107,7 @@ Now connect to the host with Agent Forwarding enabled
 
 # Setup fail2ban
 
-## CentOS/RHEL
+## RHEL-Like
 
     dnf -y install fail2ban
     systemctl enable fail2ban
@@ -126,7 +126,7 @@ Reload fail2ban and check that it works
 
 # Setup smartctl disk monitoring
 
-# CentOS/RHEL
+## RHEL-Like
 
     yum install smartmontools
 
@@ -137,20 +137,19 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
     systemctl restart smartd.service
 
 # Containers
-
-## CentOS/RHEL
+## RHEL-Like
 Using Podman
 
     yum install podman podman-compose
     systemctl enable podman
 
 # Virtualisation
-## CentOS/RHEL
+## RHEL-Like
 
     yum install qemu-kvm libvirt  virt-install
 
 # Video Acceleration with VA-API
-## CentOS/RHEL AND Intel CPU
+## RHEL-Like with Intel CPU
 Test to see if VA-API already works
 
     yum install libva-utils
@@ -231,3 +230,5 @@ For i2c devices, first get their bus location
         set temp1_crit 100
         set temp1_crit_alarm 100
         label temp1 "SODIMM1"' > /etc/sensors.d/ram
+
+# BTRFS
