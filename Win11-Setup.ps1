@@ -20,8 +20,18 @@ Function SetBIOSTimeUTC {
 	Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" -Name "RealTimeIsUniversal" -Type DWord -Value 1
 }
 
+# Hide the Language Bar
+Function HideLanguageBar {
+	Write-Output "Hiding Language Bar..."
+	If (!(Test-Path "HKCU:\Software\Microsoft\CTF\LangBar")) {
+		New-Item -Path "HKCU:\Software\Microsoft\CTF\LangBar" | Out-Null
+	}
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\CTF\LangBar" -Name "ShowStatus" -Type DWord -Value 3
+}
+
 ## END FUNCTIONS
 
 EnableClearRecentFiles
 EnableNTFSLongPaths
 SetBIOSTimeUTC
+HideLanguageBar

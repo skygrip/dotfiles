@@ -105,7 +105,9 @@ Make the following changes:
 |Application|Winget ID|
 |-----------|-----------|
 |[Laser GRBL](https://github.com/arkypita/LaserGRBL)||
-|[SuperSlicer](https://github.com/supermerill/SuperSlicer)||
+|[Lychee Slicer](https://lychee.mango3d.io/)||
+|[Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)||
+|[PrusaSlicer](https://www.prusa3d.com)|winget install -e --id Prusa3D.PrusaSlicer|
 |[Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)|winget install -e --id Ultimaker.Cura||
 
 ## Audio Tools
@@ -131,6 +133,7 @@ Make the following changes:
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
 |[Python](https://www.python.org/downloads/windows/)|winget install -e -i --id Python.Python.3.10|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
+|[Rufus](https://github.com/pbatard/rufus)|winget install -e --id Rufus.Rufus|
 |[RunJS](https://runjs.app/?ref=winstall)|winget install -e --id lukehaas.RunJS --scope user|
 |[Sublime Text](https://www.sublimetext.com/)| winget install -e --id SublimeHQ.SublimeText.4|
 |[Virtualbox](https://www.virtualbox.org/wiki/Downloads)|winget install -e --id Oracle.VirtualBox|
