@@ -126,6 +126,7 @@ Make the following changes:
 |-----------|-----------|
 |[Arduino IDE](https://www.arduino.cc/en/software/)|winget install -e --id ArduinoSA.IDE.stable |
 |[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)|winget install -e --id Amazon.AWSCLI|
+|[Deluge](https://deluge-torrent.org)|winget install -e --id DelugeTeam.Deluge|
 |[Git](https://git-scm.com/downloads)|winget install -e -i --id Git.Git|
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
 |[Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)|winget install -e --id Notepad++.Notepad++|

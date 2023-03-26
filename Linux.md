@@ -1,12 +1,27 @@
 # Linux Setup
 
 # Install Basic Tools
-# Debian/Ubuntu
+
+## Arch
+Install the following basic tools
+   
+    pacman -Syu nano vim sudo wget curl networkmanager usbutils gdisk
+    pacman -S dnsutils screen tree tmux lm_sensors hddtemp glances
+    pacman -S rsync fuse2
+
+Install Yay (Optional)
+
+    pacman -S --needed git base-devel
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si
+
+## Debian/Ubuntu
 Install the following basic tools
 
     apt install dnsutils screen vim nano tree
 
-## RHEL-Like
+## RHEL/Centos Like
 Install the following basic tools
 
     dnf config-manager --set-enabled crb
@@ -19,6 +34,13 @@ Consider the need to enable the RPM Fusion Repositories
     sudo dnf install https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm -y
 
 # Setup Networking
+## Arch
+
+Install NetworkMangaer
+
+    Pacman -S networkmanager
+    systemctl enable NetworkManager
+    systemctl start NetworkManager
 
 Using the Network Manager Text User Interface
 
@@ -31,20 +53,6 @@ Validate the hostname set
 # Setup Zsh
 Use the ZSH shell and setup the GRML setup
 
-
-## Debian/Ubuntu
-
-    sudo apt install zsh zsh-autosuggestions linux-headers
-    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    ln -s ~/.profile ~/.zprofile
-
-## Centos/RHEL
-
-    sudo yum install zsh
-    sudo wget -O /etc/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    sudo chsh -s /bin/zsh root
-    sudo chsh -s /bin/zsh username
-
 ## Arch
 
     pacman -S zsh zsh-completions
@@ -52,7 +60,55 @@ Use the ZSH shell and setup the GRML setup
     sudo chsh -s /bin/zsh $USER
     sudo chsh -s /bin/zsh root
 
+## Debian/Ubuntu
+
+    sudo apt install zsh zsh-autosuggestions linux-headers
+    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    ln -s ~/.profile ~/.zprofile
+
+## RHEL/Centos Like
+
+    sudo yum install zsh
+    sudo wget -O /etc/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+    sudo chsh -s /bin/zsh root
+    sudo chsh -s /bin/zsh username
+
 # SSH
+
+## Arch
+
+Add user
+
+    useradd -m -G wheel -s login_shell username
+
+Uncomment the relevant field in the sudo file to permit wheel users to use sudo
+
+    sed 's/^# \%wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+
+Locally install a SSH Key
+
+    mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    touch ~/.ssh/authorized_keys
+    chmod 600 ~/.ssh/authorized_keys
+    echo "Key" > ~/.ssh/authorized_keys
+
+Add the following to the opensshd config file
+    
+    mkdir /etc/ssh/sshd_config.d/
+    echo "Include /etc/ssh/sshd_config.d/*.conf" > /etc/ssh/sshd_config
+
+Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
+
+    PasswordAuthentication no
+    PermitRootLogin no
+    Match address 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+        PasswordAuthentication yes
+
+Disable root account logins (Does not affect sudo)
+
+    passwd --lock root
+
+## RHEL/Centos Like
 
 add user to wheel
 
@@ -67,7 +123,7 @@ Locally install a SSH Key
     mkdir -p ~/.ssh && chmod 700 ~/.ssh
     touch ~/.ssh/authorized_keys
     chmod 600 ~/.ssh/authorized_keys
-    cat "Key" > ~/.ssh/authorized_keys
+    echo "Key" > ~/.ssh/authorized_keys
     # Fix SELinux permissions, CentOS/RHEL only
     restorecon -R -v ~/.ssh
 
@@ -78,12 +134,11 @@ Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
     Match address 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
         PasswordAuthentication yes
 
-
 # Change sudo to accept SSH Keys as authentication isntead of password
 
 Authenticate sudo with SSH keys instead of setting NOPASSWD in sudoers file. Requires SSH Agent Forwarding.
 
-## RHEL-Like
+## RHEL/Centos Like
 
     yum install pam_ssh_agent_auth
 
@@ -106,8 +161,9 @@ Now connect to the host with Agent Forwarding enabled
     ssh -A user@host
 
 # Setup fail2ban
-
-## RHEL-Like
+## Arch
+TODO
+## RHEL/Centos Like
 
     dnf -y install fail2ban
     systemctl enable fail2ban
@@ -126,7 +182,20 @@ Reload fail2ban and check that it works
 
 # Setup smartctl disk monitoring
 
-## RHEL-Like
+## Arch
+
+Install smartmontools
+
+    pacman -S smartmontools
+
+Substitute this line to smartd.conf to do a short scan weekly, and a long scan monthly
+
+    rm /etc/smartd.conf
+    echo "DEVICESCAN -H -m root -n standby,10,q -a -o on -S on -s (S/../../1/01|L/../01/./03)" > /etc/smartd.conf
+    systemctl emctl restart smartd.service
+
+
+## RHEL/Centos Like
 
     yum install smartmontools
 
@@ -137,19 +206,50 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
     systemctl restart smartd.service
 
 # Containers
-## RHEL-Like
+## Arch
+
+    pacman -S podman podman-compose podman-docker
+    systemctl enable podman.service
+    systemctl start podman.service
+
+## RHEL/Centos Like
 Using Podman
 
     yum install podman podman-compose
     systemctl enable podman
 
 # Virtualisation
-## RHEL-Like
+## Arch
+
+TODO
+
+## RHEL/Centos Like
 
     yum install qemu-kvm libvirt  virt-install
 
 # Video Acceleration with VA-API
-## RHEL-Like with Intel CPU
+## Arch with Intel CPU
+Test to see if VA-API already works
+
+    pacman -S libva-utils
+    vainfo
+
+If not, try installing the intel driver (requires non-free drivers)
+
+    pacman -S intel-media-driver
+
+Optionally enable GuC/HuC loading
+
+    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf 
+    mkinitcpio -p linux
+
+Reboot and check if GuC/HuC loading worked
+
+    dmesg | grep i915
+    cat /sys/kernel/debug/dri/0/gt/uc/guc_info
+    cat /sys/kernel/debug/dri/0/gt/uc/huc_info
+
+## RHEL/Centos Like with Intel CPU
 Test to see if VA-API already works
 
     yum install libva-utils
@@ -171,12 +271,12 @@ Reboot and check if GuC/HuC loading worked
     cat /sys/kernel/debug/dri/0/gt/uc/huc_info
 
 # Power Saving
+## Generic Instructions
 
 Many of the power saving settings configured in bios are honored. PCI Runtime or ASCPM settings should be configured in BIOS if possible.
 
 Review power usage with Powertop
 
-    dnf install powertop
     powertop
 
 Enable SATA Active Link Power Management (Saves around 1.5w per drive)
@@ -191,18 +291,38 @@ Then add a udev rule to enable it
 
     echo 'ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9205", ATTR{power/control}="auto"' >> /etc/udev/rules.d/50-usb_power_save.rules
 
+## Arch
+Disable NMI watchdog
+
+    echo kernel.nmi_watchdog = 0 > /etc/sysctl.d/disable_watchdog.conf
+
+Set powersaving mode for Intel Wireless Cards
+
+    echo "options iwlwifi power_save=1" >> /etc/modprobe.d/iwlwifi.conf
+
+## RHEL/Centos Like
 Disable NMI watchdog
 
     echo 'kernel.nmi_watchdog=0' >> /etc/sysctl.conf
 
-Any PCI Runtime or ASCPM settings should be made in BIOS
-
 # Temperature sensing
+
+## Arch Setup
+
+Install i2c tools to also probe for DIMM temperature sensors
+
+    pacman -S i2c-tools
+    modprobe i2c_dev
+    i2cdetect -l
+
+## RHEL/Centos Like Setup
 
 Install i2c tools to also probe for DIMM temperature sensors
 
     dnf install i2c-tools lm_sensors hddtemp
     i2cdetect -l
+
+## Generic Instructions
 
 Note the temp sensors that are on the SMBus adapter and then answer yes to probe that address in sensors-detect
 
@@ -232,3 +352,22 @@ For i2c devices, first get their bus location
         label temp1 "SODIMM1"' > /etc/sensors.d/ram
 
 # BTRFS
+
+## Arch
+
+Install the btrfs system
+
+    pacman -S btrfs-progs
+
+Add btrfs to the hooks of mkinitcpio.conf
+
+    vim /etc/mkinitcpio.conf
+    mkinitcpio -p linux
+
+Create a normal btrfs FS
+
+    mkfs.btrfs /dev/sda1
+
+Create a RAID1 btrfs FS
+
+    mkfs.btrfs -d raid1 -m raid1 /dev/sda1 /dev/sdb1
