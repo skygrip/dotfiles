@@ -7,7 +7,12 @@ Install the following basic tools
    
     pacman -Syu nano vim sudo wget curl networkmanager usbutils gdisk
     pacman -S dnsutils screen tree tmux lm_sensors hddtemp glances
-    pacman -S rsync fuse2
+    pacman -S rsync fuse2 ssh-audit
+
+Install the fastest mirror
+
+    pacman -S reflector
+    reflector -a 6 -f 4 -c AU --save /etc/pacman.d/mirrorlist
 
 Install Yay (Optional)
 
@@ -74,7 +79,6 @@ Use the ZSH shell and setup the GRML setup
     sudo chsh -s /bin/zsh username
 
 # SSH
-
 ## Arch
 
 Add user
@@ -84,6 +88,10 @@ Add user
 Uncomment the relevant field in the sudo file to permit wheel users to use sudo
 
     sed 's/^# \%wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+
+Disable root account logins (Does not affect sudo)
+
+    passwd --lock root
 
 Locally install a SSH Key
 
@@ -95,7 +103,7 @@ Locally install a SSH Key
 Add the following to the opensshd config file
     
     mkdir /etc/ssh/sshd_config.d/
-    echo "Include /etc/ssh/sshd_config.d/*.conf" > /etc/ssh/sshd_config
+    echo "Include /etc/ssh/sshd_config.d/*.conf" >> /etc/ssh/sshd_config
 
 Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
 
@@ -104,9 +112,20 @@ Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
     Match address 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
         PasswordAuthentication yes
 
-Disable root account logins (Does not affect sudo)
+Add the following contents to the file /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+    
+    echo -e "\n# Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com\n# hardening guide.\nKexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256\nCiphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr\nMACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com\nHostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com" > /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
 
-    passwd --lock root
+Regenerate SSH Host keys with larger keysize
+
+    rm -f /etc/ssh/ssh_host_*
+    ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+
+Restart sshd and confirm the settings with ssh-audit
+
+    systemctl restart sshd
+    ssh-audit localhost
 
 ## RHEL/Centos Like
 
@@ -162,7 +181,25 @@ Now connect to the host with Agent Forwarding enabled
 
 # Setup fail2ban
 ## Arch
-TODO
+Install and start fail2ban
+
+    pacman -S fail2ban
+    systemctl start fail2ban
+    systemctl enable fail2ban
+
+Setup a ssh jail
+
+    echo '[sshd]
+    enabled = true
+    ignoreip = 127.0.0.0/8
+    ' > /etc/fail2ban/jail.local
+
+Reload fail2ban and check that it works
+
+    fail2ban-client reload
+    fail2ban-client status
+    fail2ban-client status sshd
+
 ## RHEL/Centos Like
 
     dnf -y install fail2ban
@@ -181,7 +218,6 @@ Reload fail2ban and check that it works
     fail2ban-client status
 
 # Setup smartctl disk monitoring
-
 ## Arch
 
 Install smartmontools
@@ -207,8 +243,9 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
 
 # Containers
 ## Arch
+Install and start podman
 
-    pacman -S podman podman-compose podman-docker
+    pacman -S podman podman-compose podman-docker fuse-overlayfs aardvark-dns
     systemctl enable podman.service
     systemctl start podman.service
 
@@ -352,7 +389,6 @@ For i2c devices, first get their bus location
         label temp1 "SODIMM1"' > /etc/sensors.d/ram
 
 # BTRFS
-
 ## Arch
 
 Install the btrfs system
@@ -371,3 +407,27 @@ Create a normal btrfs FS
 Create a RAID1 btrfs FS
 
     mkfs.btrfs -d raid1 -m raid1 /dev/sda1 /dev/sdb1
+
+# Avahi (zeroconf)
+## Arch
+Install and start the service
+
+    pacman -S avahi
+    systemctl start avahi-daemon
+    systemctl enable avahi-daemon
+
+Advertise a SSH Server
+
+    cp /usr/share/doc/avahi/ssh.service /etc/avahi/services/
+
+# Time Sync/NTP
+## Arch
+Enable the lightweight systemd timesync
+
+    systemctl enable systemd-timesyncd
+    systemctl start systemd-timesyncd
+
+Check that it worked
+
+    timedatectl
+    timedatectl timesync-status
