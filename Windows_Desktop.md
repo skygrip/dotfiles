@@ -131,6 +131,7 @@ Make the following changes:
 |[GitHub Desktop](https://desktop.github.com/)|winget install -e --id GitHub.GitHubDesktop --scope user|
 |[Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)|winget install -e --id Notepad++.Notepad++|
 |[Podman](https://github.com/containers/podman/)|winget install -e --id RedHat.Podman|
+|[PowerBI](https://powerbi.microsoft.com/en-us/)|winget install -e --id Microsoft.PowerBI|
 |[PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)|winget install -e --id PuTTY.PuTTY|
 |[Python](https://www.python.org/downloads/windows/)|winget install -e -i --id Python.Python.3.10|
 |[RaspberryPi Imager](https://www.raspberrypi.com/software/)|winget install -e --id RaspberryPiFoundation.RaspberryPiImager|
@@ -292,6 +293,22 @@ Enable the SSH-Agent service:
     Start-Service ssh-agent
 
 # Windows Terminal Configuration
+
+# Sync to OneDrive
+
+To setup the sync do the following
+
+    mkdir $Env:OneDrive\Backups\Terminal
+    cp $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\* $env:OneDrive\Backups\Terminal\
+
+To use an existing sync do the following
+
+    rmdir $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
+    cmd  /c mklink /J $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState $env:OneDrive\Backups\Terminal
+
+# Inital Setup
+
+mkdir 
 
 Set Windows terminal theme to "One Half Dark"
 
