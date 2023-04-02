@@ -241,7 +241,14 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
     echo "DEVICESCAN -H -m root -M exec /usr/libexec/smartmontools/smartdnotify -n standby,10,q -a -o on -S on -s (S/../../1/01|L/../01/./03)" > /etc/smartmontools/smartd.conf
     systemctl restart smartd.service
 
-# Containers
+# Containers (Docker CE)
+Install and start Docker
+
+    pacman -S docker docker-compose
+    systemctl enable docker
+    systemctl start docker
+
+# Containers (Podman)
 ## Arch
 Install and start podman
 
