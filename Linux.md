@@ -265,17 +265,69 @@ Using Podman
 # Virtualisation
 ## Arch
 
-TODO
+Setup Hugepages support
 
-## RHEL/Centos Like
+    echo "hugetlbfs       /dev/hugepages  hugetlbfs       mode=01770,gid=kvm        0 0" >> /etc/fstab
+    umount /dev/hugepages
+    mount /dev/hugepages
 
-    yum install qemu-kvm libvirt  virt-install
+Install qemu and start libvirtd
+
+    pacman -S qemu-base libvirt virt-install bridge-utils vde2 openbsd-netcat dmidecode 
+    sudo systemctl enable libvirtd.service
+    sudo systemctl start libvirtd.service
+
+Create a bridge interface
+
+    nmcli connection add type bridge ifname br0 stp no
+    nmcli connection add type bridge-slave ifname enp3s0 master br0
+    nmcli connection modify bridge-br0 ipv4.addresses 192.168.1.12
+    nmcli connection modify bridge-br0 ipv4.dns 192.168.1.1
+    nmcli connection modify bridge-br0 ipv4.method manual
+    nmcli connection up bridge-br0
+
+Make the bridge interface known to Docker
+
+    systemctl edit docker.service
+
+Add the following
+
+    [Service]
+    ExecStartPost=/usr/sbin/iptables -I DOCKER-USER -i br0 -o br0 -j ACCEPT
+
+Restart Docker
+
+    systemctl daemon-reload
+    systemctl restart docker
+
+Optionally install Home Assistant
+
+    mkdir -vp /var/lib/libvirt/images/hassos-vm && cd /var/lib/libvirt/images/hassos-vm
+    wget https://github.com/home-assistant/operating-system/releases/download/10.1/haos_ova-10.1.qcow2.xz
+    xz -d -v haos_ova-10.1.qcow2.xz
+    virsh pool-create-as --name hassos --type dir --target /var/lib/libvirt/images/hassos-vm
+    virt-install --import --name hassos \
+    --memory 2048 --vcpus 2 --cpu host \
+    --os-variant=generic \
+    --disk haos_ova-10.1.qcow2,format=qcow2,bus=virtio \
+    --network bridge=br0,model=virtio \
+    --graphics none \
+    --noautoconsole \
+    --boot uefi \
+    --hostdev 002.003 --hostdev 002.004
+
+Optionally forward built in bluetooth
+
+    pacman -S bluez bluez-utils
+    systemctl enable bluetooth.service
+    systemctl start bluetooth.service
+
 
 # Video Acceleration with VA-API
 ## Arch with Intel CPU
 Test to see if VA-API already works
 
-    pacman -S libva-utils
+    pacman -S libva-utils 
     vainfo
 
 If not, try installing the intel driver (requires non-free drivers)
