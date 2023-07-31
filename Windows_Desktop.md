@@ -66,6 +66,7 @@ Make the following changes:
 
 |Application|Winget ID|
 |-----------|-----------|
+|[Google Drive](https://www.google.com/drive/download/)|winget install -e --id Google.Drive|
 |[LibreOffice](https://www.libreoffice.org/)|winget install -e --id TheDocumentFoundation.LibreOffice|
 |[Microsoft Office]()|winget install -e --id Microsoft.Office|
 |[Microsoft Onedrive]()|winget install -e --id Microsoft.OneDrive|
@@ -183,7 +184,7 @@ Make the following changes:
 |[Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop)||
 |[CurseForge](https://download.curseforge.com/)||
 |[Epic Games](https://store.epicgames.com/en-US/)| winget install -e --id EpicGames.EpicGamesLauncher|
-|[Origin](https://www.origin.com/aus/en-us/store/download)|winget install -e --id ElectronicArts.EADesktop|
+|[EA](https://www.ea.com/en-au/ea-app)|winget install -e --id ElectronicArts.EADesktop|
 |[Steam](https://store.steampowered.com/about/)|winget install -e --id Valve.Steam|
 |[Twitch](https://www.twitch.tv/downloads)|winget install -e --id Twitch.Twitch|
 
