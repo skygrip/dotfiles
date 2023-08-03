@@ -266,7 +266,6 @@ Download and install the exiftool in a windows PATH
 
     New-Item -Path $HOME\Build -ItemType directory
     cd $HOME\Build
-    Remove-Item exiftool-12.57.zip
     Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.57.zip -OutFile exiftool.zip
     Expand-Archive -Path exiftool.zip -DestinationPath .
     move 'exiftool(-k).exe' exiftool.exe
@@ -274,6 +273,17 @@ Download and install the exiftool in a windows PATH
     Start-Process PowerShell.exe -ArgumentList "copy $exiftoolPath C:\Windows\" -Wait -Verb RunAs
     Remove-item exiftool.exe
     Remove-item exiftool.zip
+
+# Android SDK Platform-Tools
+Download and install the exiftool in a windows PATH
+
+    New-Item -Path $HOME\Build -ItemType directory
+    cd $HOME\Build
+    Remove-Item $HOME\Build\Android-Platform-Tools
+    Invoke-WebRequest -Uri https://dl.google.com/android/repository/platform-tools_r34.0.4-windows.zip -OutFile platform-tools.zip
+    Expand-Archive -Path platform-tools.zip -DestinationPath .
+    move platform-tools android-platform-tools
+    Remove-item platform-tools.zip
 
 # Zimmerman Tools
 
