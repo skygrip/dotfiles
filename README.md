@@ -10,6 +10,8 @@ A collection of light build guides and configuration files stored here for conve
 
 [MacOS Setup](MacOS.md)
 
+[Android TV](Android_TV.md)
+
 # Application Specific
 
 ## AWS CLI Config
