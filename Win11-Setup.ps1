@@ -29,9 +29,19 @@ Function HideLanguageBar {
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\CTF\LangBar" -Name "ShowStatus" -Type DWord -Value 3
 }
 
+# Hide Gallery from Explorer
+Function HideGallery {
+	Write-Output "Hiding Gallery..."
+	If (!(Test-Path "HKCU:\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}")) {
+		New-Item -Path "HKCU:\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" | Out-Null
+	}
+	Set-ItemProperty -Path "HKCU:\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" -Name "System.IsPinnedToNameSpaceTree" -Type DWord -Value 0	
+}
+
 ## END FUNCTIONS
 
 EnableClearRecentFiles
 EnableNTFSLongPaths
 SetBIOSTimeUTC
 HideLanguageBar
+HideGallery
