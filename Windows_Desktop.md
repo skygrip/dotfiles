@@ -214,6 +214,21 @@ Update supported apps
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
 
+# Disable Network Connected Standby
+Network Connected Standby causes all kinds of problems on laptops.
+
+Enable the Advanced Power Options:
+
+    REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\F15576E8-98B7-4186-B944-EAFA664402D9 /v Attributes /t REG_DWORD /d 2 /f
+
+Then setting things in Power Options > Change Advanced Power Settings > Network connectivity in Standby > Disable both
+
+# Enable Office Insider
+
+Current Preview is supported by MS, whereas Beta is not:
+
+    reg add HKLM\Software\Policies\Microsoft\office\16.0\common\officeupdate /v updatebranch /t REG_SZ /d CurrentPreview
+
 # Sysinternals
 
 This script will fetch the latest sysinternals and places it in the build directory. Doubles as an updater too.
@@ -274,6 +289,17 @@ Download and install the exiftool in a windows PATH
     Start-Process PowerShell.exe -ArgumentList "copy $exiftoolPath C:\Windows\" -Wait -Verb RunAs
     Remove-item exiftool.exe
     Remove-item exiftool.zip
+
+# Android SDK Platform-Tools
+Download and install the exiftool in a windows PATH
+
+    New-Item -Path $HOME\Build -ItemType directory
+    cd $HOME\Build
+    Remove-Item $HOME\Build\Android-Platform-Tools
+    Invoke-WebRequest -Uri https://dl.google.com/android/repository/platform-tools_r34.0.4-windows.zip -OutFile platform-tools.zip
+    Expand-Archive -Path platform-tools.zip -DestinationPath .
+    move platform-tools android-platform-tools
+    Remove-item platform-tools.zip
 
 # Zimmerman Tools
 
@@ -359,7 +385,7 @@ Install WSL2
 
     wsl --install
     wsl --install -d debian
-    wsl --install -d ubuntu
+    #wsl --install -d ubuntu
 
 Check that WSL is running on version 2 with updates
 
