@@ -422,22 +422,19 @@ Post Installation configuration
 
 Python Tools
 
+    sudo apt install mupdf-tools
     pip install pdfx peepdf olefile mupdf
 
 Install Didier Stevens Tools
 
     # PDF-Parser
-    wget -O ~/.local/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/.local/bin/pdf-parser.py
-    ln -s ~/.local/bin/pdf-parser.py ~/.local/bin/pdf-parser
+    wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/bin/pdf-parser.py
 
     # OleDump
-    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/.local/bin /tmp/oledump.zip && chmod +x ~/.local/bin/oledump.py
-    ln -s ~/.local/bin/oledump.py ~/.local/bin/oledump
+    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/bin /tmp/oledump.zip && chmod +x ~/bin/oledump.py
 
     # PDFID
-    wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/.local/bin /tmp/pdfid.zip && chmod +x ~/.local/bin/pdfid.py
-    ln -s ~/.local/bin/pdfid.py ~/.local/bin/pdfid
+    wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/bin /tmp/pdfid.zip && chmod +x ~/bin/pdfid.py
 
     # PDFTool
-    wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/.local/bin/pdftool.py
-    ln -s ~/.local/bin/pdftool.py ~/.local/bin/pdftool
+    wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/bin/pdftool.py
