@@ -405,7 +405,10 @@ Install useful extentions
     code --install-extension joedevivo.vscode-circuitpython
     code --install-extension ms-python.python
     code --install-extension ms-python.vscode-pylance
+    code --install-extension ms-toolsai.jupyter
+    code --install-extension ms-toolsai.jupyter-renderers
     code --install-extension ms-vscode.powershell
+    code --install-extension ms-vscode.vscode-serial-monitor
     code --install-extension streetsidesoftware.code-spell-checker
 
 ## WSL2
