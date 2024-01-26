@@ -3,6 +3,8 @@
 
 # Delete windows update files
 cleanmgr.exe /autoclean
+
+# Run with the default settings
 cleanmgr.exe /lowdisk
 
 # Delete log and TEMP files
@@ -45,7 +47,7 @@ Remove-Item -Path "C:\Users\$env:username\AppData\Local\Microsoft\Windows\INetCa
 Remove-Item -Path "C:\Users\$env:username\AppData\Local\Microsoft\Office\16.0\GrooveFileCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
 # Clear Eventlog
-Get-EventLog -LogName * | ForEach { Clear-EventLog $_.Log }
+Get-EventLog -LogName * | ForEach-Object { Clear-EventLog $_.Log }
 
 # Clean free space
 sdelete -c C:

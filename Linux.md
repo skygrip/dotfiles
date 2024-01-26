@@ -3,8 +3,9 @@
 # Install Basic Tools
 
 ## Arch
+
 Install the following basic tools
-   
+
     pacman -Syu nano vim sudo wget curl networkmanager usbutils gdisk
     pacman -S dnsutils screen tree tmux lm_sensors hddtemp glances
     pacman -S rsync fuse2 ssh-audit
@@ -22,11 +23,13 @@ Install Yay (Optional)
     makepkg -si
 
 ## Debian/Ubuntu
+
 Install the following basic tools
 
     apt install dnsutils screen vim nano tree
 
 ## RHEL/Centos Like
+
 Install the following basic tools
 
     dnf config-manager --set-enabled crb
@@ -39,6 +42,7 @@ Consider the need to enable the RPM Fusion Repositories
     sudo dnf install https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm -y
 
 # Setup Networking
+
 ## Arch
 
 Install NetworkMangaer
@@ -56,6 +60,7 @@ Validate the hostname set
     hostnamectl
 
 # Setup Zsh
+
 Use the ZSH shell and setup the GRML setup
 
 ## Arch
@@ -79,6 +84,7 @@ Use the ZSH shell and setup the GRML setup
     sudo chsh -s /bin/zsh username
 
 # SSH
+
 ## Arch
 
 Add user
@@ -101,7 +107,7 @@ Locally install a SSH Key
     echo "Key" > ~/.ssh/authorized_keys
 
 Add the following to the opensshd config file
-    
+
     mkdir /etc/ssh/sshd_config.d/
     echo "Include /etc/ssh/sshd_config.d/*.conf" >> /etc/ssh/sshd_config
 
@@ -113,8 +119,8 @@ Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
         PasswordAuthentication yes
 
 Add the following contents to the file /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
-    
-    echo -e "\n# Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com\n# hardening guide.\nKexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512\nCiphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr\nMACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com\nHostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com" > /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+
+    echo -e "\n# Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com\n# hardening guide.\nKexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256\nCiphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr\nMACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com\nHostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com" > /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
 
 Regenerate SSH Host keys with larger keysize
 
@@ -153,7 +159,7 @@ Add the following contents to the file /etc/ssh/sshd_config.d/99-localnet.conf
     Match address 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
         PasswordAuthentication yes
 
-# Change sudo to accept SSH Keys as authentication isntead of password
+# Change sudo to accept SSH Keys as authentication instead of password
 
 Authenticate sudo with SSH keys instead of setting NOPASSWD in sudoers file. Requires SSH Agent Forwarding.
 
@@ -169,7 +175,7 @@ Configure sudoers to preserve the environment variable SSH_AUTH_SOCK
 
     sed -i "81i Defaults    env_keep += "SSH_AUTH_SOCK"" /etc/sudoers
 
-Copy authorised keys that can be used for sudo access
+Copy authorized keys that can be used for sudo access
 
     sudo touch /etc/ssh/sudo_authorized_keys
     chmod 600 /etc/ssh/sudo_authorized_keys
@@ -180,7 +186,9 @@ Now connect to the host with Agent Forwarding enabled
     ssh -A user@host
 
 # Setup fail2ban
+
 ## Arch
+
 Install and start fail2ban
 
     pacman -S fail2ban
@@ -218,6 +226,7 @@ Reload fail2ban and check that it works
     fail2ban-client status
 
 # Setup smartctl disk monitoring
+
 ## Arch
 
 Install smartmontools
@@ -230,7 +239,6 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
     echo "DEVICESCAN -H -m root -n standby,10,q -a -o on -S on -s (S/../../1/01|L/../01/./03)" > /etc/smartd.conf
     systemctl emctl restart smartd.service
 
-
 ## RHEL/Centos Like
 
     yum install smartmontools
@@ -242,6 +250,7 @@ Substitute this line to smartd.conf to do a short scan weekly, and a long scan m
     systemctl restart smartd.service
 
 # Containers (Docker CE)
+
 Install and start Docker
 
     pacman -S docker docker-compose
@@ -249,7 +258,9 @@ Install and start Docker
     systemctl start docker
 
 # Containers (Podman)
+
 ## Arch
+
 Install and start podman
 
     pacman -S podman podman-compose podman-docker fuse-overlayfs aardvark-dns
@@ -257,12 +268,14 @@ Install and start podman
     systemctl start podman.service
 
 ## RHEL/Centos Like
+
 Using Podman
 
     yum install podman podman-compose
     systemctl enable podman
 
 # Virtualisation
+
 ## Arch
 
 Setup Hugepages support
@@ -273,7 +286,7 @@ Setup Hugepages support
 
 Install qemu and start libvirtd
 
-    pacman -S qemu-base libvirt virt-install bridge-utils vde2 openbsd-netcat dmidecode 
+    pacman -S qemu-base libvirt virt-install bridge-utils vde2 openbsd-netcat dmidecode
     sudo systemctl enable libvirtd.service
     sudo systemctl start libvirtd.service
 
@@ -322,12 +335,13 @@ Optionally forward built in bluetooth
     systemctl enable bluetooth.service
     systemctl start bluetooth.service
 
-
 # Video Acceleration with VA-API
+
 ## Arch with Intel CPU
+
 Test to see if VA-API already works
 
-    pacman -S libva-utils 
+    pacman -S libva-utils
     vainfo
 
 If not, try installing the intel driver (requires non-free drivers)
@@ -336,7 +350,7 @@ If not, try installing the intel driver (requires non-free drivers)
 
 Optionally enable GuC/HuC loading
 
-    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf 
+    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf
     mkinitcpio -p linux
 
 Reboot and check if GuC/HuC loading worked
@@ -346,6 +360,7 @@ Reboot and check if GuC/HuC loading worked
     cat /sys/kernel/debug/dri/0/gt/uc/huc_info
 
 ## RHEL/Centos Like with Intel CPU
+
 Test to see if VA-API already works
 
     yum install libva-utils
@@ -357,7 +372,7 @@ If not, try installing the intel driver (requires non-free drivers)
 
 Optionally enable GuC/HuC loading
 
-    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf 
+    echo "options i915 enable_guc=2" > /etc/modprobe.d/i915.conf
     dracut --regenerate-all -f
 
 Reboot and check if GuC/HuC loading worked
@@ -367,6 +382,7 @@ Reboot and check if GuC/HuC loading worked
     cat /sys/kernel/debug/dri/0/gt/uc/huc_info
 
 # Power Saving
+
 ## Generic Instructions
 
 Many of the power saving settings configured in bios are honored. PCI Runtime or ASCPM settings should be configured in BIOS if possible.
@@ -388,6 +404,7 @@ Then add a udev rule to enable it
     echo 'ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9205", ATTR{power/control}="auto"' >> /etc/udev/rules.d/50-usb_power_save.rules
 
 ## Arch
+
 Disable NMI watchdog
 
     echo kernel.nmi_watchdog = 0 > /etc/sysctl.d/disable_watchdog.conf
@@ -397,6 +414,7 @@ Set powersaving mode for Intel Wireless Cards
     echo "options iwlwifi power_save=1" >> /etc/modprobe.d/iwlwifi.conf
 
 ## RHEL/Centos Like
+
 Disable NMI watchdog
 
     echo 'kernel.nmi_watchdog=0' >> /etc/sysctl.conf
@@ -436,18 +454,19 @@ For i2c devices, first get their bus location
     sensors --bus-list
 
     echo 'bus "i2c-11" "SMBus I801 adapter at efa0"
-    
+
     chip "*-i2c-11-18"
         set temp1_crit 100
         set temp1_crit_alarm 100
         label temp1 "SODIMM0"
-    
+
     chip "*-i2c-11-1a"
         set temp1_crit 100
         set temp1_crit_alarm 100
         label temp1 "SODIMM1"' > /etc/sensors.d/ram
 
 # BTRFS
+
 ## Arch
 
 Install the btrfs system
@@ -468,7 +487,9 @@ Create a RAID1 btrfs FS
     mkfs.btrfs -d raid1 -m raid1 /dev/sda1 /dev/sdb1
 
 # Avahi (zeroconf)
+
 ## Arch
+
 Install and start the service
 
     pacman -S avahi
@@ -480,7 +501,9 @@ Advertise a SSH Server
     cp /usr/share/doc/avahi/ssh.service /etc/avahi/services/
 
 # Time Sync/NTP
+
 ## Arch
+
 Enable the lightweight systemd timesync
 
     systemctl enable systemd-timesyncd

@@ -17,4 +17,3 @@ Install the terminal theme. If you have problems with the script create an new t
 
     git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
     ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
-
