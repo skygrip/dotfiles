@@ -1,4 +1,5 @@
 # Windows Desktop Setup
+
 Setup of a basic Windows Desktop
 
 # Setup and Debloat
@@ -90,6 +91,7 @@ Make the following changes:
 |Application|Winget ID|
 |-----------|-----------|
 |[Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)||
+|[Autodesk Fusion 360](https://www.autodesk.com/products/fusion-360/overview?term=1-YEAR&tab=subscription)||
 |[Blender](https://www.blender.org/)|winget install -e --id BlenderFoundation.Blender|
 |[Darktable](https://www.darktable.org/install/)|winget install -e --id darktable.darktable|
 |[FreeCAD](https://www.freecadweb.org/)|winget install -e --id FreeCAD.FreeCAD|
@@ -97,6 +99,7 @@ Make the following changes:
 |[Handbrake](https://handbrake.fr/downloads.php)|winget install -e --id HandBrake.HandBrake|
 |[Hugin](http://hugin.sourceforge.net/download/)|winget install -e --id Hugin.Hugin|
 |[Inkscape](https://inkscape.org/)|winget install -e --id Inkscape.Inkscape|
+|[KiCad](https://www.kicad.org/)|winget install -e --id KiCad.KiCad|
 |[Luminance HDR](http://qtpfsgui.sourceforge.net)||
 |[OpenSCAD](https://www.openscad.org/)|winget install -e --id OpenSCAD.OpenSCAD|
 |[Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)|winget install -e --id TopazLabs.TopazPhotoAI|
@@ -105,6 +108,7 @@ Make the following changes:
 
 |Application|Winget ID|
 |-----------|-----------|
+|[Bambu Studio](https://bambulab.com/en/download/studio)|winget install -e --id Bambulab.Bambustudio|
 |[Laser GRBL](https://github.com/arkypita/LaserGRBL)||
 |[Lychee Slicer](https://lychee.mango3d.io/)||
 |[Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)||
@@ -208,12 +212,13 @@ Update supported apps
 
 # Powershell Setup of administator tools
 
+    Install-Module -Name AzureAD
     Install-Module -Name ExchangeOnlineManagement
     Install-Module -Name Microsoft.Online.SharePoint.PowerShell
-    Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
-    Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
-
+    Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
+    Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+    
 # Disable Network Connected Standby
 Network Connected Standby causes all kinds of problems on laptops.
 
@@ -277,7 +282,7 @@ Preload a VFS Cache
     rclone hashsum crc32 --checkers 8 /rclonepath
 
 # EXIFTOOL
-Download and install the exiftool in a windows PATH
+Download and install exiftool in a windows PATH
 
     New-Item -Path $HOME\Build -ItemType directory
     cd $HOME\Build
@@ -291,7 +296,7 @@ Download and install the exiftool in a windows PATH
     Remove-item exiftool.zip
 
 # Android SDK Platform-Tools
-Download and install the exiftool in a windows PATH
+Download and install Android SDK Platform-Tools in build folder
 
     New-Item -Path $HOME\Build -ItemType directory
     cd $HOME\Build
@@ -302,6 +307,7 @@ Download and install the exiftool in a windows PATH
     Remove-item platform-tools.zip
 
 # Zimmerman Tools
+Download and install Zimmerman Tools in build folder
 
     New-Item -Path $HOME\Build -ItemType directory
     New-Item -Path $HOME\Build\ZimmermanTools -ItemType directory
@@ -313,6 +319,10 @@ Download and install the exiftool in a windows PATH
     mv net6/* .
 
 # OpenSSH client on Windows
+
+Consier installing SSH Beta as Microsoft ships years old OpenSSH versions
+
+    winget install -e --id Microsoft.OpenSSH.Beta
 
 Enable the SSH-Agent service:
 
@@ -379,6 +389,16 @@ Setup machine
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
 Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
 
+# VSCode Setup
+
+Install useful extentions
+
+    code --install-extension DavidAnson.vscode-markdownlint
+    code --install-extension esbenp.prettier-vscode
+    code --install-extension joedevivo.vscode-circuitpython
+    code --install-extension ms-python.python
+    code --install-extension ms-python.vscode-pylance
+    code --install-extension ms-vscode.powershell
 # WSL2
 
 Install WSL2
