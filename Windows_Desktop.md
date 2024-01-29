@@ -216,9 +216,19 @@ Update supported apps
 
 ## Powershell Setup of administrator tools
 
+Install commonly used Powershell modules
+
     Install-Module -Name AzureAD
     Install-Module -Name ExchangeOnlineManagement
+    Install-Module -Name Microsoft.Graph
     Install-Module -Name Microsoft.Online.SharePoint.PowerShell
+
+Optionally, also update the installed Powershell modules
+
+    Update-Module
+
+Also install some basic server management tools
+
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
     Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
