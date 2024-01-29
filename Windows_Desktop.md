@@ -412,7 +412,6 @@ Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Use
 Install useful extentions
 
     code --install-extension esbenp.prettier-vscode
-    code --install-extension joedevivo.vscode-circuitpython
     code --install-extension ms-python.python
     code --install-extension ms-python.vscode-pylance
     code --install-extension ms-toolsai.jupyter

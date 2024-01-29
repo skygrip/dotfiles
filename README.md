@@ -83,4 +83,8 @@ recursively import only folders that contain a raw folder.
             Start-Sleep -Seconds 20
         }
     }
+
+Generate Cache files.
+Cache lives in C:\Users\[USERNAME]\AppData\Local\Microsoft\Windows\INetCache\darktable
+
     & 'C:\Program Files\darktable\bin\darktable-generate-cache.exe' -m 4
