@@ -46,24 +46,32 @@ Make the following changes:
 
 ### General Tools
 
-| Application                                                                                                            | Winget ID                                           |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| [7zip](https://www.7-zip.org/download.html)                                                                            | winget install -e --id 7zip.7zip                    |
-| [Adobe Reader](https://get.adobe.com/reader/)                                                                          |                                                     |
-| [Calibre Ebook](https://calibre-ebook.com/download_windows64)                                                          | winget install -e --id calibre.calibre              |
-| [Chrome](https://www.google.com/chrome/)                                                                               | winget install -e --id Google.Chrome                |
-| [Firefox](https://www.mozilla.org/en-US/firefox/new/)                                                                  | winget install -e --id Mozilla.Firefox              |
-| [KeepassXC](https://keepassxc.org/)                                                                                    | winget install -e --id KeePassXCTeam.KeePassXC      |
-| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)                                                                  |                                                     |
-| [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell         |
-| [OBSStudio](https://obsproject.com/)                                                                                   | winget install -e --id OBSProject.OBSStudio         |
-| [Parsec](https://parsec.app/)                                                                                          | winget install -e --id Parsec.Parsec                |
-| [PowerToys](https://github.com/microsoft/PowerToys)                                                                    | winget install -e --id Microsoft.PowerToys          |
-| [ProtonVPN](https://protonvpn.com/download)                                                                            | winget install -e --id ProtonTechnologies.ProtonVPN |
-| [Speedcrunch](https://speedcrunch.org/)                                                                                | winget install -e --id SpeedCrunch.SpeedCrunch      |
-| [VLC](https://www.videolan.org/vlc/download-windows.html)                                                              | winget install -e --id VideoLAN.VLC                 |
-| [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat        |
-| [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal    |
+| Application                                                   | Winget ID                                           |
+| ------------------------------------------------------------- | --------------------------------------------------- |
+| [7zip](https://www.7-zip.org/download.html)                   | winget install -e --id 7zip.7zip                    |
+| [Adobe Reader](https://get.adobe.com/reader/)                 |                                                     |
+| [Calibre Ebook](https://calibre-ebook.com/download_windows64) | winget install -e --id calibre.calibre              |
+| [Chrome](https://www.google.com/chrome/)                      | winget install -e --id Google.Chrome                |
+| [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox              |
+| [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC      |
+| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                     |
+| [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio         |
+| [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys          |
+| [ProtonVPN](https://protonvpn.com/download)                   | winget install -e --id ProtonTechnologies.ProtonVPN |
+| [Speedcrunch](https://speedcrunch.org/)                       | winget install -e --id SpeedCrunch.SpeedCrunch      |
+| [VLC](https://www.videolan.org/vlc/download-windows.html)     | winget install -e --id VideoLAN.VLC                 |
+
+### System Tools
+
+| Application                                                                                                            | Winget ID                                        |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| [Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                          | winget install -e --id Guru3D.Afterburner        |
+| [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO             |
+| [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell      |
+| [Parsec](https://parsec.app/)                                                                                          | winget install -e --id Parsec.Parsec             |
+| [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS               |
+| [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat     |
+| [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal |
 
 ### Office Applications
 
@@ -121,7 +129,7 @@ Make the following changes:
 
 | Application                                                                          | Winget ID                                |
 | ------------------------------------------------------------------------------------ | ---------------------------------------- |
-| [Audacity](https://www.audacityteam.org/?ref=winstall)                               | winget install -e --id=Audacity.Audacity |
+| [Audacity](https://www.audacityteam.org/?ref=winstall)                               | winget install -e --id Audacity.Audacity |
 | [Equalizer APO](https://equalizerapo.com/download.html)                              |                                          |
 | [Lisp VST Plugin](https://plugins4free.com/plugin/1662/)                             |                                          |
 | [Nvidia Broadcast](https://www.nvidia.com/en-au/geforce/broadcasting/broadcast-app/) | winget install -e --id Nvidia.Broadcast  |
