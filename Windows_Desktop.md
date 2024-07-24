@@ -224,6 +224,10 @@ Update supported apps
 
 ## Powershell Setup of administrator tools
 
+Set Execution Policy to RemoteSigned
+
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+
 Install commonly used Powershell modules
 
     Install-Module -Name AzureAD
@@ -250,12 +254,6 @@ Enable the Advanced Power Options:
     REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\F15576E8-98B7-4186-B944-EAFA664402D9 /v Attributes /t REG_DWORD /d 2 /f
 
 Then setting things in Power Options > Change Advanced Power Settings > Network connectivity in Standby > Disable both
-
-## Enable Office Insider
-
-Current Preview is supported by MS, whereas Beta is not:
-
-    reg add HKLM\Software\Policies\Microsoft\office\16.0\common\officeupdate /v updatebranch /t REG_SZ /d CurrentPreview
 
 ## Sysinternals
 
