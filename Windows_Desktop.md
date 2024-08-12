@@ -308,14 +308,19 @@ Download and install exiftool in a windows PATH
 
     New-Item -Path $HOME\Build -ItemType directory
     cd $HOME\Build
-    Remove-Item exiftool-12.57.zip
-    Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.68.zip -OutFile exiftool.zip
-    Expand-Archive -Path exiftool.zip -DestinationPath .
+    Remove-Item $HOME\Build\exiftool.zip
+    Remove-Item $HOME\Build\exiftool
+    Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.92_64.zip -OutFile exiftool.zip
+    Expand-Archive -Path exiftool.zip -DestinationPath $HOME\Build
+    Remove-Item $HOME\Build\exiftool.zip
+    move $HOME\Build\exiftool-* $HOME\Build\exiftool
+    cd $HOME\Build\exiftool
     move 'exiftool(-k).exe' exiftool.exe
-    $exiftoolPath = "$HOME\Build\exiftool.exe"
-    Start-Process PowerShell.exe -ArgumentList "copy $exiftoolPath C:\Windows\" -Wait -Verb RunAs
-    Remove-item exiftool.exe
-    Remove-item exiftool.zip
+    $PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
+    $exiftool_path = "$HOME\Build\exiftool"
+    if( $PATH -notlike "*"+$exiftool_path+"*" ){
+        [Environment]::SetEnvironmentVariable("PATH", "$PATH;$exiftool_path", "User")
+    }
 
 ## Android SDK Platform-Tools
 
@@ -344,7 +349,7 @@ Download and install Zimmerman Tools in build folder
 
 ## OpenSSH client on Windows
 
-Consier installing SSH Beta as Microsoft ships years old OpenSSH versions
+Consider installing SSH Beta as Microsoft ships years old OpenSSH versions
 
     winget install -e --id Microsoft.OpenSSH.Beta
 
