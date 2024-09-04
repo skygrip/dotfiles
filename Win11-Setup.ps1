@@ -43,14 +43,14 @@ Function DisableStartWebSearch {
 	write-output "Disabling Bing Search in Start Menu"
 	$WebSearch = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
 	If (!(Test-Path $WebSearch)) {
-		New-Item $WebSearch
+		New-Item $WebSearch  | Out-Null
 	}
 	Set-ItemProperty $WebSearch DisableWebSearch -Value 1
 	##Loop through all user SIDs in the registry and disable Bing Search
 	foreach ($sid in $UserSIDs) {
 		$WebSearch = "Registry::HKU\$sid\SOFTWARE\Microsoft\Windows\CurrentVersion\Search"
 		If (!(Test-Path $WebSearch)) {
-			New-Item $WebSearch
+			New-Item $WebSearch  | Out-Null
 		}
 		Set-ItemProperty $WebSearch BingSearchEnabled -Value 0
 	}
@@ -70,15 +70,15 @@ Function HideLearnAboutPicture {
 Function DisableRecall {
 	#Turn off Recall
 	write-output "Disabling Recall"
-	$recall = "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+	$recall = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
 	If (!(Test-Path $recall)) {
-		New-Item $recall
+		New-Item $recall  | Out-Null
 	}
 	Set-ItemProperty $recall DisableAIDataAnalysis -Value 1
 
 	$recalluser = 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI'
 	If (!(Test-Path $recalluser)) {
-		New-Item $recalluser
+		New-Item $recalluser  | Out-Null
 	}
 	Set-ItemProperty $recalluser DisableAIDataAnalysis -Value 1
 }
@@ -88,7 +88,7 @@ Function DisableWindowsFeedback {
 	write-output "Disabling Windows Feedback Experience program"
 	$Advertising = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo"
 	If (!(Test-Path $Advertising)) {
-		New-Item $Advertising
+		New-Item $Advertising  | Out-Null
 	}
 	If (Test-Path $Advertising) {
 		Set-ItemProperty $Advertising Enabled -Value 0
@@ -98,7 +98,7 @@ Function DisableWindowsFeedback {
 	write-output "Stopping the Windows Feedback Experience program"
 	$Period = "HKCU:\Software\Microsoft\Siuf\Rules"
 	If (!(Test-Path $Period)) {
-		New-Item $Period
+		New-Item $Period -Force | Out-Null
 	}
 	Set-ItemProperty $Period PeriodInNanoSeconds -Value 0
 }
@@ -109,12 +109,12 @@ Function DisableAppSuggestions {
 	$registryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
 	$registryOEM = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
 	If (!(Test-Path $registryPath)) {
-		New-Item $registryPath
+		New-Item $registryPath  | Out-Null
 	}
 	Set-ItemProperty $registryPath DisableWindowsConsumerFeatures -Value 1
 
 	If (!(Test-Path $registryOEM)) {
-		New-Item $registryOEM
+		New-Item $registryOEM  | Out-Null
 	}
 	Set-ItemProperty $registryOEM  ContentDeliveryAllowed -Value 0
 	Set-ItemProperty $registryOEM  OemPreInstalledAppsEnabled -Value 0
@@ -132,7 +132,6 @@ SetBIOSTimeUTC
 HideLanguageBar
 HideGallery
 DisableStartWebSearch
-HidePeopleIcon
 HideLearnAboutPicture
 DisableRecall
 DisableWindowsFeedback
