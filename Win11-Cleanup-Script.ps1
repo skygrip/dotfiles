@@ -89,6 +89,10 @@ reg delete "HKCU\Software\Martin Prikryl\WinSCP 2\Configuration\LastFingerprints
 reg delete "HKCU\Software\Martin Prikryl\WinSCP 2\SshHostKeys" /f
 reg delete "HKCU\Software\SimonTatham\PuTTY\SshHostKeys" /f
 reg delete "HKCU\Software\sqlitebrowser\sqlitebrowser\General\recentFileList" /f
+Remove-Item -Path "C:\Users\$env:username\AppData\Local\calibre-cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "C:\Users\$env:username\AppData\Roaming\calibre\viewer\annots\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "C:\Users\$env:username\AppData\Roaming\calibre\history.plist" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "C:\Users\$env:username\AppData\Roaming\calibre\viewer-webengine.json" -Recurse -Force -ErrorAction SilentlyContinue
 
 # Delete Windows notification history
 Get-Service -DisplayName  "Windows Push Notification*" | Stop-Service
