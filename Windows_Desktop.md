@@ -42,6 +42,7 @@ Make the following changes:
 - Disable Snap Windows and Title Bar Window Shake
 - Use autoruns to stop certain apps from starting
 - Disable controller opening Game Bar (Game Bar Controller Settings)
+- Disable BitLocker UEFI PCR 2 Setting if eGPU is used (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > UEFI Firmware Configuration)
 
 ## Software
 
