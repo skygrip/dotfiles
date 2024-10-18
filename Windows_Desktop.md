@@ -26,7 +26,7 @@ Make the following changes:
   - Set sleep timer to off
   - Set turn monitor off timer to off
 - Enable Core Isolation
-- Enable Bitlocker Drive Encryption
+- Enable BitLocker Drive Encryption
 - In Windows features Enable:
   - Virtual Machine Platform
   - Windows Hypervisor Platform
@@ -41,6 +41,7 @@ Make the following changes:
 - Disable "Select the far corner of the taskbar to show the desktop"
 - Disable Snap Windows and Title Bar Window Shake
 - Use autoruns to stop certain apps from starting
+- Disable controller opening Game Bar (Game Bar Controller Settings)
 
 ## Software
 
@@ -119,6 +120,7 @@ Make the following changes:
 | Application                                                                                   | Winget ID                                   |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | [Bambu Studio](https://bambulab.com/en/download/studio)                                       | winget install -e --id Bambulab.Bambustudio |
+| [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                         |                                             |
 | [Laser GRBL](https://github.com/arkypita/LaserGRBL)                                           |                                             |
 | [Lychee Slicer](https://lychee.mango3d.io/)                                                   |                                             |
 | [Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software) |                                             |
@@ -144,15 +146,17 @@ Make the following changes:
 | [Deluge](https://deluge-torrent.org)                                                                     | winget install -e --id DelugeTeam.Deluge                       |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
+| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e -id Mu.Mu                                    |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
 | [Python](https://www.python.org/downloads/windows/)                                                      | winget install -e -i --id Python.Python.3.10                   |
-| [RaspberryPi Imager](https://www.raspberrypi.com/software/)                                              | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
+| [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
 | [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
+| [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                       |
 | [Visual Studio Code](https://code.visualstudio.com/)                                                     | winget install -e --id Microsoft.VisualStudioCode --scope user |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro                   |
@@ -206,7 +210,7 @@ Make the following changes:
 
 | Application                                                                                               | Winget ID                               |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [AMD Chipset Drivers](https://www.amd.com/en/support)                                                     |                                         |
+| [AMD Chipset Drivers](https://www.amd.com/en/support/download/drivers.html)                               |                                         |
 | [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)                 |                                         |
 | [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                        |                                         |
 | [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                        |                                         |
@@ -412,7 +416,7 @@ Setup machine
     winget install pandoc
     pip install -U radian
 
-    install.packages(c("languageserver","rmarkdown","httpgd","jsonlite","R6")
+    install.packages(c("languageserver","rmarkdown","httpgd","jsonlite","R6"))
     install.packages(c('ggplot2','scales','lubridate'))
 
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
@@ -430,6 +434,7 @@ Install useful extentions
     code --install-extension ms-toolsai.jupyter-renderers
     code --install-extension ms-vscode.powershell
     code --install-extension ms-vscode.vscode-serial-monitor
+    code --install-extension pycom.pymakr
     code --install-extension streetsidesoftware.code-spell-checker
     code --install-extension vscode.ipynb
 
