@@ -26,7 +26,6 @@ Make the following changes:
   - Set sleep timer to off
   - Set turn monitor off timer to off
 - Enable Core Isolation
-- Enable BitLocker Drive Encryption
 - In Windows features Enable:
   - Virtual Machine Platform
   - Windows Hypervisor Platform
@@ -43,6 +42,7 @@ Make the following changes:
 - Use autoruns to stop certain apps from starting
 - Disable controller opening Game Bar (Game Bar Controller Settings)
 - Disable BitLocker UEFI PCR 2 Setting if eGPU is used (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > UEFI Firmware Configuration)
+- Enable BitLocker Drive Encryption (with TPM and PIN if UEFI PCR 2 disabled)
 
 ## Software
 
