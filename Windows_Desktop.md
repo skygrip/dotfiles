@@ -68,6 +68,7 @@ Make the following changes:
 | Application                                                                                                            | Winget ID                                        |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | [Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                          | winget install -e --id Guru3D.Afterburner        |
+| [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme  |
 | [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO             |
 | [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell      |
 | [Parsec](https://parsec.app/)                                                                                          | winget install -e --id Parsec.Parsec             |
@@ -79,7 +80,7 @@ Make the following changes:
 
 | Application                                                                           | Winget ID                                                |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [Google Drive](https://www.google.com/drive/download/)                                | winget install -e --id Google.Drive                      |
+| [Google Drive](https://www.google.com/drive/download/)                                | winget install -e --id Google.GoogleDrive                |
 | [LibreOffice](https://www.libreoffice.org/)                                           | winget install -e --id TheDocumentFoundation.LibreOffice |
 | [Microsoft Office](https://www.microsoft.com/en-us/microsoft-365/download-office)     | winget install -e --id Microsoft.Office                  |
 | [Microsoft Onedrive](https://www.microsoft.com/en-us/microsoft-365/onedrive/download) | winget install -e --id Microsoft.OneDrive                |
