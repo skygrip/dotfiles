@@ -67,7 +67,7 @@ Make the following changes:
 
 | Application                                                                                                            | Winget ID                                        |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| [Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                          | winget install -e --id Guru3D.Afterburner        |
+| [Afterburner Beta](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                     | winget install -e --id Guru3D.Afterburner.Beta   |
 | [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme  |
 | [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO             |
 | [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell      |
