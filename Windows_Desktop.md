@@ -103,7 +103,7 @@ Make the following changes:
 
 | Application                                                                                               | Winget ID                                        |
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)                      |                                                  |
+| [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)                      | winget install -e --id Adobe.CreativeCloud       |
 | [Autodesk Fusion 360](https://www.autodesk.com/products/fusion-360/overview?term=1-YEAR&tab=subscription) |                                                  |
 | [Blender](https://www.blender.org/)                                                                       | winget install -e --id BlenderFoundation.Blender |
 | [Darktable](https://www.darktable.org/install/)                                                           | winget install -e --id darktable.darktable       |
@@ -114,6 +114,7 @@ Make the following changes:
 | [Inkscape](https://inkscape.org/)                                                                         | winget install -e --id Inkscape.Inkscape         |
 | [KiCad](https://www.kicad.org/)                                                                           | winget install -e --id KiCad.KiCad               |
 | [Luminance HDR](http://qtpfsgui.sourceforge.net)                                                          |                                                  |
+| [Ollama](https://ollama.com/download)                                                                     | winget install -e --id Ollama.Ollama             |
 | [OpenSCAD](https://www.openscad.org/)                                                                     | winget install -e --id OpenSCAD.OpenSCAD         |
 | [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)                                                | winget install -e --id TopazLabs.TopazPhotoAI    |
 
@@ -428,17 +429,31 @@ Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Use
 
 Install useful extentions
 
+    code --install-extension continue.continue
+    code --install-extension davidanson.vscode-markdownlint
     code --install-extension esbenp.prettier-vscode
+    code --install-extension mechatroner.rainbow-csv
+    code --install-extension ms-python.black-formatter
+    code --install-extension ms-python.debugpy
+    code --install-extension ms-python.isort
+    code --install-extension ms-python.pylint
     code --install-extension ms-python.python
     code --install-extension ms-python.vscode-pylance
     code --install-extension ms-toolsai.datawrangler
     code --install-extension ms-toolsai.jupyter
+    code --install-extension ms-toolsai.jupyter-keymap
     code --install-extension ms-toolsai.jupyter-renderers
+    code --install-extension ms-toolsai.vscode-jupyter-cell-tags
+    code --install-extension ms-toolsai.vscode-jupyter-slideshow
+    code --install-extension ms-vscode.cmake-tools
+    code --install-extension ms-vscode.cpptools
+    code --install-extension ms-vscode.cpptools-extension-pack
+    code --install-extension ms-vscode.cpptools-themes
     code --install-extension ms-vscode.powershell
     code --install-extension ms-vscode.vscode-serial-monitor
-    code --install-extension pycom.pymakr
+    code --install-extension redhat.vscode-xml
     code --install-extension streetsidesoftware.code-spell-checker
-    code --install-extension vscode.ipynb
+    code --install-extension twxs.cmake
 
 ## WSL2
 
