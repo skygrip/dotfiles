@@ -151,13 +151,13 @@ Make the following changes:
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
-| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e -id Mu.Mu                                    |
+| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                    |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
 | [Python](https://www.python.org/downloads/windows/)                                                      | winget install -e -i --id Python.Python.3.10                   |
-| [Qbittorrent](https://www.qbittorrent.org/download                                                       | winget install -e --id qBittorrent.qBittorrent                 |
+| [Qbittorrent](https://www.qbittorrent.org/download)                                                      | winget install -e --id qBittorrent.qBittorrent                 |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
@@ -465,17 +465,19 @@ General Purpose Models
     ollama pull phi3.5
     ollama pull gemma2
 
-Programming Models
+Code Models
 
-    # Code Models
     ollama pull llama3.1:8b
     ollama pull deepseek-coder-v2
-    # TabAutoCompleteModels
+
+Tab Autocomplete Models
+
     ollama pull starcoder2:3b
     ollama pull codegemma:2b-code
-    # Embeddings Models
+
+Embeddings Models
+
     ollama pull nomic-embed-text
-    
 
 Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
 
