@@ -18,7 +18,7 @@ Make the following changes:
 - Run Windows Update
 - Open Microsoft Store and force all store apps to update (Currently Fixes Winget)
 - Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
-- Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
+- Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
 - Uninstall the default bloat apps
 - Disable Remote Assistance
 - Enable RDP (If Applicable)
@@ -43,6 +43,8 @@ Make the following changes:
 - Disable controller opening Game Bar (Game Bar Controller Settings)
 - Disable BitLocker UEFI PCR 2 Setting if eGPU is used (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > UEFI Firmware Configuration)
 - Enable BitLocker Drive Encryption (with TPM and PIN if UEFI PCR 2 disabled)
+- Optionally Enforce Bitlocker TPMandPIN (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > Require Additional Authentication at Startup)
+- Optionally add Bitlocker TPMandPIN protector (manage-bde -protectors -add -TPMAndPIN C:)
 
 ## Software
 
@@ -120,15 +122,16 @@ Make the following changes:
 
 ### Manufacturing Tools
 
-| Application                                                                                   | Winget ID                                   |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| [Bambu Studio](https://bambulab.com/en/download/studio)                                       | winget install -e --id Bambulab.Bambustudio |
-| [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                         |                                             |
-| [Laser GRBL](https://github.com/arkypita/LaserGRBL)                                           |                                             |
-| [Lychee Slicer](https://lychee.mango3d.io/)                                                   |                                             |
-| [Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software) |                                             |
-| [PrusaSlicer](https://www.prusa3d.com)                                                        | winget install -e --id Prusa3D.PrusaSlicer  |
-| [Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)                               | winget install -e --id Ultimaker.Cura       |
+| Application                                                                                      | Winget ID                                   |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| [Bambu Studio](https://bambulab.com/en/download/studio)                                          | winget install -e --id Bambulab.Bambustudio |
+| [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                            |                                             |
+| [Laser GRBL](https://github.com/arkypita/LaserGRBL)                                              |                                             |
+| [Lychee Slicer](https://lychee.mango3d.io/)                                                      |                                             |
+| [Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)    |                                             |
+| [PrusaSlicer](https://www.prusa3d.com)                                                           | winget install -e --id Prusa3D.PrusaSlicer  |
+| [Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)                                  | winget install -e --id Ultimaker.Cura       |
+| [Valentina Dev](https://bitbucket.org/valentinaproject/valentinaproject.bitbucket.io/downloads/) |                                             |
 
 ### Audio Tools
 
@@ -146,7 +149,6 @@ Make the following changes:
 | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
-| [Deluge](https://deluge-torrent.org)                                                                     | winget install -e --id DelugeTeam.Deluge                       |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e -id Mu.Mu                                    |
@@ -155,6 +157,7 @@ Make the following changes:
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
 | [Python](https://www.python.org/downloads/windows/)                                                      | winget install -e -i --id Python.Python.3.10                   |
+| [Qbittorrent](https://www.qbittorrent.org/download                                                       | winget install -e --id qBittorrent.qBittorrent                 |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
@@ -180,9 +183,8 @@ Make the following changes:
 | [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)                                   |                                                              |
 | [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)                                              |                                                              |
 | [Plaso](https://github.com/log2timeline/plaso)                                                    |                                                              |
-| [RegRipper](https://github.com/keydet89/RegRipper2.8)                                             |                                                              |
+| [RegRipper](https://github.com/keydet89/RegRipper3.0)                                             |                                                              |
 | [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)                                    |                                                              |
-| [TimeSketch](https://github.com/google/timesketch)                                                |                                                              |
 | [Volatility](https://github.com/volatilityfoundation/volatility3)                                 |                                                              |
 | [Zimmerman Tools](https://ericzimmerman.github.io/)                                               |                                                              |
 
@@ -454,6 +456,23 @@ Install useful extentions
     code --install-extension redhat.vscode-xml
     code --install-extension streetsidesoftware.code-spell-checker
     code --install-extension twxs.cmake
+
+## Ollama Setup
+
+General Purpose Models
+
+    ollama pull llama3.2
+    ollama pull phi3.5
+    ollama pull gemma2
+
+Programming Models
+
+    ollama pull deepseek-coder-v2
+    ollama pull nomic-embed-text
+    ollama pull starcoder2
+    ollama pull codegemma:2b-code
+
+Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
 
 ## WSL2
 
