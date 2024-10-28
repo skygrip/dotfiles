@@ -50,20 +50,20 @@ Make the following changes:
 
 ### General Tools
 
-| Application                                                   | Winget ID                                           |
-| ------------------------------------------------------------- | --------------------------------------------------- |
-| [7zip](https://www.7-zip.org/download.html)                   | winget install -e --id 7zip.7zip                    |
-| [Adobe Reader](https://get.adobe.com/reader/)                 |                                                     |
-| [Calibre Ebook](https://calibre-ebook.com/download_windows64) | winget install -e --id calibre.calibre              |
-| [Chrome](https://www.google.com/chrome/)                      | winget install -e --id Google.Chrome                |
-| [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox              |
-| [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC      |
-| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                     |
-| [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio         |
-| [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys          |
-| [ProtonVPN](https://protonvpn.com/download)                   | winget install -e --id ProtonTechnologies.ProtonVPN |
-| [Speedcrunch](https://speedcrunch.org/)                       | winget install -e --id SpeedCrunch.SpeedCrunch      |
-| [VLC](https://www.videolan.org/vlc/download-windows.html)     | winget install -e --id VideoLAN.VLC                 |
+| Application                                                   | Winget ID                                      |
+| ------------------------------------------------------------- | ---------------------------------------------- |
+| [7zip](https://www.7-zip.org/download.html)                   | winget install -e --id 7zip.7zip               |
+| [Adobe Reader](https://get.adobe.com/reader/)                 |                                                |
+| [Calibre Ebook](https://calibre-ebook.com/download_windows64) | winget install -e --id calibre.calibre         |
+| [Chrome](https://www.google.com/chrome/)                      | winget install -e --id Google.Chrome           |
+| [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox         |
+| [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC |
+| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                |
+| [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio    |
+| [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys     |
+| [ProtonVPN](https://protonvpn.com/download)                   | winget install -e --id Proton.ProtonVPN        |
+| [Speedcrunch](https://speedcrunch.org/)                       | winget install -e --id SpeedCrunch.SpeedCrunch |
+| [VLC](https://www.videolan.org/vlc/download-windows.html)     | winget install -e --id VideoLAN.VLC            |
 
 ### System Tools
 
@@ -151,7 +151,7 @@ Make the following changes:
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
-| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                    |
+| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
