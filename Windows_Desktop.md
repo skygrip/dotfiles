@@ -467,10 +467,15 @@ General Purpose Models
 
 Programming Models
 
+    # Code Models
+    ollama pull llama3.1:8b
     ollama pull deepseek-coder-v2
-    ollama pull nomic-embed-text
-    ollama pull starcoder2
+    # TabAutoCompleteModels
+    ollama pull starcoder2:3b
     ollama pull codegemma:2b-code
+    # Embeddings Models
+    ollama pull nomic-embed-text
+    
 
 Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
 
