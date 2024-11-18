@@ -1,13 +1,14 @@
 Device: Odyssey G70B NVIDIA High Definition Audio {cbf55adb-35b9-46ba-b844-b1e54213f922}
-Preamp: -6.1 dB
+Preamp: -6 dB
 Filter: ON LP Fc 18000 Hz
+Filter: ON PK Fc 50 Hz Gain -6 dB Q 30
+Filter: ON PK Fc 100 Hz Gain 0 dB Q 10
+Filter: ON LS Fc 105 Hz Gain 6 dB Q 0.8
 Filter: ON PK Fc 514 Hz Gain -3 dB Q 10
+Filter: ON PK Fc 680 Hz Gain 6 dB Q 20
+Filter: ON PK Fc 800 Hz Gain 6 dB Q 20
 Filter: ON PK Fc 1281 Hz Gain -5 dB Q 10
+Filter: ON HSC Fc 3000 Hz Gain -5 dB Q 0.35
 Filter: ON PK Fc 9470 Hz Gain -5 dB Q 10
 Filter: ON PK Fc 11310 Hz Gain -5 dB Q 10
-Filter: ON PK Fc 680 Hz Gain 6 dB Q 20
-Filter: ON PK Fc 100 Hz Gain 0 dB Q 10
-Filter: ON PK Fc 800 Hz Gain 6 dB Q 20
-Filter: ON LS Fc 200 Hz Gain 6 dB Q 0.8
-Filter: ON NO Fc 50 Hz
-# GraphicEQ: 25 0; 40 0; 63 0; 100 0; 160 0; 250 0; 400 0; 630 0; 1000 0; 1600 0; 2500 0; 4000 -1.8; 6300 -4.2; 10000 -8.6; 16000 -11
+Filter: ON HSC Fc 10000 Hz Gain -3 dB Q 2
