@@ -73,14 +73,17 @@ The following Firefox addons are also installed for security:
 
 ## Darktable Setup
 
-recursively import only folders that contain a raw folder.
+Recursively import only folders that contain a Camera RAW file.
 
     $darktable = 'C:\Program Files\darktable\bin\darktable.exe'
-    foreach($folder in Get-ChildItem | Sort){
-        if ((Get-ChildItem -Path $folder -force | Where-Object Extension -in ('.CR2','.CR3') | Measure-Object).Count -ne 0){
-            echo "importing folder: $folder"
-            & $darktable $folder
-            Start-Sleep -Seconds 20
+    $delayPerImage = 0.1
+
+    foreach ($folder in Get-ChildItem | Sort) {
+        $rawCount = (Get-ChildItem -Path $folder -Force | Where-Object {$_.Extension -in ('.CR2','.CR3')}).Count
+        if ($rawCount -gt 0) {
+            Write-Host "& '$darktable' '$folder'"
+            $totalDelay = [math]::Ceiling($rawCount * $delayPerImage)
+            Write-Host "Start-Sleep -Seconds $totalDelay"
         }
     }
 
