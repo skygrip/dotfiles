@@ -368,6 +368,17 @@ Enable the SSH-Agent service:
     Set-Service ssh-agent -StartupType Automatic
     Start-Service ssh-agent
 
+## Putty PAgent setup
+
+Download and install Putty PAgent
+
+    winget install -e --id PuTTY.PuTTY
+
+Start pagent on startup
+
+    start "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk"
+    copy-item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk" "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+
 ## Windows Terminal Configuration
 
 ### Sync to OneDrive
