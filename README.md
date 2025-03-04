@@ -2,7 +2,7 @@
 
 A collection of light build guides and configuration files stored here for convenience.
 
-# Operating System Setup
+## Operating System Setup
 
 [Windows Desktop Setup](Windows_Desktop.md)
 
@@ -12,15 +12,15 @@ A collection of light build guides and configuration files stored here for conve
 
 [Android TV](Android_TV.md)
 
-# Application Specific
+## Application Specific
 
-## AWS CLI Config
+### AWS CLI Config
 
 Enable auto prompt mode
 
     aws configure set cli_auto_prompt on
 
-## Firefox Setup
+### Firefox Setup
 
 Make the following configuration changes in the settings:
 
@@ -61,7 +61,7 @@ Optionally enable the following settings for different User experience
     dom.webnotifications.enabled = False
     browser.formfill.enable = False
 
-### Firefox Addons
+#### Firefox Addons
 
 The following Firefox addons are also installed for security:
 
@@ -71,7 +71,7 @@ The following Firefox addons are also installed for security:
 - [NoScript](https://addons.mozilla.org/en-US/firefox/addon/noscript/?src=search)
 - [uBlock Origin](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/)
 
-## Darktable Setup
+### Darktable Setup
 
 Recursively import only folders that contain a Camera RAW file.
 
