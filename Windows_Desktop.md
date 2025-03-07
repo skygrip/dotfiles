@@ -152,6 +152,7 @@ Make the following changes:
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
+| [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
@@ -214,17 +215,18 @@ Make the following changes:
 
 ## Drivers
 
-| Application                                                                                               | Winget ID                               |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [AMD Chipset Drivers](https://www.amd.com/en/support/download/drivers.html)                               |                                         |
-| [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)                 |                                         |
-| [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                        |                                         |
-| [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                        |                                         |
-| [Logitech Options](https://www.logitech.com/en-au/product/options)                                        | winget install -e --id Logitech.Options |
-| [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                   |                                         |
-| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                          |                                         |
-| [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers) |                                         |
-| [FTDI Virtual COM Port Drivers](https://ftdichip.com/drivers/vcp-drivers/)                                |                                         |
+| Application                                                                                                                               | Winget ID                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [AMD Chipset Drivers](https://www.amd.com/en/support/download/drivers.html)                                                               |                                         |
+| [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)                                                 |                                         |
+| [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)                                 |                                         |
+| [Dell Display and Peripheral Manager](https://www.dell.com/support/product-details/en-us/product/dell-display-peripheral-manager/drivers) |                                         |
+| [FTDI Virtual COM Port Drivers](https://ftdichip.com/drivers/vcp-drivers/)                                                                |                                         |
+| [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                                                        |                                         |
+| [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                         |
+| [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options |
+| [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                         |
+| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                         |
 
 ## Winget
 
@@ -253,7 +255,7 @@ Also install some basic server management tools
 
     Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
     Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
-    Add-WindowsCapability –online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+    Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
 
 ## Disable Network Connected Standby
 
