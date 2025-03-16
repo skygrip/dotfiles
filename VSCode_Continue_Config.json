@@ -1,22 +1,58 @@
 {
   "models": [
     {
-        "title": "deepseek-coder-v2",
-        "provider": "ollama",
-        "model": "deepseek-coder-v2",
-        "parameters": {}
+      "title": "CodeGemma (7B)",
+      "provider": "ollama",
+      "model": "codegemma:7b",
+      "parameters": {}
     },
     {
-      "title": "llama3.1:8b",
+      "title": "CodeLlama (13B)",
       "provider": "ollama",
-      "model": "llama3.1:8b",
+      "model": "codellama:13b",
       "parameters": {}
-  }
-],
+    },
+    {
+      "title": "CodeLlama Python (13B)",
+      "provider": "ollama",
+      "model": "codellama:13b-python",
+      "parameters": {}
+    },
+    {
+      "title": "Qwen2.5-Coder (14B)",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:14b",
+      "parameters": {}
+    },
+    {
+      "title": "Gemma 3 (12B)",
+      "provider": "ollama",
+      "model": "gemma3:12b",
+      "parameters": {}
+    },
+    {
+      "title": "Llama 3.1 (8b)",
+      "provider": "ollama",
+      "model": ":llama3.1:8b",
+      "parameters": {}
+    },
+    {
+      "title": "phi4 (14B)",
+      "provider": "ollama",
+      "model": "phi4:14b",
+      "parameters": {}
+    },
+    {
+      "title": "Qwen 2.5 (14B)",
+      "provider": "ollama",
+      "model": "qwen2.5:14b",
+      "parameters": {}
+    }
+  ],
   "tabAutocompleteModel": {
-    "title": "starcoder2:3b",
+    "title": "codegemma:2b-code",
     "provider": "ollama",
-    "model": "starcoder2:3b",
+    "model": "codegemma:2b-code",
     "parameters": {}
   },
   "embeddingsProvider": {
