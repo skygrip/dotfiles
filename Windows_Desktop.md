@@ -435,24 +435,24 @@ Set Windows terminal theme to "One Half Dark"
 Add some profiles
 
 ```json
-        {
-          "name": "SSH - server",
-          "commandline": "ssh server",
-          "hidden": false,
-          "suppressApplicationTitle": true
-        },
-        {
-          "name": "O365 Exchange Online",
-          "commandline": "powershell.exe -NoExit Connect-ExchangeOnline",
-          "hidden": false,
-          "suppressApplicationTitle": true
-        },
-        {
-          "name": "O365 Security & Compliance Centre",
-          "commandline": "powershell.exe -NoExit Connect-IPPSSession",
-          "hidden": false,
-          "suppressApplicationTitle": true
-        },
+    {
+      "name": "SSH - server",
+      "commandline": "ssh server",
+      "hidden": false,
+      "suppressApplicationTitle": true
+    },
+    {
+      "name": "O365 Exchange Online",
+      "commandline": "powershell.exe -NoExit Connect-ExchangeOnline",
+      "hidden": false,
+      "suppressApplicationTitle": true
+    },
+    {
+      "name": "O365 Security & Compliance Centre",
+      "commandline": "powershell.exe -NoExit Connect-IPPSSession",
+      "hidden": false,
+      "suppressApplicationTitle": true
+    },
 ```
 
 ## Podman Setup
@@ -517,33 +517,33 @@ code --install-extension twxs.cmake
 General Purpose Models
 
 ```powershell
-    ollama pull gemma3:12b
-    ollama pull llama3.1:8b
-    ollama pull phi4:14b
-    ollama pull qwen2.5:14b
+ollama pull gemma3:12b
+ollama pull llama3.1:8b
+ollama pull phi4:14b
+ollama pull qwen2.5:14b
 ```
 
 Code Models
 
 ```powershell
-    ollama pull codegemma:7b
-    ollama pull codellama:13b
-    ollama pull codellama:13b-python
-    ollama pull qwen2.5-coder:14b
+ollama pull codegemma:7b
+ollama pull codellama:13b
+ollama pull codellama:13b-python
+ollama pull qwen2.5-coder:14b
 ```
 
 Tab Autocomplete Models
 
 ```powershell
-    ollama pull qwen2.5-coder:1.5b-base
-    ollama pull starcoder2:3b
-    ollama pull codegemma:2b-code
+ollama pull qwen2.5-coder:1.5b-base
+ollama pull starcoder2:3b
+ollama pull codegemma:2b-code
 ```
 
 Embeddings Models
 
 ```powershell
-    ollama pull nomic-embed-text
+ollama pull nomic-embed-text
 ```
 
 Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
@@ -553,67 +553,62 @@ Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.j
 Install WSL2
 
 ```powershell
-    wsl --install
-    wsl --install -d debian
-    #wsl --install -d ubuntu
+wsl --install
+wsl --install -d debian
+#wsl --install -d ubuntu
 ```
 
 Check that WSL is running on version 2 with updates
 
 ```powershell
-    wsl --status
-    wsl --list --all --verbose
+wsl --status
+wsl --list --all --verbose
 ```
 
 Post Installation configuration
 
 ```bash
-    # Update system
-    sudo apt update && sudo apt dist-upgrade
-    sudo apt install curl libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli ca-certificates gnupg lsb-release
-
-    # TODO
-    # Make the WSL subnet static so it doesnt collide with real ips
-    # Also fix the issues with VPN's
-
-    # ZSH config
-    sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
-    sudo chsh -s /bin/zsh $USER
-    sudo chsh -s /bin/zsh root
-    echo """[[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile'""" >> ~/.zshrc
-    zsh
-
-    # Fix Python version path
-    sudo ln -s /usr/bin/python3 /usr/bin/python
-
-    # Disable including windows paths
-    sudo sh -c 'echo "[interop]" >> /etc/wsl.conf'
-    sudo sh -c 'echo  "enabled=false" >> /etc/wsl.conf'
-    sudo sh -c 'echo  "appendWindowsPath=false" >> /etc/wsl.conf'
-
-    # Fix the bell
-    echo "set bell-style none" >> ~/.inputrc
+# Update system
+sudo apt update && sudo apt dist-upgrade
+sudo apt install curl libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli ca-certificates gnupg lsb-release
+# TODO
+# Make the WSL subnet static so it doesnt collide with real ips
+# Also fix the issues with VPN's
+# ZSH config
+sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+sudo chsh -s /bin/zsh $USER
+sudo chsh -s /bin/zsh root
+echo """[[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile'""" >> ~/.zshrc
+zsh
+# Fix Python version path
+sudo ln -s /usr/bin/python3 /usr/bin/python
+# Disable including windows paths
+sudo sh -c 'echo "[interop]" >> /etc/wsl.conf'
+sudo sh -c 'echo  "enabled=false" >> /etc/wsl.conf'
+sudo sh -c 'echo  "appendWindowsPath=false" >> /etc/wsl.conf'
+# Fix the bell
+echo "set bell-style none" >> ~/.inputrc
 ```
 
 Python Tools
 
 ```bash
-    sudo apt install mupdf-tools
-    pip install pdfx peepdf olefile mupdf
+sudo apt install mupdf-tools
+pip install pdfx peepdf olefile mupdf
 ```
 
 Install Didier Stevens Tools
 
 ```bash
-    # PDF-Parser
-    wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/bin/pdf-parser.py
+# PDF-Parser
+wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/bin/pdf-parser.py
 
-    # OleDump
-    wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/bin /tmp/oledump.zip && chmod +x ~/bin/oledump.py
+# OleDump
+wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/bin /tmp/oledump.zip && chmod +x ~/bin/oledump.py
 
-    # PDFID
-    wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/bin /tmp/pdfid.zip && chmod +x ~/bin/pdfid.py
+# PDFID
+wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/bin /tmp/pdfid.zip && chmod +x ~/bin/pdfid.py
 
-    # PDFTool
-    wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/bin/pdftool.py
+# PDFTool
+wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/bin/pdftool.py
 ```
