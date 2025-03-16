@@ -4,12 +4,6 @@ Setup of a basic Windows Desktop
 
 ## Setup and Debloat
 
-### Windows 10
-
-Run the following debloat too then also run the functions in [Win10-Setup.ps1](Win10-Setup.ps1)
-
-    iwr -useb https://git.io/debloat|iex
-
 ### Windows 11
 
 Make the following changes:
@@ -232,30 +226,40 @@ Make the following changes:
 
 Update supported apps
 
-    winget upgrade --all
+```powershell
+winget upgrade --all
+```
 
 ## Powershell Setup of administrator tools
 
 Set Execution Policy to RemoteSigned
 
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+```
 
 Install commonly used Powershell modules
 
-    Install-Module -Name AzureAD
-    Install-Module -Name ExchangeOnlineManagement
-    Install-Module -Name Microsoft.Graph
-    Install-Module -Name Microsoft.Online.SharePoint.PowerShell
+```powershell
+Install-Module -Name AzureAD
+Install-Module -Name ExchangeOnlineManagement
+Install-Module -Name Microsoft.Graph
+Install-Module -Name Microsoft.Online.SharePoint.PowerShell
+```
 
 Optionally, also update the installed Powershell modules
 
-    Update-Module
+```powershell
+Update-Module
+```
 
 Also install some basic server management tools
 
-    Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
-    Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
-    Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+```powershell
+Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
+Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
+Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+```
 
 ## Disable Network Connected Standby
 
@@ -263,7 +267,9 @@ Network Connected Standby causes all kinds of problems on laptops.
 
 Enable the Advanced Power Options:
 
-    REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\F15576E8-98B7-4186-B944-EAFA664402D9 /v Attributes /t REG_DWORD /d 2 /f
+```powershell
+REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\F15576E8-98B7-4186-B944-EAFA664402D9 /v Attributes /t REG_DWORD /d 2 /f
+```
 
 Then setting things in Power Options > Change Advanced Power Settings > Network connectivity in Standby > Disable both
 
@@ -271,115 +277,136 @@ Then setting things in Power Options > Change Advanced Power Settings > Network 
 
 This script will fetch the latest sysinternals and places it in the build directory. Doubles as an updater too.
 
-    New-Item -Path $HOME\Build -ItemType directory
-    New-Item -Path $HOME\Build\SysInternals -ItemType directory
-    cd $HOME\Build\SysInternals
-    Remove-Item $HOME\Build\SysInternals\*
-    Invoke-WebRequest -Uri https://download.sysinternals.com/files/SysinternalsSuite.zip -OutFile SysinternalsSuite.zip
-    Expand-Archive -Path SysinternalsSuite.zip -DestinationPath .
-    Remove-Item SysinternalsSuite.zip
-    $SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
-    Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
+```powershell
+New-Item -Path $HOME\Build -ItemType directory
+New-Item -Path $HOME\Build\SysInternals -ItemType directory
+cd $HOME\Build\SysInternals
+Remove-Item $HOME\Build\SysInternals\*
+Invoke-WebRequest -Uri https://download.sysinternals.com/files/SysinternalsSuite.zip -OutFile SysinternalsSuite.zip
+Expand-Archive -Path SysinternalsSuite.zip -DestinationPath .
+Remove-Item SysinternalsSuite.zip
+$SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
+Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
+```
 
 ## Rclone
 
 This script will fetch the latest rclone and places it in the build directory and C:\Windows. Doubles as an updater too.
 
-    New-Item -Path $HOME\Build -ItemType directory
-    New-Item -Path $HOME\Build\Rclone -ItemType directory
-    cd $HOME\Build\Rclone
-    Remove-Item $HOME\Build\Rclone\*
-    Invoke-WebRequest -Uri https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone-current-windows-amd64.zip
-    Expand-Archive -Path rclone-current-windows-amd64.zip -DestinationPath .
-    Remove-Item rclone-current-windows-amd64.zip
-    move rclone*\* .
-    Remove-item rclone-v*
-    $rclonePath = "$HOME\Build\Rclone\rclone.exe"
-    Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
+```powershell
+New-Item -Path $HOME\Build -ItemType directory
+New-Item -Path $HOME\Build\Rclone -ItemType directory
+cd $HOME\Build\Rclone
+Remove-Item $HOME\Build\Rclone\*
+Invoke-WebRequest -Uri https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone-current-windows-amd64.zip
+Expand-Archive -Path rclone-current-windows-amd64.zip -DestinationPath .
+Remove-Item rclone-current-windows-amd64.zip
+move rclone*\* .
+Remove-item rclone-v*
+$rclonePath = "$HOME\Build\Rclone\rclone.exe"
+Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
+```
 
 Create a Rclone command
 
-    $rclone_path = "C:\Windows\rclone.exe"
-    $rclone_config = "$ENV:AppData\rclone\rclone.conf"
-    $rclone_service_name = "gdrive"
-    $rclone_cachedir = "Q:\$rclone_service_name"
-    $rclone_drive_letter = "Y"
-    $rclone_log = "$ENV:AppData\rclone\rclone.log"
-    $rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --cache-dir ${rclone_cachedir} --no-console --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h --vfs-cache-max-size 450G --file-perms 0777 --network-mode"
-
-    # Check the command makes sense
-    echo ($rclone_path + ' ' + $rclone_arguments)
+```powershell
+$rclone_path = "C:\Windows\rclone.exe"
+$rclone_config = "$ENV:AppData\rclone\rclone.conf"
+$rclone_service_name = "gdrive"
+$rclone_cachedir = "Q:\$rclone_service_name"
+$rclone_drive_letter = "Y"
+$rclone_log = "$ENV:AppData\rclone\rclone.log"
+$rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --cache-dir ${rclone_cachedir} --no-console --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h--vfs-cache-max-size 450G --file-perms 0777 --network-mode"
+# Check the command makes sense
+echo ($rclone_path + ' ' + $rclone_arguments)
+```
 
 Preload a VFS Cache
 
-    rclone hashsum crc32 --checkers 8 /rclonepath
+```powershell
+rclone hashsum crc32 --checkers 8 /rclonepath
+```
 
 ## EXIFTOOL
 
 Download and install exiftool in a windows PATH
 
-    New-Item -Path $HOME\Build -ItemType directory
-    cd $HOME\Build
-    Remove-Item $HOME\Build\exiftool.zip
-    Remove-Item $HOME\Build\exiftool
-    Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.92_64.zip -OutFile exiftool.zip
-    Expand-Archive -Path exiftool.zip -DestinationPath $HOME\Build
-    Remove-Item $HOME\Build\exiftool.zip
-    move $HOME\Build\exiftool-* $HOME\Build\exiftool
-    cd $HOME\Build\exiftool
-    move 'exiftool(-k).exe' exiftool.exe
-    $PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
-    $exiftool_path = "$HOME\Build\exiftool"
-    if( $PATH -notlike "*"+$exiftool_path+"*" ){
-        [Environment]::SetEnvironmentVariable("PATH", "$PATH;$exiftool_path", "User")
-    }
+```powershell
+New-Item -Path $HOME\Build -ItemType directory
+cd $HOME\Build
+Remove-Item $HOME\Build\exiftool.zip
+Remove-Item $HOME\Build\exiftool
+Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.92_64.zip -OutFile exiftool.zip
+Expand-Archive -Path exiftool.zip -DestinationPath $HOME\Build
+Remove-Item $HOME\Build\exiftool.zip
+move $HOME\Build\exiftool-* $HOME\Build\exiftool
+cd $HOME\Build\exiftool
+move 'exiftool(-k).exe' exiftool.exe
+$PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
+$exiftool_path = "$HOME\Build\exiftool"
+if( $PATH -notlike "*"+$exiftool_path+"*" ){
+    [Environment]::SetEnvironmentVariable("PATH", "$PATH;$exiftool_path", "User")
+}
+```
 
 ## Android SDK Platform-Tools
 
 Download and install Android SDK Platform-Tools in build folder
 
-    New-Item -Path $HOME\Build -ItemType directory
-    cd $HOME\Build
-    Remove-Item $HOME\Build\Android-Platform-Tools
-    Invoke-WebRequest -Uri https://dl.google.com/android/repository/platform-tools_r34.0.4-windows.zip -OutFile platform-tools.zip
-    Expand-Archive -Path platform-tools.zip -DestinationPath .
-    move platform-tools android-platform-tools
-    Remove-item platform-tools.zip
+```powershell
+New-Item -Path $HOME\Build -ItemType directory
+cd $HOME\Build
+Remove-Item $HOME\Build\Android-Platform-Tools
+Invoke-WebRequest -Uri https://dl.google.com/android/repository/platform-tools_r34.0.4-windows.zip -OutFile platform-tools.zip
+Expand-Archive -Path platform-tools.zip -DestinationPath .
+move platform-tools android-platform-tools
+Remove-item platform-tools.zip
+```
 
 ## Zimmerman Tools
 
 Download and install Zimmerman Tools in build folder
 
-    New-Item -Path $HOME\Build -ItemType directory
-    New-Item -Path $HOME\Build\ZimmermanTools -ItemType directory
-    cd $HOME\Build\ZimmermanTools
-    Remove-Item $HOME\Build\ZimmermanTools\*
-    Invoke-WebRequest -Uri https://f001.backblazeb2.com/file/EricZimmermanTools/Get-ZimmermanTools.zip -OutFile Get-ZimmermanTools.zip
-    Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
-    ./Get-ZimmermanTools.ps1 -NetVersion 6
-    mv net6/* .
+```powershell
+New-Item -Path $HOME\Build -ItemType directory
+New-Item -Path $HOME\Build\ZimmermanTools -ItemType directory
+cd $HOME\Build\ZimmermanTools
+Remove-Item $HOME\Build\ZimmermanTools\*
+Invoke-WebRequest -Uri https://f001.backblazeb2.com/file/EricZimmermanTools/Get-ZimmermanTools.zip -OutFile Get-ZimmermanTools.zip
+Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
+./Get-ZimmermanTools.ps1 -NetVersion 6
+mv net6/* .
+```
 
 ## OpenSSH client on Windows
 
 Consider installing SSH Beta as Microsoft ships years old OpenSSH versions
 
-    winget install -e --id Microsoft.OpenSSH.Beta
+```powershell
+winget install -e --id Microsoft.OpenSSH.Beta
+```
 
 Enable the SSH-Agent service:
 
-    Set-Service ssh-agent -StartupType Automatic
-    Start-Service ssh-agent
+```powershell
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+```
 
 ## Putty PAgent setup
 
 Download and install Putty PAgent
 
-    winget install -e --id PuTTY.PuTTY
+```powershell
+winget install -e --id PuTTY.PuTTY
+```
 
 Start pagent on startup
 
-    start "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk"
-    copy-item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk" "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+```powershell
+start "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk"
+copy-item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\Pageant.lnk" "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+```
 
 ## Windows Terminal Configuration
 
@@ -387,13 +414,17 @@ Start pagent on startup
 
 To setup the sync do the following
 
-    mkdir $Env:OneDrive\Backups\Terminal
-    cp $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\* $env:OneDrive\Backups\Terminal\
+```powershell
+mkdir $Env:OneDrive\Backups\Terminal
+cp $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\* $env:OneDrive\Backups\Terminal\
+```
 
 To use an existing sync do the following
 
-    rmdir $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
-    cmd  /c mklink /J $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState $env:OneDrive\Backups\Terminal
+```powershell
+rmdir $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
+cmd  /c mklink /J $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState $env:OneDrive\Backups\Terminal
+```
 
 ### Initial Setup
 
@@ -403,6 +434,7 @@ Set Windows terminal theme to "One Half Dark"
 
 Add some profiles
 
+```json
         {
           "name": "SSH - server",
           "commandline": "ssh server",
@@ -421,22 +453,29 @@ Add some profiles
           "hidden": false,
           "suppressApplicationTitle": true
         },
+```
 
 ## Podman Setup
 
 Setup machine
 
-    podman machine init
-    podman machine start
+```powershell
+podman machine init
+podman machine start
+```
 
 ## R setup
 
-    winget install -e -i --id RProject.R
-    winget install pandoc
-    pip install -U radian
+```powershell
+winget install -e -i --id RProject.R
+winget install pandoc
+pip install -U radian
+```
 
-    install.packages(c("languageserver","rmarkdown","httpgd","jsonlite","R6"))
-    install.packages(c('ggplot2','scales','lubridate'))
+```r
+install.packages(c("languageserver","rmarkdown","httpgd","jsonlite","R6"))
+install.packages(c('ggplot2','scales','lubridate'))
+```
 
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
 Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
@@ -445,53 +484,67 @@ Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Use
 
 Install useful extentions
 
-    code --install-extension continue.continue
-    code --install-extension davidanson.vscode-markdownlint
-    code --install-extension esbenp.prettier-vscode
-    code --install-extension mechatroner.rainbow-csv
-    code --install-extension ms-python.black-formatter
-    code --install-extension ms-python.debugpy
-    code --install-extension ms-python.isort
-    code --install-extension ms-python.pylint
-    code --install-extension ms-python.python
-    code --install-extension ms-python.vscode-pylance
-    code --install-extension ms-toolsai.datawrangler
-    code --install-extension ms-toolsai.jupyter
-    code --install-extension ms-toolsai.jupyter-keymap
-    code --install-extension ms-toolsai.jupyter-renderers
-    code --install-extension ms-toolsai.vscode-jupyter-cell-tags
-    code --install-extension ms-toolsai.vscode-jupyter-slideshow
-    code --install-extension ms-vscode.cmake-tools
-    code --install-extension ms-vscode.cpptools
-    code --install-extension ms-vscode.cpptools-extension-pack
-    code --install-extension ms-vscode.cpptools-themes
-    code --install-extension ms-vscode.powershell
-    code --install-extension ms-vscode.vscode-serial-monitor
-    code --install-extension redhat.vscode-xml
-    code --install-extension streetsidesoftware.code-spell-checker
-    code --install-extension twxs.cmake
+```powershell
+code --install-extension continue.continue
+code --install-extension davidanson.vscode-markdownlint
+code --install-extension esbenp.prettier-vscode
+code --install-extension mechatroner.rainbow-csv
+code --install-extension ms-python.black-formatter
+code --install-extension ms-python.debugpy
+code --install-extension ms-python.isort
+code --install-extension ms-python.pylint
+code --install-extension ms-python.python
+code --install-extension ms-python.vscode-pylance
+code --install-extension ms-toolsai.datawrangler
+code --install-extension ms-toolsai.jupyter
+code --install-extension ms-toolsai.jupyter-keymap
+code --install-extension ms-toolsai.jupyter-renderers
+code --install-extension ms-toolsai.vscode-jupyter-cell-tags
+code --install-extension ms-toolsai.vscode-jupyter-slideshow
+code --install-extension ms-vscode.cmake-tools
+code --install-extension ms-vscode.cpptools
+code --install-extension ms-vscode.cpptools-extension-pack
+code --install-extension ms-vscode.cpptools-themes
+code --install-extension ms-vscode.powershell
+code --install-extension ms-vscode.vscode-serial-monitor
+code --install-extension redhat.vscode-xml
+code --install-extension streetsidesoftware.code-spell-checker
+code --install-extension twxs.cmake
+```
 
 ## Ollama Setup
 
 General Purpose Models
 
-    ollama pull llama3.2
-    ollama pull phi3.5
-    ollama pull gemma2
+```powershell
+    ollama pull gemma3:12b
+    ollama pull llama3.1:8b
+    ollama pull phi4:14b
+    ollama pull qwen2.5:14b
+```
 
 Code Models
 
-    ollama pull llama3.1:8b
-    ollama pull deepseek-coder-v2
+```powershell
+    ollama pull codegemma:7b
+    ollama pull codellama:13b
+    ollama pull codellama:13b-python
+    ollama pull qwen2.5-coder:14b
+```
 
 Tab Autocomplete Models
 
+```powershell
+    ollama pull qwen2.5-coder:1.5b-base
     ollama pull starcoder2:3b
     ollama pull codegemma:2b-code
+```
 
 Embeddings Models
 
+```powershell
     ollama pull nomic-embed-text
+```
 
 Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
 
@@ -499,17 +552,22 @@ Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.j
 
 Install WSL2
 
+```powershell
     wsl --install
     wsl --install -d debian
     #wsl --install -d ubuntu
+```
 
 Check that WSL is running on version 2 with updates
 
+```powershell
     wsl --status
     wsl --list --all --verbose
+```
 
 Post Installation configuration
 
+```bash
     # Update system
     sudo apt update && sudo apt dist-upgrade
     sudo apt install curl libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli ca-certificates gnupg lsb-release
@@ -535,14 +593,18 @@ Post Installation configuration
 
     # Fix the bell
     echo "set bell-style none" >> ~/.inputrc
+```
 
 Python Tools
 
+```bash
     sudo apt install mupdf-tools
     pip install pdfx peepdf olefile mupdf
+```
 
 Install Didier Stevens Tools
 
+```bash
     # PDF-Parser
     wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/bin/pdf-parser.py
 
@@ -554,3 +616,4 @@ Install Didier Stevens Tools
 
     # PDFTool
     wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/bin/pdftool.py
+```
