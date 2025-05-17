@@ -82,7 +82,7 @@ Make the following changes:
 | [Microsoft Office](https://www.microsoft.com/en-us/microsoft-365/download-office)     | winget install -e --id Microsoft.Office                  |
 | [Microsoft Onedrive](https://www.microsoft.com/en-us/microsoft-365/onedrive/download) | winget install -e --id Microsoft.OneDrive                |
 | [Microsoft Teams](https://teams.microsoft.com/downloads)                              | winget install -e --id Microsoft.Teams --scope user      |
-| [Notion](https://www.notion.so/)                                                      | winget install -e --id Notion.Notion                     |
+| [Tex Live](https://tug.org/texlive.html)                                              | winget install -e --id TeXLive.TexLive                   |
 | [Thunderbird](https://www.thunderbird.net/en-US/)                                     | winget install -e --id Mozilla.Thunderbird               |
 
 ### Messaging Applications
@@ -488,6 +488,7 @@ Install useful extentions
 code --install-extension continue.continue
 code --install-extension davidanson.vscode-markdownlint
 code --install-extension esbenp.prettier-vscode
+code --install-extension latex-workshop
 code --install-extension mechatroner.rainbow-csv
 code --install-extension ms-python.black-formatter
 code --install-extension ms-python.debugpy
