@@ -52,7 +52,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Hide "Learn about this picture" icon from the desktop wallpaper.
 - Uninstall and disable OneDrive
 - Removes bloatware pre-installed applications
-- Disable icons for Search, Task View, Widgets, and Chat. Set the search icon to be hidden.
 - Start Menu: Disable recommendations and recently added apps
 - Accessibility: Disable Sticky/Filter/Toggle Keys
 - Multitasking: Disable Snap Windows and Shake to Minimize
@@ -68,10 +67,13 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 #### Manual Steps
 
+- Disable Widgets, Taskview, and Search from Taskbar settings
 - Unpin all default app tiles and disable "Show recently added apps" and "Show recommendations for tips, shortcuts, new apps".
 - Ensure Hardware Accelerated GPU Scheduling is enabled. `System > Display > Graphics > Change default graphics settings`.
 - Enable Core Isolation.
 - Disable Remote Assistance.
+- Set Date/Time to ISO time and add a UTC clock
+- Disable Window Snap and Title Bar Window Shake 
 - Prevent the controller from opening Game Bar via the Game Bar Controller Settings.
 - Set lid close action to do nothing (Optional)
 - Set power button to shutdown not sleep workstation (Optional)
@@ -93,12 +95,15 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Configure Windows Update to automatically download and install updates.
   - Set Active Hours
   - Configure windows updates to auto install at 3am and reboot if necessary
+  - `New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Force`
   - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 4`
   - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "ScheduledInstallTime" -Value 3`
+  - OPTIONAL: Configure immediate reboot (NoAutoRebootWithLoggedOnUsers=0) This is required to force a reboot when a user is logged on.
+  - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 0`
+
 - Use Task Scheduler to run `winget upgrade --all` weekly.
   - `Register-ScheduledTask -TaskName "Weekly Winget Upgrade" -Action (New-ScheduledTaskAction -Execute "winget.exe" -Argument "upgrade --all --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am) -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest) -Description "Automatically updates all winget packages weekly." -Force`
-- Enable Storage Sense (System > Storage) to automatically free up space monthly:
-  - `Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name '01' -Value 30 -Type DWord -Force`
+- Enable Storage Sense (System > Storage) to run monthly
 
 ## Software
 
@@ -402,7 +407,7 @@ $wshell = New-Object -ComObject WScript.Shell
 $shortcut = $wshell.CreateShortcut($shortcutPath)
 
 $shortcut.TargetPath = "C:\Windows\Bginfo64.exe"
-$shortcut.Arguments = "`"C:\Windows\Bginfo_config.bgi`" /TIMER:0 /NOLICPROMPT /SILENT"
+$shortcut.Arguments = "`"C:\Windows\Bginfo_config.bgi`" /TIMER 0 /SILENT"
 $shortcut.Description = "Run BGInfo at startup to update desktop wallpaper for all users."
 $shortcut.IconLocation = "C:\Windows\Bginfo64.exe"
 $shortcut.Save()
