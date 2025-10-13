@@ -73,6 +73,8 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Enable Core Isolation.
 - Disable Remote Assistance.
 - Prevent the controller from opening Game Bar via the Game Bar Controller Settings.
+- Set lid close action to do nothing (Optional)
+- Set power button to shutdown not sleep workstation (Optional)
 - Enable BitLocker Drive Encryption.
   - If an eGPU is used, disable BitLocker UEFI PCR 2 Setting (`gpedit.msc` > ... > BitLocker > OS Drive > UEFI Firmware Configuration).
   - Optionally enforce TPM and PIN (`gpedit.msc` > ... > BitLocker > OS Drive > Require Additional Authentication at Startup).
@@ -89,7 +91,10 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 #### Automatic Maintenance (Optional)
 
 - Configure Windows Update to automatically download and install updates.
-- Set Active Hours to prevent reboots during work hours.
+  - Set Active Hours
+  - Configure windows updates to auto install at 3am and reboot if necessary
+  - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 4`
+  - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "ScheduledInstallTime" -Value 3`
 - Use Task Scheduler to run `winget upgrade --all` weekly.
   - `Register-ScheduledTask -TaskName "Weekly Winget Upgrade" -Action (New-ScheduledTaskAction -Execute "winget.exe" -Argument "upgrade --all --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am) -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest) -Description "Automatically updates all winget packages weekly." -Force`
 - Enable Storage Sense (System > Storage) to automatically free up space monthly:
