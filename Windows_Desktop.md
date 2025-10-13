@@ -8,38 +8,71 @@ Setup of a basic Windows Desktop
 
 Make the following changes:
 
-- Enable Windows update for other Microsoft products
-- Run Windows Update
-- Open Microsoft Store and force all store apps to update (Currently Fixes Winget)
-- Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator
-- Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
-- Uninstall the default bloat apps
-- Disable Remote Assistance
-- Enable RDP (If Applicable)
-  - Disable Sleep and Hibernation from Shutdown Settings
-  - Set sleep timer to off
-  - Set turn monitor off timer to off
-- Enable Core Isolation
-- In Windows features Enable:
+#### Initial Setup
+
+- Enable Windows update for other Microsoft products.
+- Run Windows Update to install all available updates.
+- Open Microsoft Store and update all installed apps (this can fix issues with `winget`).
+- Install the latest [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+
+Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
+
+- Disables Windows Telemetry services and data collection.
+- Disables the Windows Recall (AI snapshot) feature.
+- Disables the Windows Feedback Experience program.
+- Prevents the automatic installation of suggested apps and bloatware.
+- Disables Bing web search results from appearing in the Start Menu.
+- Sets the system's hardware clock to use UTC
+- Enables support for file paths longer than 260 characters (Win32 Long Path Support).
+- Automatically clears 'Recent Items' and application jump lists upon user logout.
+- Hides the "Gallery" folder from the File Explorer sidebar.
+- Hides the language bar from the taskbar.
+- Disables the "Let's finish setting up your device" notifications that appear after updates.
+- Hide "Learn about this picture" icon from the desktop wallpaper.
+- Uninstall and disable OneDrive
+- Removes bloatware pre-installed applications
+- Disable icons for Search, Task View, Widgets, and Chat. Set the search icon to be hidden.
+- Start Menu: Disable recommendations and recently added apps
+- Accessibility: Disable Sticky/Filter/Toggle Keys
+- Multitasking: Disable Snap Windows and Shake to Minimize
+- Taskbar: Disable "Peek at desktop" button
+- File Explorer: Show hidden files and file extensions
+- File Explorer: Open to "This PC" instead of "Home"
+- File Explorer: Disable Office.com files and sync provider notifications
+- Enable Windows Features:
   - Virtual Machine Platform
   - Windows Hypervisor Platform
   - Windows Sandbox
   - Windows Subsystem for Linux
-- Set taskbar time to ISO mode, and add a UTC clock
-- Fix language settings so the language switcher isn't there
-- Disable Taskbar items: Search, Task View, Widgets, Chat
-- In folder settings, disable "show files from office.com"
-- Disable "Hide extensions for known file types" and Hidden Files
-- Disable StickyKeys and ToggleKeys
-- Disable "Select the far corner of the taskbar to show the desktop"
-- Disable Snap Windows and Title Bar Window Shake
-- Use autoruns to stop certain apps from starting
-- Disable controller opening Game Bar (Game Bar Controller Settings)
-- Disable security questions (gpedit.msc > Computer Configuration > Administrative Templates > Windows Components > Credential User Interface)
-- Disable BitLocker UEFI PCR 2 Setting if eGPU is used (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > UEFI Firmware Configuration)
-- Enable BitLocker Drive Encryption (with TPM and PIN if UEFI PCR 2 disabled)
-- Optionally Enforce Bitlocker TPMandPIN (gpedit.msc > System > Admin Templates > Windows Components > BitLocker > OS Drive > Require Additional Authentication at Startup)
-- Optionally add Bitlocker TPMandPIN protector (manage-bde -protectors -add -TPMAndPIN C:)
+
+#### Manual Steps
+
+- Unpin all default app tiles and disable "Show recently added apps" and "Show recommendations for tips, shortcuts, new apps".
+- Ensure Hardware Accelerated GPU Scheduling is enabled. `System > Display > Graphics > Change default graphics settings`.
+- Enable Core Isolation.
+- Disable Remote Assistance.
+- Prevent the controller from opening Game Bar via the Game Bar Controller Settings.
+- Enable BitLocker Drive Encryption.
+  - If an eGPU is used, disable BitLocker UEFI PCR 2 Setting (`gpedit.msc` > ... > BitLocker > OS Drive > UEFI Firmware Configuration).
+  - Optionally enforce TPM and PIN (`gpedit.msc` > ... > BitLocker > OS Drive > Require Additional Authentication at Startup).
+  - Optionally add a PIN protector: `manage-bde -protectors -add -TPMAndPIN C:`
+
+#### Remote Access (Optional)
+
+- For configuring a machine for remote access, ensuring it remains online.
+- Enable Remote Desktop (RDP) `System > Remote Desktop`
+- Configure 'Always On' Power Settings:
+  - In Power Options, set the active plan to never sleep or hibernate when plugged in.
+  - Disable Sleep and Hibernation from the shutdown menu.
+
+#### Automatic Maintenance (Optional)
+
+- Configure Windows Update to automatically download and install updates.
+- Set Active Hours to prevent reboots during work hours.
+- Use Task Scheduler to run `winget upgrade --all` weekly.
+  - `Register-ScheduledTask -TaskName "Weekly Winget Upgrade" -Action (New-ScheduledTaskAction -Execute "winget.exe" -Argument "upgrade --all --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am) -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest) -Description "Automatically updates all winget packages weekly." -Force`
+- Enable Storage Sense (System > Storage) to automatically free up space monthly:
+  - `Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name '01' -Value 30 -Type DWord -Force`
 
 ## Software
 
