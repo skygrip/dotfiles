@@ -4,6 +4,27 @@ Setup of a basic Windows Desktop
 
 ## Setup and Debloat
 
+## BIOS
+
+Start with updating the BIOS and loading defaults:
+
+ - Update BIOS/UEFI and Load Optimized Defaults
+
+Review BIOS settings:
+
+ - Enable Memory Profile (XMP / DOCP / EXPO)
+ - Enable Re-Size BAR
+ - Enable Above 4G Decoding
+ - Enable Virtualization Technology (Intel VT-x / AMD-V)
+ - Set Restore on AC/Power Loss to Last State
+ - Disable "Halt On Error" to prevent "no keyboard detected" errors
+ - Disable CSM
+ - Enable TPM
+ - Enable Secure Boot
+ - Configure Fan Curves (Optional)
+ - Enable Wake on LAN (Optional)
+- Set a BIOS Password (Optional)
+
 ### Windows 11
 
 Make the following changes:
@@ -322,6 +343,64 @@ Expand-Archive -Path SysinternalsSuite.zip -DestinationPath .
 Remove-Item SysinternalsSuite.zip
 $SdeletePath = "$HOME\Build\SysInternals\sdelete.exe"
 Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait -Verb RunAs
+```
+
+### BGInfo - Desktop System Information
+
+`BGInfo` is a utility from the Sysinternals suite that automatically displays relevant system information on the desktop wallpaper. This is useful for quickly identifying the configuration of a machine without opening multiple tools.
+
+
+Install and configure
+
+```powershell
+cd $HOME\Build\SysInternals
+$bginfoPath = "$HOME\Build\SysInternals\Bginfo64.exe"
+Start-Process PowerShell.exe -ArgumentList "copy $bginfoPath C:\Windows\" -Wait -Verb RunAs
+```
+
+Create config file
+
+- Set font to Consolas
+- save file to `C:\Windows\Bginfo_config.bgi`
+
+```BGInfo
+Host Information
+----------------------------
+Host Name:	<Host Name>
+User Name:	<User Name>
+Boot Time:	<Boot Time>
+
+Operating System
+----------------------------
+OS Version:	<OS Version>
+Architecture:	<System Type>
+
+Hardware
+----------------------------
+CPU:	<CPU>
+Memory:	<Memory>
+
+Disk Space
+----------------------------
+Volumes:	<Volumes>
+```
+
+Set to launch for all users on login
+
+```powershell
+$bginfoPath = "C:\Windows\Bginfo64.exe"
+$startupFolder = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp" #  All Users startup folder path
+
+# Create the shortcut in the "All Users" startup folder
+$shortcutPath = Join-Path $startupFolder "BGInfo.lnk"
+$wshell = New-Object -ComObject WScript.Shell
+$shortcut = $wshell.CreateShortcut($shortcutPath)
+
+$shortcut.TargetPath = "C:\Windows\Bginfo64.exe"
+$shortcut.Arguments = "`"C:\Windows\Bginfo_config.bgi`" /TIMER:0 /NOLICPROMPT /SILENT"
+$shortcut.Description = "Run BGInfo at startup to update desktop wallpaper for all users."
+$shortcut.IconLocation = "C:\Windows\Bginfo64.exe"
+$shortcut.Save()
 ```
 
 ## Rclone
