@@ -21,40 +21,32 @@ Change the following System Settings:
   - Disable Content Caching
   - Disable AirPlay Receiver
 
-
-install the Xcode Command Line Tools, which are required by Homebrew and many other development tools.
+Install Xcode Command Line Tools
 
     xcode-select --install
 
+Install Homebrew.
 
-Install Homebrew, the de-facto package manager for macOS.
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    /bin/bash -c "$(curl -fsSL [https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh](https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh))"
-
-    # Add Homebrew to your PATH (the installer will prompt you with the correct path)
-    # For Apple Silicon (M1/M2/M3):
-    echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-
-
-Install iTerm2, Zsh, Oh My Zsh, and necessary fonts.
+Install iTerm2, Zsh, Oh My Zsh, and fonts.
 
     # Install iTerm2
     brew install --cask iterm2
     
     # Install Oh My Zsh
-    sh -c "$(curl -fsSL [https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh](https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh))"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     
     # Install Powerlevel10k theme
-    git clone --depth=1 [https://github.com/romkatv/powerlevel10k.git](https://github.com/romkatv/powerlevel10k.git) ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
     
     # Install Nerd Fonts (FiraCode is a great one)
     brew tap homebrew/cask-fonts
     brew install --cask font-fira-code-nerd-font
     
-    # Install useful Zsh plugins
-    git clone [https://github.com/zsh-users/zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-    git clone [https://github.com/zsh-users/zsh-syntax-highlighting.git](https://github.com/zsh-users/zsh-syntax-highlighting.git) ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    # ZSH plugins
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 
 
 Set ZSH_THEME="powerlevel10k/powerlevel10k" in your ~/.zshrc.
