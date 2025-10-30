@@ -143,45 +143,55 @@ Other steps
 
 General Tools:
 
-- [Adobe Reader](https://get.adobe.com/reader/)
-- [Calibre Ebook](https://calibre-ebook.com/download_osx)
-- [Chrome](https://www.google.com/chrome/)
-- [Dropbox](https://www.dropbox.com/install)
-- [Firefox](https://www.mozilla.org/en-US/firefox/new/)
-- [KeepassXC](https://keepassxc.org/)
-- [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)
-- [LibreOffice](https://www.libreoffice.org/)
-- [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466)
-- [Speedcrunch](https://speedcrunch.org/)
-- [VLC](https://www.videolan.org/vlc/)
+|App|Cask|
+|---|---|
+|[Adobe Reader](https://get.adobe.com/reader/)|
+|[Calibre Ebook](https://calibre-ebook.com/download_osx)|
+|[Chrome](https://www.google.com/chrome/)|
+|[Dropbox](https://www.dropbox.com/install)|
+|[Firefox](https://www.mozilla.org/en-US/firefox/new/)|
+|[KeepassXC](https://keepassxc.org/)|
+|[Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)|
+|[LibreOffice](https://www.libreoffice.org/)|
+|[Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466)|
+|[Speedcrunch](https://speedcrunch.org/)|
+|[VLC](https://www.videolan.org/vlc/)|
+|[Keka](https://www.keka.io/en/)
+|[Sublime Text](https://www.sublimetext.com/)
 
 Messaging Applications:
 
-- [Discord](https://discordapp.com/)
-- [Microsoft Teams](https://teams.microsoft.com/downloads)
-- [Telegram](https://macos.telegram.org/)
-- [Thunderbird](https://www.thunderbird.net/en-US/)
-- [WhatsApp](https://www.whatsapp.com/download/?lang=en)
-- [Zoom](https://zoom.us/support/download)
+|App|Cask|
+|---|---|
+|[Discord](https://discordapp.com/)
+|[Microsoft Teams](https://teams.microsoft.com/downloads)
+|[Telegram](https://macos.telegram.org/)
+|[Thunderbird](https://www.thunderbird.net/en-US/)
+|[WhatsApp](https://www.whatsapp.com/download/?lang=en)
+|[Zoom](https://zoom.us/support/download)
 
 Creative Tools:
 
-- [Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
-- [Blender](https://www.blender.org/)
-- [FreeCAD](https://www.freecadweb.org/)
-- [GIMP](https://www.gimp.org/)
-- [Hugin](http://hugin.sourceforge.net/download/)
-- [Inkscape](https://inkscape.org/)
-- [Luminance HDR](http://qtpfsgui.sourceforge.net)
-- [OpenSCAD](https://www.openscad.org/)
+|App|Cask|
+|---|---|
+|[Adobe Creative Cloud](https://creativecloud.adobe.com/apps/download/creative-cloud)
+|[Blender](https://www.blender.org/)
+|[FreeCAD](https://www.freecadweb.org/)
+|[GIMP](https://www.gimp.org/)
+|[Hugin](http://hugin.sourceforge.net/download/)
+|[Inkscape](https://inkscape.org/)
+|[Luminance HDR](http://qtpfsgui.sourceforge.net)
+|[OpenSCAD](https://www.openscad.org/)|brew install --cask openscad@snapshot|
 
 Development Tools:
 
-- [Anaconda3](https://www.anaconda.com/products/individual)
-- [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.pkg)
-- [Cyberduck](https://cyberduck.io/)
-- [Git](https://git-scm.com/downloads)
-- [GitHub Desktop](https://desktop.github.com/)
-- [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
-- [Visual Studio Code](https://code.visualstudio.com/)
-- [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
+|App|Cask|
+|---|---|
+|[Anaconda3](https://www.anaconda.com/products/individual)
+|[AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.pkg)
+|[Cyberduck](https://cyberduck.io/)
+|[Git](https://git-scm.com/downloads)
+|[GitHub Desktop](https://desktop.github.com/)
+|[Virtualbox](https://www.virtualbox.org/wiki/Downloads)
+|[Visual Studio Code](https://code.visualstudio.com/)
+|[VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)
