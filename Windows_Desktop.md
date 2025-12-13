@@ -8,22 +8,22 @@ Setup of a basic Windows Desktop
 
 Start with updating the BIOS and loading defaults:
 
- - Update BIOS/UEFI and Load Optimized Defaults
+- Update BIOS/UEFI and Load Optimized Defaults
 
 Review BIOS settings:
 
- - Enable Memory Profile (XMP / DOCP / EXPO)
- - Enable Re-Size BAR
- - Enable Above 4G Decoding
- - Enable Virtualization Technology (Intel VT-x / AMD-V)
- - Set Restore on AC/Power Loss to Last State
- - Disable "Halt On Error" to prevent "no keyboard detected" errors
- - Disable CSM
- - Enable TPM
- - Enable Secure Boot
- - Configure Fan Curves (Optional)
- - Enable Wake on LAN (Optional)
- - Set a BIOS Password (Optional)
+- Enable Memory Profile (XMP / DOCP / EXPO)
+- Enable Re-Size BAR
+- Enable Above 4G Decoding
+- Enable Virtualization Technology (Intel VT-x / AMD-V)
+- Set Restore on AC/Power Loss to Last State
+- Disable "Halt On Error" to prevent "no keyboard detected" errors
+- Disable CSM
+- Enable TPM
+- Enable Secure Boot
+- Configure Fan Curves (Optional)
+- Enable Wake on LAN (Optional)
+- Set a BIOS Password (Optional)
 
 ### Windows 11
 
@@ -73,7 +73,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Enable Core Isolation.
 - Disable Remote Assistance.
 - Set Date/Time to ISO time and add a UTC clock
-- Disable Window Snap and Title Bar Window Shake 
+- Disable Window Snap and Title Bar Window Shake
 - Prevent the controller from opening Game Bar via the Game Bar Controller Settings.
 - Set lid close action to do nothing (Optional)
 - Set power button to shutdown not sleep workstation (Optional)
@@ -93,6 +93,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 #### Automatic Maintenance (Optional)
 
 - Configure Windows Update to automatically download and install updates.
+
   - Set Active Hours
   - Configure windows updates to auto install at 3am and reboot if necessary
   - `New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Force`
@@ -359,7 +360,6 @@ Start-Process PowerShell.exe -ArgumentList "copy $SdeletePath C:\Windows\" -Wait
 
 `BGInfo` is a utility from the Sysinternals suite that automatically displays relevant system information on the desktop wallpaper. This is useful for quickly identifying the configuration of a machine without opening multiple tools.
 
-
 Install and configure
 
 ```powershell
@@ -610,10 +610,11 @@ Install useful extentions
 
 ```powershell
 code --install-extension continue.continue
-code --install-extension davidanson.vscode-markdownlint
+code --install-extension ms-vscode.hexeditor
+code --install-extension ms-vscode.powershell
+code --install-extension ms-vscode.vscode-serial-monitor
 code --install-extension esbenp.prettier-vscode
-code --install-extension latex-workshop
-code --install-extension mechatroner.rainbow-csv
+code --install-extension redhat.vscode-xml
 code --install-extension ms-python.black-formatter
 code --install-extension ms-python.debugpy
 code --install-extension ms-python.isort
@@ -626,34 +627,34 @@ code --install-extension ms-toolsai.jupyter-keymap
 code --install-extension ms-toolsai.jupyter-renderers
 code --install-extension ms-toolsai.vscode-jupyter-cell-tags
 code --install-extension ms-toolsai.vscode-jupyter-slideshow
-code --install-extension ms-vscode.cmake-tools
-code --install-extension ms-vscode.cpptools
-code --install-extension ms-vscode.cpptools-extension-pack
-code --install-extension ms-vscode.cpptools-themes
-code --install-extension ms-vscode.powershell
-code --install-extension ms-vscode.vscode-serial-monitor
-code --install-extension redhat.vscode-xml
 code --install-extension streetsidesoftware.code-spell-checker
-code --install-extension twxs.cmake
+code --install-extension PKief.material-icon-theme
 ```
+
+Activate the theme after
+
+    Open the command palette (Ctrl+Shift+P or Cmd+Shift+P on macOS), type Material Icons: Activate Icon Theme, and select it.
 
 ## Ollama Setup
 
 Consider the following options if your hardware supports it:
 
 Enable Flash Attention:
+
 ```powershell
 [Environment]::SetEnvironmentVariable("OLLAMA_FLASH_ATTENTION", "1", "User")
 ```
 
 Enable KV Cache Quantization (Saves ~50% VRAM on context):
+
 ```powershell
 [Environment]::SetEnvironmentVariable("OLLAMA_KV_CACHE_TYPE", "q8_0", "User")
 ```
 
 Force Vulkan if your hardware needs it (Non NVIDIA Devices)
+
 ```powershell
-[Environment]::SetEnvironmentVariable("OLLAMA_VULKAN", "1", "Machine")
+[Environment]::SetEnvironmentVariable("OLLAMA_VULKAN", "1", "User")
 ```
 
 Enable "Shared GPU Memory Override" on Intel devices and set to 80%
@@ -664,7 +665,8 @@ Install WSL2
 
 ```powershell
 wsl --install
-wsl --install -d debian
+wsl --install -d archlinux
+#wsl --install -d debian
 #wsl --install -d ubuntu
 ```
 
