@@ -23,7 +23,7 @@ Review BIOS settings:
  - Enable Secure Boot
  - Configure Fan Curves (Optional)
  - Enable Wake on LAN (Optional)
-- Set a BIOS Password (Optional)
+ - Set a BIOS Password (Optional)
 
 ### Windows 11
 
@@ -639,39 +639,24 @@ code --install-extension twxs.cmake
 
 ## Ollama Setup
 
-General Purpose Models
+Consider the following options if your hardware supports it:
 
+Enable Flash Attention:
 ```powershell
-ollama pull gemma3:12b
-ollama pull llama3.1:8b
-ollama pull phi4:14b
-ollama pull qwen2.5:14b
+[Environment]::SetEnvironmentVariable("OLLAMA_FLASH_ATTENTION", "1", "User")
 ```
 
-Code Models
-
+Enable KV Cache Quantization (Saves ~50% VRAM on context):
 ```powershell
-ollama pull codegemma:7b
-ollama pull codellama:13b
-ollama pull codellama:13b-python
-ollama pull qwen2.5-coder:14b
+[Environment]::SetEnvironmentVariable("OLLAMA_KV_CACHE_TYPE", "q8_0", "User")
 ```
 
-Tab Autocomplete Models
-
+Force Vulkan if your hardware needs it (Non NVIDIA Devices)
 ```powershell
-ollama pull qwen2.5-coder:1.5b-base
-ollama pull starcoder2:3b
-ollama pull codegemma:2b-code
+[Environment]::SetEnvironmentVariable("OLLAMA_VULKAN", "1", "Machine")
 ```
 
-Embeddings Models
-
-```powershell
-ollama pull nomic-embed-text
-```
-
-Setup VSCode plugin Continue with the following config [VSCode_Continue_Config.json](VSCode_Continue_Config.json)
+Enable "Shared GPU Memory Override" on Intel devices and set to 80%
 
 ## WSL2
 

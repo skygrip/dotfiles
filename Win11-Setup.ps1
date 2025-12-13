@@ -45,16 +45,6 @@ Function DisableStartWebSearch {
 	If (!(Test-Path $WebSearch)) {
 		New-Item $WebSearch  | Out-Null
 	}
-	Set-ItemProperty $WebSearch DisableWebSearch -Value 1
-	##Loop through all user SIDs in the registry and disable Bing Search
-	foreach ($sid in $UserSIDs) {
-		$WebSearch = "Registry::HKU\$sid\SOFTWARE\Microsoft\Windows\CurrentVersion\Search"
-		If (!(Test-Path $WebSearch)) {
-			New-Item $WebSearch  | Out-Null
-		}
-		Set-ItemProperty $WebSearch BingSearchEnabled -Value 0
-	}
-
 	Set-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" BingSearchEnabled -Value 0
 }
 
@@ -198,14 +188,6 @@ Function TweakExplorerAndUI {
 	# File Explorer: Open to "This PC" instead of "Home"
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "LaunchTo" -Value 1 -Type DWord -Force
 
-    # File Explorer: Disable Office.com files and sync provider notifications
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowSyncProviderNotifications" -Value 0 -Type DWord -Force
-    $officePath = "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" # This key is for the classic context menu, but the value is under a subkey
-    If (Test-Path $officePath) {
-        $inprocPath = Join-Path -Path $officePath -ChildPath "InprocServer32"
-        Set-ItemProperty -Path $inprocPath -Name "ShowOfficeFilesInExplorer" -Value 0 -Type DWord -ErrorAction SilentlyContinue # May not exist, that's OK
-    }
-	
     Write-Output "Restarting explorer.exe to apply UI changes..."
     Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
 }
@@ -214,6 +196,7 @@ Function DisableRemoteAssistance {
 	# Disable Remote Assistance
 	Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Remote Assistance" -Name "fAllowToGetHelp" -Value 0 -Type DWord -Force
 }
+
 Function DisableSecurityQuestionsForLocalAccounts {
 	# Disable Security Questions for Local Accounts
 	$policyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
@@ -248,6 +231,7 @@ Function UninstallBloatware {
 	Get-AppxPackage *SkypeApp* | Remove-AppxPackage
 	Get-AppxPackage *MicrosoftTeams* | Remove-AppxPackage # Personal version of Teams (Chat icon)
 }
+
 Function UninstallCopilot {
 	# AI
 	Get-AppxPackage *Microsoft.Copilot* | Remove-AppxPackage
@@ -281,7 +265,7 @@ EnableWindowsFeatures
 
 # UI
 TweakExplorerAndUI
-ClassicRightClickMenu
+#ClassicRightClickMenu
 HideLanguageBar
 HideGallery
 DisableStartWebSearch
