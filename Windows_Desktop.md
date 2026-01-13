@@ -211,6 +211,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
+| [Google Antigravity](https://antigravity.google)                                                         | winget install -e --id Google.Antigravity                      |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
@@ -276,18 +277,19 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 ## Drivers
 
-| Application                                                                                                                               | Winget ID                               |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [AMD Chipset Drivers](https://www.amd.com/en/support/download/drivers.html)                                                               |                                         |
-| [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)                                                 |                                         |
-| [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)                                 |                                         |
-| [Dell Display and Peripheral Manager](https://www.dell.com/support/product-details/en-us/product/dell-display-peripheral-manager/drivers) |                                         |
-| [FTDI Virtual COM Port Drivers](https://ftdichip.com/drivers/vcp-drivers/)                                                                |                                         |
-| [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                                                        |                                         |
-| [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                         |
-| [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options |
-| [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                         |
-| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                         |
+| Application                                                                                                                               | Winget ID                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [AMD Chipset Drivers](https://www.amd.com/en/support/download/drivers.html)                                                               |                                                         |
+| [Canon EOS Webcam Utility](https://www.canon.com.au/services-and-apps/eos-webcam-utility)                                                 |                                                         |
+| [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)                                 |                                                         |
+| [Dell Display and Peripheral Manager](https://www.dell.com/support/product-details/en-us/product/dell-display-peripheral-manager/drivers) | winget install -e --id Dell.DisplayAndPeripheralManager |
+| [FTDI Virtual COM Port Drivers](https://ftdichip.com/drivers/vcp-drivers/)                                                                |                                                         |
+| [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                                                        |                                                         |
+| [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                                         |
+| [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options                 |
+| [MSI Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                                         | winget install -e --id Guru3D.Afterburner               |
+| [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                                         |
+| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                                         |
 
 ## Winget
 
