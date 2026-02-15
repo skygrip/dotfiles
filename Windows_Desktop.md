@@ -137,6 +137,8 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS               |
 | [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat     |
 | [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal |
+| [Winget-AutoUpdate](https://github.com/Romanitho/Winget-AutoUpdate)                                                    | winget install -e --id Romanitho.Winget-AutoUpdate |
+
 
 ### Office Applications
 
@@ -216,6 +218,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
+| [Node.js](https://nodejs.org/)                                                                           | winget install -e --id OpenJS.NodeJS                             |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
@@ -227,6 +230,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
 | [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
 | [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
+| [uv](https://astral.sh/uv/)                                                                              | winget install -e --id astral-sh.uv                            |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                       |
 | [Visual Studio Code](https://code.visualstudio.com/)                                                     | winget install -e --id Microsoft.VisualStudioCode --scope user |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro                   |
@@ -325,7 +329,6 @@ Update-Module
 Also install some basic server management tools
 
 ```powershell
-Add-WindowsCapability -Online -Name Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0
 Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
 Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
 ```
@@ -506,10 +509,10 @@ mv net6/* .
 
 ## OpenSSH client on Windows
 
-Consider installing SSH Beta as Microsoft ships years old OpenSSH versions
+Consider installing SSH Preview as Microsoft ships years old OpenSSH builds by default
 
 ```powershell
-winget install -e --id Microsoft.OpenSSH.Beta
+winget install -e --id Microsoft.OpenSSH.Preview
 ```
 
 Enable the SSH-Agent service:
@@ -581,15 +584,6 @@ Add some profiles
     },
 ```
 
-## Podman Setup
-
-Setup machine
-
-```powershell
-podman machine init
-podman machine start
-```
-
 ## R setup
 
 ```powershell
@@ -606,36 +600,87 @@ install.packages(c('ggplot2','scales','lubridate'))
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
 Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
 
-## VSCode Setup
+## Google Antigravity Setup
 
-Install useful extentions
+Install Google Antigravity
 
 ```powershell
-code --install-extension continue.continue
-code --install-extension ms-vscode.hexeditor
-code --install-extension ms-vscode.powershell
-code --install-extension ms-vscode.vscode-serial-monitor
-code --install-extension esbenp.prettier-vscode
-code --install-extension redhat.vscode-xml
-code --install-extension ms-python.black-formatter
-code --install-extension ms-python.debugpy
-code --install-extension ms-python.isort
-code --install-extension ms-python.pylint
-code --install-extension ms-python.python
-code --install-extension ms-python.vscode-pylance
-code --install-extension ms-toolsai.datawrangler
-code --install-extension ms-toolsai.jupyter
-code --install-extension ms-toolsai.jupyter-keymap
-code --install-extension ms-toolsai.jupyter-renderers
-code --install-extension ms-toolsai.vscode-jupyter-cell-tags
-code --install-extension ms-toolsai.vscode-jupyter-slideshow
-code --install-extension streetsidesoftware.code-spell-checker
-code --install-extension PKief.material-icon-theme
+winget install -e --id Google.Antigravity
+```
+
+Install useful extensions.
+*Replaces standard Python linting tools with `ruff` for speed.*
+
+```powershell
+# Python & Data Science
+antigravity --install-extension charliermarsh.ruff
+antigravity --install-extension ms-python.python
+antigravity --install-extension ms-python.vscode-pylance
+antigravity --install-extension ms-python.debugpy
+antigravity --install-extension ms-toolsai.datawrangler
+antigravity --install-extension ms-toolsai.jupyter
+antigravity --install-extension ms-toolsai.jupyter-keymap
+antigravity --install-extension ms-toolsai.jupyter-renderers
+antigravity --install-extension ms-toolsai.vscode-jupyter-cell-tags
+antigravity --install-extension ms-toolsai.vscode-jupyter-slideshow
+
+# Utilities & File Handlers
+antigravity --install-extension ms-vscode.powershell
+antigravity --install-extension redhat.vscode-xml
+antigravity --install-extension mechatroner.rainbow-csv
+antigravity --install-extension emilast.LogFileHighlighter
+antigravity --install-extension ms-vscode.hexeditor
+antigravity --install-extension ms-vscode.vscode-serial-monitor
+antigravity --install-extension tomoki1207.pdf
+antigravity --install-extension streetsidesoftware.code-spell-checker
+
+# Aesthetics
+antigravity --install-extension PKief.material-icon-theme
+antigravity --install-extension esbenp.prettier-vscode
 ```
 
 Activate the theme after
 
     Open the command palette (Ctrl+Shift+P or Cmd+Shift+P on macOS), type Material Icons: Activate Icon Theme, and select it.
+
+### MCP Configuration
+
+Antigravity supports the Model Context Protocol (MCP) to extend its capabilities. To configure MCP servers, edit your `mcp_config.json`.
+
+Example configuration for **OpenSCAD** (requires `uv`):
+
+```json
+{
+    "mcpServers": {
+        "openscad": {
+            "command": "uv",
+            "args": [
+                "run",
+                "--with",
+                "git+https://github.com/quellant/openscad-mcp.git",
+                "openscad-mcp"
+            ],
+            "env": {
+                "OPENSCAD_PATH": "C:\\Program Files\\OpenSCAD (Nightly)\\openscad.exe"
+            }
+        }
+    }
+}
+```
+
+### Skills Configuration
+
+Antigravity uses "Skills" to provide specialized agentic capabilities like complex visualizations and automated workflows.
+
+Add skills:
+
+```powershell
+# Pretty Mermaid - Diagram rendering
+npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-mermaid
+
+# Chart Visualization via AntV
+npx skills add antvis/chart-visualization-skills
+```
 
 ## Ollama Setup
 
@@ -663,66 +708,149 @@ Enable "Shared GPU Memory Override" on Intel devices and set to 80%
 
 ## WSL2
 
-Install WSL2
+Install WSL2 and Arch Linux.
 
 ```powershell
 wsl --install
-wsl --install -d archlinux
-#wsl --install -d debian
-#wsl --install -d ubuntu
+wsl --install -d ArchLinux
 ```
 
-Check that WSL is running on version 2 with updates
+### Post-Install Arch Linux Configuration
 
-```powershell
-wsl --status
-wsl --list --all --verbose
-```
+Update the system and install the base development tools and shell environment.
 
-Post Installation configuration
+> **Note:** The following commands are for **Arch Linux**.
 
 ```bash
-# Update system
-sudo apt update && sudo apt dist-upgrade
-sudo apt install curl libimage-exiftool-perl yara python3-pip xpdf zsh shellcheck wget curl vim unzip imagemagick awscli ca-certificates gnupg lsb-release
-# TODO
-# Make the WSL subnet static so it doesnt collide with real ips
-# Also fix the issues with VPN's
-# ZSH config
+# Initialize keyring and update
+sudo pacman -Sy --noconfirm archlinux-keyring
+sudo pacman -Syu --noconfirm
+
+# Install base development and common utility packages
+sudo pacman -S --needed --noconfirm \
+    base-devel \
+    git \
+    wget \
+    curl \
+    unzip \
+    p7zip \
+    vim \
+    neovim \
+    zsh \
+    htop \
+    jq \
+    ripgrep \
+    fd \
+    bat \
+    eza
+    
+# Configure ZSH (using Grml)
 sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
 sudo chsh -s /bin/zsh $USER
-sudo chsh -s /bin/zsh root
-echo """[[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile'""" >> ~/.zshrc
-zsh
-# Fix Python version path
-sudo ln -s /usr/bin/python3 /usr/bin/python
-# Disable including windows paths
+echo '[[ -e ~/.profile ]] && emulate sh -c "source ~/.profile"' >> ~/.zshrc
+```
+
+### Forensics & Malware Analysis Toolkit
+
+Install tools specifically for analyzing hostile email attachments, PDFs, and OLE documents.
+
+**System Packages**
+
+```bash
+sudo pacman -S --needed --noconfirm \
+    perl-image-exiftool \
+    yara \
+    python-pip \
+    python-virtualenv \
+    python-beautifulsoup4 \
+    python-dateutil \
+    clamav \
+    upx \
+    strace \
+    ltrace \
+    radare2 \
+    gdb \
+    binwalk \
+    qpdf \
+    poppler \
+    mupdf-tools \
+    cabextract
+```
+
+**Python Analysis Tools via PIP**
+
+Installs `oletools` (standard for office docs), `pdfx`, and other parsers globally.
+
+```bash
+# Note: Using --break-system-packages to install globally in the WSL container for convenience.
+# Alternatively, use pipx or a virtualenv.
+pip install --break-system-packages \
+    oletools \
+    olefile \
+    pdfx \
+    peepdf \
+    eml_parser \
+    msg-parser \
+    xlmmacrodeobfuscator \
+    msoffcrypto-tool \
+    shodan \
+    virustotal-api \
+    yara-python
+```
+
+**Didier Stevens Suite (and friends)**
+
+Scripts for deep inspection of PDF and OLE structures.
+
+```bash
+# Create a local bin directory
+mkdir -p ~/bin
+
+# oledump.py (Analyze OLE streams)
+wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_77.zip
+unzip -j -d ~/bin /tmp/oledump.zip oledump.py plugin_*.py
+chmod +x ~/bin/oledump.py
+
+# pdf-parser.py (Parse PDF structures)
+wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py
+chmod +x ~/bin/pdf-parser.py
+
+# pdfid.py (PDF Metadata/Anomaly detection)
+wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_8.zip
+unzip -j -d ~/bin /tmp/pdfid.zip pdfid.py
+chmod +x ~/bin/pdfid.py
+
+# pdftool.py
+wget -O ~/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py
+chmod +x ~/bin/pdftool.py
+
+# zipdump.py (Analyze zip structures, handy for jar/apk/docx)
+wget -O ~/bin/zipdump.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/zipdump.py
+chmod +x ~/bin/zipdump.py
+
+# emldump.py (Analyze EML files)
+wget -O ~/bin/emldump.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/emldump.py
+chmod +x ~/bin/emldump.py
+
+# base64dump.py
+wget -O ~/bin/base64dump.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/base64dump.py
+chmod +x ~/bin/base64dump.py
+
+# Add ~/bin to PATH in ZSH
+echo 'export PATH=$PATH:~/bin' >> ~/.zshrc
+```
+
+### Safety & Isolation (Recommended)
+
+To run malware analysis safely, prevent WSL from executing Windows binaries or appending the Windows path.
+
+```bash
+# Disable Windows Interop
 sudo sh -c 'echo "[interop]" >> /etc/wsl.conf'
-sudo sh -c 'echo  "enabled=false" >> /etc/wsl.conf'
-sudo sh -c 'echo  "appendWindowsPath=false" >> /etc/wsl.conf'
-# Fix the bell
-echo "set bell-style none" >> ~/.inputrc
+sudo sh -c 'echo "enabled=false" >> /etc/wsl.conf'
+sudo sh -c 'echo "appendWindowsPath=false" >> /etc/wsl.conf'
+
+# Apply changes (requires wsl --shutdown)
 ```
 
-Python Tools
 
-```bash
-sudo apt install mupdf-tools
-pip install pdfx peepdf olefile mupdf
-```
-
-Install Didier Stevens Tools
-
-```bash
-# PDF-Parser
-wget -O ~/bin/pdf-parser.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdf-parser.py && chmod +x ~/bin/pdf-parser.py
-
-# OleDump
-wget -O /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_75.zip && unzip -e -d ~/bin /tmp/oledump.zip && chmod +x ~/bin/oledump.py
-
-# PDFID
-wget -O /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_7.zip && unzip -e -d ~/bin /tmp/pdfid.zip && chmod +x ~/bin/pdfid.py
-
-# PDFTool
-wget -O ~/.local/bin/pdftool.py https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/pdftool.py && chmod +x ~/bin/pdftool.py
-```
