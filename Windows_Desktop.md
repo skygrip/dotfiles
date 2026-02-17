@@ -634,6 +634,8 @@ antigravity --install-extension ms-vscode.hexeditor
 antigravity --install-extension ms-vscode.vscode-serial-monitor
 antigravity --install-extension tomoki1207.pdf
 antigravity --install-extension streetsidesoftware.code-spell-checker
+antigravity --install-extension bierner.markdown-mermaid
+antigravity --install-extension saoudrizwan.claude-dev
 
 # Aesthetics
 antigravity --install-extension PKief.material-icon-theme
@@ -668,6 +670,35 @@ Example configuration for **OpenSCAD** (requires `uv`):
     }
 }
 ```
+
+
+#### Secondary Sidebar Layout
+Moved Cline to the secondary sidebar for better multitasking:
+- **Unhide Secondary Activity Bar**: View > Appearance > Secondary Side Bar (or `Ctrl+Alt+B`).
+- **Relocate Icon**: Drag the Cline icon from the main Activity Bar (left) to the Secondary Activity Bar (right).
+
+#### Cline Model Recommendations & Strategy
+Configuring Cline to use local models via Ollama.
+
+> **Note**: Model landscape changes weekly. Check [ollama.com/library](https://ollama.com/library) for the absolute latest.
+
+**Hardware Profile: GPU with 12GB VRAM**  
+*Goal: Fast, local execution with full GPU offload.*
+**Ollama Configuration:**
+- **Provider**: `Ollama`
+- **Model**: `qwen2.5-coder:7b` or `qwen3:8b`
+- **Request timeout**: 300000ms (5 minutes)
+- **Context**: 32768
+- **Compact Prompt**: On
+
+**Hardware Profile: Unified Memory Laptop 32GB RAM**  
+*Goal: Smarter reasoning & Planning.*
+**Ollama Configuration:**
+- **Provider**: `Ollama`
+- **Model**: `qwen2.5-coder:7b` or `qwen3:8b` or `gpt-oss:20b`
+- **Request timeout**: 300000ms (5 minutes)
+- **Context**: 32768
+- **Compact Prompt**: On
 
 ### Skills Configuration
 
