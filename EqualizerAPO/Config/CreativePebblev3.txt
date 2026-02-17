@@ -1,12 +1,14 @@
-Device: Speakers (Creative Pebble V3)
-Preamp: -4 dB
+Device: Line Out RODE AI-1
+Preamp: -3.0 dB
 Filter: ON HP Fc 80 Hz
-Filter: ON PK Fc 166 Hz Gain -0.5 dB Q 1.41
-Filter: ON PK Fc 333 Hz Gain 0.5 dB Q 1.41
-Filter: ON PK Fc 577 Hz Gain 0.5 dB Q 1.64
-Filter: ON PK Fc 1000 Hz Gain -1 dB Q 1.41
-Filter: ON PK Fc 2000 Hz Gain -0.5 dB Q 1.41
-Filter: ON PK Fc 4000 Hz Gain 1 dB Q 1.41
-Filter: ON PK Fc 8000 Hz Gain -1 dB Q 1.41
-Filter: ON PK Fc 16000 Hz Gain -0.5 dB Q 1.41
-Filter: ON PK Fc 20000 Hz Gain -1 dB Q 2.99
+# Fake Bass / Warmth
+Filter: ON PK Fc 150 Hz Gain 3.0 dB Q 1.0
+# Midrange Scoop
+Filter: ON PK Fc 1000 Hz Gain -2.0 dB Q 1.4
+# Top End Sparkle
+Filter: ON HS Fc 6000 Hz Gain 2.5 dB Q 0.7
+# Resonance Fixes
+Filter: ON PK Fc 577 Hz Gain 0.5 dB Q 1.6
+Filter: ON PK Fc 2000 Hz Gain -0.5 dB Q 1.4
+Filter: ON PK Fc 4000 Hz Gain 1.0 dB Q 1.4
+Filter: ON PK Fc 16000 Hz Gain -0.5 dB Q 1.4
