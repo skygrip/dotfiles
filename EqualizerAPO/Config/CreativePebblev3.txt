@@ -1,5 +1,5 @@
 Device: Line Out RODE AI-1
-Preamp: -3.0 dB
+Preamp: -2.9 dB
 Filter: ON HP Fc 80 Hz
 # Fake Bass / Warmth
 Filter: ON PK Fc 150 Hz Gain 3.0 dB Q 1.0
