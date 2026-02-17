@@ -213,6 +213,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
+| [GitHub CLI](https://cli.github.com/)                                                                    | winget install -e --id GitHub.cli                              |
 | [Google Antigravity](https://antigravity.google)                                                         | winget install -e --id Google.Antigravity                      |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
