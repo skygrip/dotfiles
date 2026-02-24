@@ -218,6 +218,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
+| [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools |
 | [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
 | [Node.js](https://nodejs.org/)                                                                           | winget install -e --id OpenJS.NodeJS                             |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
@@ -229,6 +230,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
+| [Rust](https://www.rust-lang.org/tools/install)                                                          | winget install -e --id Rustlang.Rustup                         |
 | [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
 | [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
 | [uv](https://astral.sh/uv/)                                                                              | winget install -e --id astral-sh.uv                            |
@@ -293,6 +295,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                                         |
 | [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options                 |
 | [MSI Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                                         | winget install -e --id Guru3D.Afterburner               |
+| [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)                                                                        | winget install -e --id Nvidia.CUDA                      |
 | [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                                         |
 | [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                                         |
 
@@ -336,15 +339,63 @@ Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0
 
 ## Disable Network Connected Standby
 
-Network Connected Standby causes all kinds of problems on laptops.
+Network Connected Standby (Modern Standby or S0 Low Power Idle) can cause problems on laptops, e.g overheating in backpacks or draining the battery while supposedly asleep. Desktops typically use traditional S3 sleep, but some newer boards support Modern Standby.
 
-Enable the Advanced Power Options:
+You can review the available sleep states on your system to see what is supported:
+
+```powershell
+powercfg /availablesleepstates
+```
+
+A Desktop system will typically only list `Standby (S3)` and note that S0 Low Power Idle is not supported by the firmware.
+
+```text
+The following sleep states are available on this system:
+    Standby (S3)
+
+The following sleep states are not available on this system:
+    Standby (S0 Low Power Idle)
+        The system firmware does not support this standby state.
+```
+
+A Laptop system will typically list `Standby (S0 Low Power Idle)` and note that S3 is disabled when S0 low power idle is supported.
+
+```text
+The following sleep states are available on this system:
+    Standby (S0 Low Power Idle) Network Connected
+
+The following sleep states are not available on this system:
+    Standby (S3)
+        The system firmware does not support this standby state.
+        This standby state is disabled when S0 low power idle is supported.
+```
+
+If Modern Standby is active on your machine, it's recommended to disable network connectivity during sleep to prevent background activity. Enable the Advanced Power Options:
 
 ```powershell
 REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\F15576E8-98B7-4186-B944-EAFA664402D9 /v Attributes /t REG_DWORD /d 2 /f
 ```
 
-Then setting things in Power Options > Change Advanced Power Settings > Network connectivity in Standby > Disable both
+Disable Network Connectivity in Standby for both battery and plugged in:
+
+```powershell
+powercfg /setacvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
+powercfg /setdcvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
+powercfg /setactive scheme_current
+```
+
+To verify that connectivity in standby is disabled, run `powercfg /availablesleepstates`. You should see `Network Disconnected` or `Connectivity in standby is disabled by policy` under the `Standby (S0 Low Power Idle)` section.
+
+## Disable Fast Startup and Hibernation
+
+Fast Startup can cause issues with device initialization and dual-booting setups.
+Note: The `powercfg /h off` command completely disables hibernation, which is required for Fast Startup to function. This also frees up the disk space previously used by `hiberfil.sys`.
+
+```powershell
+powercfg /h off
+```
+
+To verify that Fast Startup and Hibernation are disabled, run `powercfg /availablesleepstates`. Under the `Fast Startup` section, it should state `Hibernation is not available.`
 
 ## Sysinternals
 
@@ -600,6 +651,14 @@ install.packages(c('ggplot2','scales','lubridate'))
 
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
 Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
+
+## Python Setup
+
+Install [ruff](https://docs.astral.sh/ruff/) globally via pip so the IDE plugin works.
+
+```powershell
+pip install -U ruff jupyter ipykernel pandas matplotlib seaborn scikit-learn plotnine
+```
 
 ## Google Antigravity Setup
 
