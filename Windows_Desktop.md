@@ -209,6 +209,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 | Application                                                                                              | Winget ID                                                      |
 | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                | winget install -e --id Google.PlatformTools                    |
 | [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
@@ -225,7 +226,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
-| [Python](https://www.python.org/downloads/windows/)                                                      | winget install -e -i --id Python.Python.3.10                   |
 | [Qbittorrent](https://www.qbittorrent.org/download)                                                      | winget install -e --id qBittorrent.qBittorrent                 |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
@@ -530,20 +530,6 @@ if( $PATH -notlike "*"+$exiftool_path+"*" ){
 }
 ```
 
-## Android SDK Platform-Tools
-
-Download and install Android SDK Platform-Tools in build folder
-
-```powershell
-New-Item -Path $HOME\Build -ItemType directory
-cd $HOME\Build
-Remove-Item $HOME\Build\Android-Platform-Tools
-Invoke-WebRequest -Uri https://dl.google.com/android/repository/platform-tools_r34.0.4-windows.zip -OutFile platform-tools.zip
-Expand-Archive -Path platform-tools.zip -DestinationPath .
-move platform-tools android-platform-tools
-Remove-item platform-tools.zip
-```
-
 ## Zimmerman Tools
 
 Download and install Zimmerman Tools in build folder
@@ -641,7 +627,7 @@ Add some profiles
 ```powershell
 winget install -e -i --id RProject.R
 winget install pandoc
-pip install -U radian
+uv tool install radian
 ```
 
 ```r
@@ -652,12 +638,29 @@ install.packages(c('ggplot2','scales','lubridate'))
 Enable r.plot.useHttpgd and r.bracketedPaste in VS Code settings.
 Set r.rterm.windows to the path of radian.exe (use escaped \\ paths, eg. C:\\Users\\user)
 
-## Python Setup
+## Python and UV Setup
 
-Install [ruff](https://docs.astral.sh/ruff/) globally via pip so the IDE plugin works.
+Install `uv` via winget to manage your Python versions.
+
+Use the `--default` flag to make python.exe available for general shell commands (this handles adding the `python` command to your PATH). Also install Python 3.12 for PyTorch.
 
 ```powershell
-pip install -U ruff jupyter ipykernel pandas matplotlib seaborn scikit-learn plotnine
+winget install -e --id astral-sh.uv
+uv python install --default
+uv python install 3.12
+```
+
+Install [ruff](https://docs.astral.sh/ruff/) globally via `uv` so the IDE plugin works.
+
+```powershell
+uv pip install --system -U jupyter ipykernel pandas matplotlib seaborn scikit-learn plotnine ollama
+```
+
+Install certain python tools to PATH
+
+```powershell
+uv tool install jupytext
+uv tool install ruff
 ```
 
 ## Google Antigravity Setup
