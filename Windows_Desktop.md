@@ -149,6 +149,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Microsoft Office](https://www.microsoft.com/en-us/microsoft-365/download-office)     | winget install -e --id Microsoft.Office                  |
 | [Microsoft Onedrive](https://www.microsoft.com/en-us/microsoft-365/onedrive/download) | winget install -e --id Microsoft.OneDrive                |
 | [Microsoft Teams](https://teams.microsoft.com/downloads)                              | winget install -e --id Microsoft.Teams --scope user      |
+| [MiKTeX](https://miktex.org/download)                                                 | winget install -e --id MiKTeX.MiKTeX                     |
 | [Tex Live](https://tug.org/texlive.html)                                              | winget install -e --id TeXLive.TexLive                   |
 | [Thunderbird](https://www.thunderbird.net/en-US/)                                     | winget install -e --id Mozilla.Thunderbird               |
 
@@ -212,6 +213,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                | winget install -e --id Google.PlatformTools                    |
 | [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
+| [CMake](https://cmake.org/)                                                                              | winget install -e --id Kitware.CMake                           |
 | [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [GitHub CLI](https://cli.github.com/)                                                                    | winget install -e --id GitHub.cli                              |
@@ -776,6 +778,41 @@ npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-merm
 npx skills add antvis/chart-visualization-skills
 ```
 
+## Gemini and OpenCode
+
+Install the Google Gemini and OpenCode tools.
+
+```powershell
+# Google Gemini CLI
+npm install -g @google/gemini-cli
+
+# OpenCode CLI
+npm install -g opencode-ai
+
+# OpenCode Desktop App
+# Download from https://opencode.ai/download
+```
+
+## n8n
+
+n8n is an extendable workflow automation tool. The standalone desktop app is deprecated, and running via Docker is the recommended local method.
+
+### Docker
+
+Create a persistent volume for data:
+
+```powershell
+docker volume create n8n_data
+```
+
+Run the container:
+
+```powershell
+docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n docker.n8n.io/n8nio/n8n
+```
+
+Access via `http://localhost:5678`.
+
 ## Ollama Setup
 
 Consider the following options if your hardware supports it:
@@ -799,6 +836,72 @@ Force Vulkan if your hardware needs it (Non NVIDIA Devices)
 ```
 
 Enable "Shared GPU Memory Override" on Intel devices and set to 80%
+## LLM Model Serving (vLLM & NVIDIA GPU)
+
+vLLM is a high-performance library for LLM inference.
+
+### Docker Desktop
+
+```powershell
+docker run -it --rm --gpus all `
+  -v ~/.cache/huggingface:/root/.cache/huggingface `
+  -v ~/.cache/vllm:/root/.cache/vllm `
+  -p 8000:8000 `
+  --ipc=host `
+  -e VLLM_SERVER_STREAM_OPTIONS_INCLUDE_USAGE=True `
+  vllm/vllm-openai:latest `
+  --model QuantTrio/Qwen3.5-4B-AWQ `
+  --host 0.0.0.0 `
+  --max-model-len 16384 `
+  --reasoning-parser qwen3 `
+  --kv-cache-dtype fp8 `
+  --override-generation-config '{"stream_options": {"include_usage": true}}'
+```
+
+### WSL2 (Native)
+
+```bash
+# Setup via 'uv'
+uv venv
+source .venv/bin/activate
+uv pip install vllm
+
+# Run server with full optimizations (Adding --host 0.0.0.0 for external access)
+python -m vllm.entrypoints.openai.api_server \
+  --model QuantTrio/Qwen3.5-4B-AWQ \
+  --host 0.0.0.0 \
+  --max-model-len 16384 \
+  --reasoning-parser qwen3 \
+  --kv-cache-dtype fp8 \
+  --speculative-config '{"method": "mtp", "num_speculative_tokens": 1}'
+```
+
+## Open WebUI
+
+```powershell
+docker run -d -p 3000:8080 `
+  --add-host=host.docker.internal:host-gateway `
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 `
+  -e OPENAI_API_BASE_URL=http://host.docker.internal:8000/v1 `
+  -e OPENAI_API_CONFIG='{"stream_options": {"include_usage": true}}' `
+  -v ~/.cache/open-webui:/app/backend/data `
+  --name open-webui `
+  ghcr.io/open-webui/open-webui:main
+```
+
+### Connection Setup:
+After starting Open WebUI, navigate to `http://localhost:3000` to configure your connections.
+
+#### 1. Native Windows Ollama
+1. Go to **Settings > General > Ollama API**.
+2. Set the **API URL** to `http://host.docker.internal:11434`. (Ensure Ollama is running on the host).
+3. Any models pulled in Windows Ollama (e.g., `ollama pull qwen3.5:9b`) will automatically appear.
+
+#### 2. Docker vLLM (OpenAI API Compatibility)
+1. Go to **Settings > General > OpenAI API**.
+2. Set **API URL** to `http://host.docker.internal:8000/v1`. (Check that vLLM logs say "Uvicorn running on http://0.0.0.0:8000").
+3. Set **API Key** to `none`.
+4. vLLM models will now appear alongside your Ollama models in the same search selection bar.
 
 ## WSL2
 
