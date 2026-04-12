@@ -120,6 +120,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC |
 | [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                |
 | [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio    |
+| [Obsidian](https://obsidian.md/)                              | winget install -e --id Obsidian.Obsidian       |
 | [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys     |
 | [ProtonVPN](https://protonvpn.com/download)                   | winget install -e --id Proton.ProtonVPN        |
 | [Speedcrunch](https://speedcrunch.org/)                       | winget install -e --id SpeedCrunch.SpeedCrunch |
@@ -176,6 +177,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [GIMP](https://www.gimp.org/)                                                                             | winget install -e --id GIMP.GIMP                 |
 | [Handbrake](https://handbrake.fr/downloads.php)                                                           | winget install -e --id HandBrake.HandBrake       |
 | [Hugin](http://hugin.sourceforge.net/download/)                                                           | winget install -e --id Hugin.Hugin               |
+| [ImageMagick](https://imagemagick.org/script/download.php)                                               | winget install -e --id ImageMagick.ImageMagick  |
 | [Inkscape](https://inkscape.org/)                                                                         | winget install -e --id Inkscape.Inkscape         |
 | [KiCad](https://www.kicad.org/)                                                                           | winget install -e --id KiCad.KiCad               |
 | [Luminance HDR](http://qtpfsgui.sourceforge.net)                                                          |                                                  |
