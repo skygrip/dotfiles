@@ -108,6 +108,14 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 ## Software
 
+### Package Managers
+
+| Application                                      | Winget ID / Install Command                  |
+| ------------------------------------------------ | -------------------------------------------- |
+| [Git](https://git-scm.com/downloads)             | winget install -e -i --id Git.Git            |
+| [Node.js (npm / npx)](https://nodejs.org/)       | winget install -e --id OpenJS.NodeJS         |
+| [uv](https://astral.sh/uv/)                      | winget install -e --id astral-sh.uv          |
+
 ### General Tools
 
 | Application                                                   | Winget ID                                      |
@@ -123,6 +131,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Obsidian](https://obsidian.md/)                              | winget install -e --id Obsidian.Obsidian       |
 | [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys     |
 | [ProtonVPN](https://protonvpn.com/download)                   | winget install -e --id Proton.ProtonVPN        |
+| [Qbittorrent](https://www.qbittorrent.org/download)           | winget install -e --id qBittorrent.qBittorrent |
 | [Speedcrunch](https://speedcrunch.org/)                       | winget install -e --id SpeedCrunch.SpeedCrunch |
 | [VLC](https://www.videolan.org/vlc/download-windows.html)     | winget install -e --id VideoLAN.VLC            |
 
@@ -181,9 +190,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Inkscape](https://inkscape.org/)                                                                         | winget install -e --id Inkscape.Inkscape         |
 | [KiCad](https://www.kicad.org/)                                                                           | winget install -e --id KiCad.KiCad               |
 | [Luminance HDR](http://qtpfsgui.sourceforge.net)                                                          |                                                  |
-| [Ollama](https://ollama.com/download)                                                                     | winget install -e --id Ollama.Ollama             |
 | [OpenSCAD](https://www.openscad.org/)                                                                     | winget install -e --id OpenSCAD.OpenSCAD         |
-| [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)                                                | winget install -e --id TopazLabs.TopazPhotoAI    |
 
 ### Manufacturing Tools
 
@@ -208,38 +215,55 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Nvidia Broadcast](https://www.nvidia.com/en-au/geforce/broadcasting/broadcast-app/) | winget install -e --id Nvidia.Broadcast  |
 | [ReaPlugs](https://www.reaper.fm/reaplugs/)                                          |                                          |
 
+### AI Tools
+
+| Application                                                        | Winget ID / Install Command                  |
+| ------------------------------------------------------------------ | -------------------------------------------- |
+| [AnythingLLM](https://useanything.com/)                            | winget install -e --id MintplexLabs.AnythingLLM |
+| [Google Gemini CLI](https://github.com/google/gemini-cli)          | npm install -g @google/gemini-cli            |
+| [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) | uv tool install huggingface_hub[cli]         |
+| [Jan](https://jan.ai/)                                             | winget install -e --id Jan.Jan               |
+| [LM Studio](https://lmstudio.ai/)                                  | winget install -e --id ElementLabs.LMStudio  |
+| [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) | winget install -e --id Nvidia.CUDA           |
+| [Ollama](https://ollama.com/download)                              | winget install -e --id Ollama.Ollama          |
+| [OpenCode CLI](https://opencode.ai/)                               | npm install -g opencode-ai                   |
+| [OpenCode Desktop](https://opencode.ai/download)                   | winget install -e --id SST.OpenCodeDesktop  |
+| [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)     |  |
+| [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)         | winget install -e --id TopazLabs.TopazPhotoAI |
+
+### IDEs & Editors
+
+| Application                                                                                              | Winget ID                                                      |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
+| [Google Antigravity](https://antigravity.google)                                                         | winget install -e --id Google.Antigravity                      |
+| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
+| [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
+| [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
+| [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
+| [Visual Studio Code](https://code.visualstudio.com/)                                                     | winget install -e --id Microsoft.VisualStudioCode --scope user |
+
 ### Development Tools
 
 | Application                                                                                              | Winget ID                                                      |
 | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                | winget install -e --id Google.PlatformTools                    |
-| [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [CMake](https://cmake.org/)                                                                              | winget install -e --id Kitware.CMake                           |
-| [Git](https://git-scm.com/downloads)                                                                     | winget install -e -i --id Git.Git                              |
-| [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [GitHub CLI](https://cli.github.com/)                                                                    | winget install -e --id GitHub.cli                              |
-| [Google Antigravity](https://antigravity.google)                                                         | winget install -e --id Google.Antigravity                      |
+| [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools |
-| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
-| [Node.js](https://nodejs.org/)                                                                           | winget install -e --id OpenJS.NodeJS                             |
-| [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
-| [Qbittorrent](https://www.qbittorrent.org/download)                                                      | winget install -e --id qBittorrent.qBittorrent                 |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
 | [Rust](https://www.rust-lang.org/tools/install)                                                          | winget install -e --id Rustlang.Rustup                         |
-| [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
-| [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
-| [uv](https://astral.sh/uv/)                                                                              | winget install -e --id astral-sh.uv                            |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                       |
-| [Visual Studio Code](https://code.visualstudio.com/)                                                     | winget install -e --id Microsoft.VisualStudioCode --scope user |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                            | winget install -e --id WinSCP.WinSCP                           |
 
@@ -252,7 +276,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Foremost](http://foremost.sourceforge.net/)                                                      |                                                              |
 | [FTK Imager](https://accessdata.com/product-download/)                                            |                                                              |
 | [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)                    | winget install -e --id GSmartControl.GSmartControl           |
-| [HxD Hex Editor](https://mh-nexus.de/en/hxd/)                                                     |                                                              |
+| [ImHex](https://imhex.werwolv.net/)                                                               | winget install -e --id WerWolv.ImHex                         |
 | [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape) |                                                              |
 | [Maltego](https://www.maltego.com/downloads/)                                                     |                                                              |
 | [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)                                   |                                                              |
@@ -267,6 +291,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 | Application                                         | Winget ID                                            |
 | --------------------------------------------------- | ---------------------------------------------------- |
+| [Burp Suite Community](https://portswigger.net/burp/communitydownload) | winget install -e --id PortSwigger.BurpSuite.Community |
 | [MITMProxy](https://github.com/mitmproxy/mitmproxy) | winget install -e --id mitmproxy.mitmproxy           |
 | [Nmap](https://nmap.org/)                           | winget install -e --id Insecure.Nmap                 |
 | [Postman](https://www.getpostman.com/downloads/)    | winget install -e --id Postman.Postman --scope user  |
@@ -275,7 +300,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [ZAProxy](https://github.com/zaproxy/zaproxy)       | winget install -e --id OWASP.ZAP                     |
 | [Zeek](https://www.zeek.org/)                       |                                                      |
 
-## Video Game Launchers
+### Video Game Launchers
 
 | Application                                                          | Winget ID                                          |
 | -------------------------------------------------------------------- | -------------------------------------------------- |
@@ -286,7 +311,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Steam](https://store.steampowered.com/about/)                       | winget install -e --id Valve.Steam                 |
 | [Twitch](https://www.twitch.tv/downloads)                            | winget install -e --id Twitch.Twitch               |
 
-## Drivers
+### Drivers
 
 | Application                                                                                                                               | Winget ID                                               |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -299,7 +324,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                                         |
 | [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options                 |
 | [MSI Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                                         | winget install -e --id Guru3D.Afterburner               |
-| [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)                                                                        | winget install -e --id Nvidia.CUDA                      |
 | [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                                         |
 | [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                                         |
 
@@ -669,12 +693,6 @@ uv tool install ruff
 
 ## Google Antigravity Setup
 
-Install Google Antigravity
-
-```powershell
-winget install -e --id Google.Antigravity
-```
-
 Install useful extensions.
 *Replaces standard Python linting tools with `ruff` for speed.*
 
@@ -778,21 +796,6 @@ npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-merm
 
 # Chart Visualization via AntV
 npx skills add antvis/chart-visualization-skills
-```
-
-## Gemini and OpenCode
-
-Install the Google Gemini and OpenCode tools.
-
-```powershell
-# Google Gemini CLI
-npm install -g @google/gemini-cli
-
-# OpenCode CLI
-npm install -g opencode-ai
-
-# OpenCode Desktop App
-# Download from https://opencode.ai/download
 ```
 
 ## n8n
