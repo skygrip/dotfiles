@@ -732,29 +732,63 @@ Activate the theme after
 
 ### MCP Configuration
 
-Antigravity supports the Model Context Protocol (MCP) to extend its capabilities. To configure MCP servers, edit your `mcp_config.json`.
+Antigravity (and other hosts like **Jan** and **LM Studio**) supports the **Model Context Protocol (MCP)**. This allows your local AI models to use external tools, search the web, and perform complex reasoning.
 
-Example configuration for **OpenSCAD** (requires `uv`):
+| Server | Purpose | Method |
+| :--- | :--- | :--- |
+| **Sequential Thinking** | Advanced reasoning and iterative problem solving. | `npx` |
+| **DuckDuckGo Search** | Real-time web search capabilities (No API Key required). | `npx` |
+| **Brave Search** | Real-time web search capabilities (Requires API Key). | `npx` |
+| **OpenSCAD** | 3D Geometry and Model analysis. | `uv` |
+
+#### Example `mcp_config.json`
 
 ```json
 {
-    "mcpServers": {
-        "openscad": {
-            "command": "uv",
-            "args": [
-                "run",
-                "--with",
-                "git+https://github.com/quellant/openscad-mcp.git",
-                "openscad-mcp"
-            ],
-            "env": {
-                "OPENSCAD_PATH": "C:\\Program Files\\OpenSCAD (Nightly)\\openscad.exe"
-            }
-        }
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "ddg-search": {
+      "command": "npx",
+      "args": ["-y", "@ericthered926/duckduckgo-mcp-server"]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "YOUR_API_KEY"
+      }
+    },
+    "openscad": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "git+https://github.com/quellant/openscad-mcp.git",
+        "openscad-mcp"
+      ],
+      "env": {
+        "OPENSCAD_PATH": "C:\\Program Files\\OpenSCAD (Nightly)\\openscad.exe"
+      }
     }
+  }
 }
 ```
 
+### Skills Configuration
+
+
+```powershell
+# Pretty Mermaid - Diagram rendering
+npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-mermaid
+
+# Chart Visualization via AntV
+npx skills add antvis/chart-visualization-skills
+
+# Tip: Search for more skills using: npx skills find <keyword>
+```
 
 #### Secondary Sidebar Layout
 Moved Cline to the secondary sidebar for better multitasking:
@@ -783,20 +817,6 @@ Configuring Cline to use local models via Ollama.
 - **Request timeout**: 300000ms (5 minutes)
 - **Context**: 32768
 - **Compact Prompt**: On
-
-### Skills Configuration
-
-Antigravity uses "Skills" to provide specialized agentic capabilities like complex visualizations and automated workflows.
-
-Add skills:
-
-```powershell
-# Pretty Mermaid - Diagram rendering
-npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-mermaid
-
-# Chart Visualization via AntV
-npx skills add antvis/chart-visualization-skills
-```
 
 ## n8n
 
