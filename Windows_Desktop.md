@@ -22,7 +22,7 @@ Review BIOS settings:
 - Enable TPM
 - Enable Secure Boot
 - Configure Fan Curves (Optional)
-- Enable Wake on LAN (Optional)
+- Enable Wake on LAN (`Power On By PCI-E`)
 - Set a BIOS Password (Optional)
 
 ### Windows 11
@@ -84,11 +84,57 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 #### Remote Access (Optional)
 
-- For configuring a machine for remote access, ensuring it remains online.
-- Enable Remote Desktop (RDP) `System > Remote Desktop`
-- Configure 'Always On' Power Settings:
-  - In Power Options, set the active plan to never sleep or hibernate when plugged in.
-  - Disable Sleep and Hibernation from the shutdown menu.
+Disable Fast Startup, Standby & Hibernation.
+
+```powershell
+powercfg /h off
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+```
+
+Set display to never turn off
+
+```powershell
+powercfg /change monitor-timeout-ac 0
+```
+
+Set the "When I close the lid" option to "Do nothing" for both On Battery and Plugged In
+
+```powershell
+# Set "Lid Close Action" to "Do Nothing" (0) when Plugged In (AC)
+powercfg -setacvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
+# Set "Lid Close Action" to "Do Nothing" (0) when On Battery (DC)
+powercfg -setdcvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
+# Apply
+powercfg -setactive SCHEME_CURRENT
+
+```
+
+##### RDP
+
+Enable RDP
+
+```powershell
+# Enable Remote Desktop
+Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+```
+
+##### Parsec
+
+Install via Winget
+```powershell
+winget install --id Parsec.Parsec --override "/percomputer /silent" --accept-package-agreements --accept-source-agreements
+```
+
+Configure the following Host settings in the Parsec app:
+   *   **Hosting**: `Enabled`
+   *   **Install Parsec Virtual Display Driver**
+   *   **Virtual Displays**: Set to `1`
+   *   **Fallback to Virtual Display**: `Enabled`
+   *   **Resolution**: Set to **`Use Client Resolution`** 
+   *   **Decoder/Encoder**: Ensure H.265 (HEVC) codec is **`Enabled`** 
+   *   **Audio Source**: Set to **`Parsec Virtual Audio`**
 
 #### Automatic Maintenance (Optional)
 
@@ -143,7 +189,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 | [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme  |
 | [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO             |
 | [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell      |
-| [Parsec](https://parsec.app/)                                                                                          | winget install -e --id Parsec.Parsec             |
 | [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS               |
 | [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat     |
 | [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal |
