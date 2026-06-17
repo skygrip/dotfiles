@@ -33,32 +33,17 @@ Install Homebrew.
 
 ### Terminal Tweaks
 
-Install iTerm2, Zsh, Oh My Zsh, and fonts.
+Configure Zsh to use Grml config and install plugins via Homebrew.
 
-    # Install iTerm2
-    brew install --cask iterm2
+    # Install ZSH plugins via Homebrew
+    brew install zsh-autosuggestions zsh-syntax-highlighting
 
-    # Install Oh My Zsh
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    # Download Grml zshrc config
+    curl -Lo ~/.zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
 
-    # Install Powerlevel10k theme
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
-
-    # Install Nerd Fonts (FiraCode is a great one)
-    brew tap homebrew/cask-fonts
-    brew install --cask font-fira-code-nerd-font
-
-    # ZSH plugins
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-
-Set ZSH_THEME="powerlevel10k/powerlevel10k" in your ~/.zshrc.
-
-Add zsh-autosuggestions and zsh-syntax-highlighting to the plugins=(...) list in your ~/.zshrc.
-
-Set your iTerm2 font to FiraCode Nerd Font.
-
-Run p10k configure to set up your prompt.
+    # Enable plugins in ~/.zshrc.local
+    echo "source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ~/.zshrc.local
+    echo "source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc.local
 
 ### General UI/UX Tweaks
 
@@ -188,3 +173,198 @@ Run p10k configure to set up your prompt.
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                    | `cask "virtualbox"`         |
 | [Visual Studio Code](https://code.visualstudio.com/)                                       | `cask "visual-studio-code"` |
 | [VMWare Fusion](https://www.vmware.com/products/desktop-hypervisor/workstation-and-fusion) | `cask "vmware-fusion"`      |
+
+## Ollama with HTTPS & API Key (Caddy Proxy)
+
+This setup runs Ollama locally and configures Caddy as a reverse proxy to:
+1. Secure the connection with a locally signed TLS certificate (HTTPS).
+2. Protect the API with a custom API key header (`Authorization: Bearer <key>`).
+
+### 1. Install Ollama and Caddy
+
+Install Ollama and Caddy via Homebrew:
+
+```bash
+# Install Ollama
+brew install ollama
+
+# Install Caddy (used for HTTPS and API Key authentication)
+brew install caddy
+```
+
+### 2. Configure Caddy
+
+Create or edit your Caddyfile. The default system-wide Caddyfile path for Homebrew is:
+- **Apple Silicon macOS:** `/opt/homebrew/etc/Caddyfile`
+- **Intel macOS:** `/usr/local/etc/Caddyfile`
+
+Add the following configuration (replace `KEY` with your desired API key):
+
+```caddy
+# Listen on port 11435 for HTTPS
+https://localhost:11435 {
+    # Generate a locally-signed certificate and attempt to install
+    # it into the macOS System Keychain so it is trusted locally.
+    tls internal
+
+    # Require a Bearer token in the Authorization header
+    @no-api-key {
+        not header Authorization "Bearer KEY"
+    }
+    respond @no-api-key "Unauthorized" 401
+
+    # Forward authorized traffic to Ollama's default port
+    reverse_proxy localhost:11434
+}
+```
+
+> [!NOTE]
+> If you prefer a custom domain name (e.g., `ollama.local`) instead of `localhost:11435`, replace `https://localhost:11435` with `ollama.local` and add `127.0.0.1 ollama.local` to your `/etc/hosts` file.
+
+### 3. Start and Auto-Start the Services
+
+Depending on your requirements, you can configure these services to start on **user login** or on **system boot** (before any user logs in, like a server).
+
+---
+
+#### Option A: Auto-Start on User Login (LaunchAgents)
+This is the default and recommended method for personal computers. The services start when you log into your macOS user account.
+
+```bash
+# Start and register Ollama to run at login
+brew services start ollama
+
+# Start and register Caddy to run at login
+brew services start caddy
+```
+
+*If you are using the Ollama Desktop App (`brew install --cask ollama`), you can auto-start it at login by opening the app, clicking the menu bar icon, and checking **Start at login** (or run `osascript -e 'tell application "System Events" to make new login item at end with properties {path:"/Applications/Ollama.app", hidden:false}'` in Terminal).*
+
+---
+
+#### Option B: Auto-Start on Boot (LaunchDaemons)
+To run these services as system-wide daemons that start as soon as macOS boots up (before any user logs in):
+
+##### 1. Caddy Boot-Start
+Caddy can be easily run on boot as root by using `sudo` with brew services:
+```bash
+sudo brew services start caddy
+```
+This registers Caddy as a system-wide LaunchDaemon in `/Library/LaunchDaemons/homebrew.mxcl.caddy.plist`.
+
+##### 2. Ollama Boot-Start (with Custom User)
+If you run `sudo brew services start ollama`, Ollama will run as `root` and default to saving/reading models from `/var/root/.ollama/models`.
+
+To start Ollama on boot but run it under your own user account (so it can access your models at `~/.ollama/models`), create a custom LaunchDaemon plist at `/Library/LaunchDaemons/org.ollama.ollama.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.ollama.ollama</string>
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Use /usr/local/bin/ollama on Intel Macs -->
+        <string>/opt/homebrew/bin/ollama</string>
+        <string>serve</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>UserName</key>
+    <string>YOUR_MACOS_USERNAME</string>
+    <key>StandardOutPath</key>
+    <string>/var/log/ollama.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/ollama.err</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OLLAMA_HOST</key>
+        <string>127.0.0.1:11434</string>
+    </dict>
+</dict>
+</plist>
+```
+
+> [!IMPORTANT]
+> Replace `YOUR_MACOS_USERNAME` with your actual macOS username (run `whoami` to find it), and ensure the path to the `ollama` binary is correct (`/opt/homebrew/bin/ollama` for Apple Silicon or `/usr/local/bin/ollama` for Intel).
+
+After creating the file, set the correct ownership and register it:
+```bash
+# Set ownership to root
+sudo chown root:wheel /Library/LaunchDaemons/org.ollama.ollama.plist
+
+# Load and start the daemon
+sudo launchctl bootstrap system /Library/LaunchDaemons/org.ollama.ollama.plist
+```
+
+---
+
+### Ollama Environment Variables
+
+Ollama supports several environment variables to tune its performance, concurrency, and resource footprint. The most relevant ones for server-like configurations include:
+
+| Variable | Description | Default | Example Value |
+| :--- | :--- | :--- | :--- |
+| `OLLAMA_NUM_PARALLEL` | Maximum number of parallel requests/users handled concurrently per model. | `1` (or `4` depending on VRAM) | `4` |
+| `OLLAMA_MAX_QUEUE` | Maximum requests queued before rejecting with HTTP `503 Service Unavailable`. | `512` | `1024` |
+| `OLLAMA_MAX_LOADED_MODELS` | Maximum number of models loaded in VRAM concurrently. | `1` | `2` |
+| `OLLAMA_KEEP_ALIVE` | Duration a model stays loaded in VRAM after the last request. Set to `-1` to keep loaded indefinitely. | `5m` | `1h` (1 hour) |
+| `OLLAMA_MODELS` | Directory path where downloaded models are stored. | `~/.ollama/models` | `/path/to/models` |
+| `OLLAMA_FLASH_ATTENTION` | Enables Flash Attention for faster generation and lower memory consumption. | Disabled | `1` (to enable) |
+
+#### How to Apply These Variables
+
+##### 1. When using the Custom LaunchDaemon (`org.ollama.ollama.plist`)
+Simply add the keys and string values directly into the `<key>EnvironmentVariables</key>` `<dict>` section of your plist file:
+
+```xml
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OLLAMA_HOST</key>
+        <string>127.0.0.1:11434</string>
+        <key>OLLAMA_NUM_PARALLEL</key>
+        <string>4</string>
+        <key>OLLAMA_MAX_QUEUE</key>
+        <string>512</string>
+        <key>OLLAMA_MAX_LOADED_MODELS</key>
+        <string>2</string>
+        <key>OLLAMA_KEEP_ALIVE</key>
+        <string>1h</string>
+        <key>OLLAMA_FLASH_ATTENTION</key>
+        <string>1</string>
+    </dict>
+```
+
+##### 2. When using the Default Homebrew Service (LaunchAgent)
+Edit the Homebrew-generated plist file located at `~/Library/LaunchAgents/homebrew.mxcl.ollama.plist` to add the environment variables under the `<key>EnvironmentVariables</key>` block, then restart the service:
+```bash
+brew services restart ollama
+```
+
+---
+
+### 4. Verify the Setup
+
+Test the secure proxy using `curl`.
+
+1. **Verify that access is blocked without the correct API key:**
+   ```bash
+   curl -k -i https://localhost:11435
+   ```
+   *Should return HTTP status `401 Unauthorized`.*
+
+2. **Verify that access is allowed with the correct API key:**
+   ```bash
+   curl -k -i -H "Authorization: Bearer YOUR_SUPER_SECRET_KEY" https://localhost:11435
+   ```
+   *Should return HTTP status `200 OK` (Ollama is running).*
+
+3. **Verify the TLS certificate is trusted locally (without the `-k` / `--insecure` flag):**
+   ```bash
+   curl -i -H "Authorization: Bearer YOUR_SUPER_SECRET_KEY" https://localhost:11435
+   ```
+   *Should succeed without SSL verification errors once the root certificate is trusted by macOS.*
