@@ -1083,3 +1083,8 @@ sudo sh -c 'echo "appendWindowsPath=false" >> /etc/wsl.conf'
 ```
 
 
+
+ # #   R e g i s t r y   A u d i t   R e s u l t s 
+ |   P a t h   |   N a m e   |   E x p e c t e d   |   A c t u a l   |   S t a t u s   | 
+ |   : - - -   |   : - - -   |   : - - -   |   : - - -   |   : - - -   |  
+ 
