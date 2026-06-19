@@ -100,48 +100,86 @@ export default function (pi: ExtensionAPI) {
     let lastAction = "";
     let foundThinking = false;
 
+    // Find the last assistant entry and count how many tool responses follow it.
+    // This allows us to track the current index in a parallel tool call sequence.
+    let lastAssistantEntryIdx = -1;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      if (entry.type === "message" && entry.message?.role === "assistant") {
+        lastAssistantEntryIdx = i;
+        break;
+      }
+    }
+
+    let executedToolCallsCount = 0;
+    if (lastAssistantEntryIdx !== -1) {
+      for (let i = lastAssistantEntryIdx + 1; i < entries.length; i++) {
+        const entry = entries[i];
+        if (entry.type === "message" && (
+          entry.message?.role === "tool" || 
+          entry.message?.role === "toolResult"
+        )) {
+          executedToolCallsCount++;
+        }
+      }
+    }
+
     // Scan backward to find the previous action and any thinking steps in between
     for (let i = entries.length - 1; i >= 0; i--) {
       const entry = entries[i];
       if (entry.type === "message" && entry.message?.role === "assistant") {
         const parts = Array.isArray(entry.message.content) ? entry.message.content : [];
-        for (let j = parts.length - 1; j >= 0; j--) {
-          const part = parts[j];
+        
+        // Extract all tool calls in this assistant message
+        const toolCallParts: any[] = [];
+        for (const part of parts) {
           if (part.type === "toolCall" || part.type === "functionCall") {
-            const name = part.name || "";
-            if (name === "sequential_thinking") {
-              foundThinking = true;
-            } else if (/write|edit|replace|patch|create|update|bash|run_command/i.test(name)) {
-              let isPlanMd = false;
-              const isBashCmd = name.toLowerCase() === "bash" || name.toLowerCase() === "run_command";
-              
-              if (part.arguments) {
-                try {
-                  const parsed = typeof part.arguments === "string" ? JSON.parse(part.arguments) : part.arguments;
-                  if (parsed) {
-                    const targetFile = parsed.TargetFile || parsed.AbsolutePath || parsed.path || parsed.file || parsed.filename || "";
-                    if (typeof targetFile === "string") {
-                      const lower = targetFile.toLowerCase();
-                      if (lower.endsWith("plan.md") || lower.endsWith("task.md") || lower.endsWith("todo.md")) {
-                        isPlanMd = true;
-                      }
-                    }
-                    if (isBashCmd) {
-                      const cmd = (parsed.command || parsed.CommandLine || "").toLowerCase();
-                      if (cmd.includes("plan.md") || cmd.includes("task.md") || cmd.includes("todo.md")) {
-                        isPlanMd = true;
-                      }
+            toolCallParts.push(part);
+          }
+        }
+
+        // Determine starting index of tool calls to scan in this message.
+        // We only scan tool calls that have executed prior to the current tool call.
+        let startIndex = toolCallParts.length - 1;
+        if (i === lastAssistantEntryIdx) {
+          startIndex = executedToolCallsCount - 1;
+        }
+
+        for (let j = startIndex; j >= 0; j--) {
+          const part = toolCallParts[j];
+          const name = part.name || "";
+          if (name === "sequential_thinking") {
+            foundThinking = true;
+          } else if (/write|edit|replace|patch|create|update|bash|run_command/i.test(name)) {
+            let isPlanMd = false;
+            const isBashCmd = name.toLowerCase() === "bash" || name.toLowerCase() === "run_command";
+            
+            if (part.arguments) {
+              try {
+                const parsed = typeof part.arguments === "string" ? JSON.parse(part.arguments) : part.arguments;
+                if (parsed) {
+                  const targetFile = parsed.TargetFile || parsed.AbsolutePath || parsed.path || parsed.file || parsed.filename || "";
+                  if (typeof targetFile === "string") {
+                    const lower = targetFile.toLowerCase();
+                    if (lower.endsWith("plan.md") || lower.endsWith("task.md") || lower.endsWith("todo.md")) {
+                      isPlanMd = true;
                     }
                   }
-                } catch {}
-              }
+                  if (isBashCmd) {
+                    const cmd = (parsed.command || parsed.CommandLine || "").toLowerCase();
+                    if (cmd.includes("plan.md") || cmd.includes("task.md") || cmd.includes("todo.md")) {
+                      isPlanMd = true;
+                    }
+                  }
+                }
+              } catch {}
+            }
 
-              if (isPlanMd) {
-                foundThinking = true; // Updating a plan/task/todo file acts as an interstitial thinking step
-              } else {
-                lastAction = name.toLowerCase();
-                break;
-              }
+            if (isPlanMd) {
+              foundThinking = true; // Updating a plan/task/todo file acts as an interstitial thinking step
+            } else {
+              lastAction = name.toLowerCase();
+              break;
             }
           }
         }
