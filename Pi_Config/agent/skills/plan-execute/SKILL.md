@@ -12,6 +12,11 @@ If PLAN.md does not exist, create it. If it exists, read it.
 
 Also read EVOLUTION.md if it exists. Check for any past lessons relevant to the current project or technology stack — they may save you from repeating a known mistake.
 
+### Resuming or Re-planning
+If PLAN.md already exists, or if you are resuming work from a previous attempt:
+- **Do not clear the `Done` section.** Preserve the history of previously completed tasks.
+- If you are creating a new plan but some tasks have already been completed manually or in a previous session, document them in the `Done` section (e.g., `- [x] Previously Completed: Initial project setup`) so the plan reflects the full scope of the project.
+
 ### PLAN.md Format
 
 Use this exact structure:
@@ -35,7 +40,7 @@ Use this exact structure:
 _(tasks added during execution — roadblocks, prerequisites, new requirements)_
 
 ## Done
-_(completed tasks moved here with inline notes on what changed)_
+- [x] Previously Completed: Initial workspace setup and structure definition
 ```
 
 ### Rules for Writing Tasks
