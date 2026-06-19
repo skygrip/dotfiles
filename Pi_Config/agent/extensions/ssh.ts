@@ -14,6 +14,7 @@
  */
 
 import { spawn } from "node:child_process";
+import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
 	type BashOperations,
@@ -26,9 +27,29 @@ import {
 	type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
 
-function sshExec(remote: string, command: string): Promise<Buffer> {
+function createPathTranslator(remoteCwd: string, localCwd: string) {
+	const normalizedLocal = path.resolve(localCwd).replace(/\\/g, "/").toLowerCase();
+	const normalizedRemote = remoteCwd.replace(/\\/g, "/");
+
+	return (p: string) => {
+		const resolved = path.resolve(p).replace(/\\/g, "/");
+		const normalizedResolved = resolved.toLowerCase();
+
+		if (normalizedResolved.startsWith(normalizedLocal)) {
+			const relativePart = resolved.slice(normalizedLocal.length);
+			return (normalizedRemote + relativePart).replace(/\/+/g, "/");
+		}
+		return resolved;
+	};
+}
+
+function shellEscape(arg: string): string {
+	return "'" + arg.replace(/'/g, "'\\''") + "'";
+}
+
+function sshExec(remoteArgs: string[], command: string): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
-		const child = spawn("ssh", [remote, command], { stdio: ["ignore", "pipe", "pipe"] });
+		const child = spawn("ssh", [...remoteArgs, command], { stdio: ["ignore", "pipe", "pipe"] });
 		const chunks: Buffer[] = [];
 		const errChunks: Buffer[] = [];
 		child.stdout.on("data", (data) => chunks.push(data));
@@ -44,14 +65,14 @@ function sshExec(remote: string, command: string): Promise<Buffer> {
 	});
 }
 
-function createRemoteReadOps(remote: string, remoteCwd: string, localCwd: string): ReadOperations {
-	const toRemote = (p: string) => p.replace(localCwd, remoteCwd);
+function createRemoteReadOps(remoteArgs: string[], remoteCwd: string, localCwd: string): ReadOperations {
+	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
-		readFile: (p) => sshExec(remote, `cat ${JSON.stringify(toRemote(p))}`),
-		access: (p) => sshExec(remote, `test -r ${JSON.stringify(toRemote(p))}`).then(() => {}),
+		readFile: (p) => sshExec(remoteArgs, `cat ${shellEscape(toRemote(p))}`),
+		access: (p) => sshExec(remoteArgs, `test -r ${shellEscape(toRemote(p))}`).then(() => {}),
 		detectImageMimeType: async (p) => {
 			try {
-				const r = await sshExec(remote, `file --mime-type -b ${JSON.stringify(toRemote(p))}`);
+				const r = await sshExec(remoteArgs, `file --mime-type -b ${shellEscape(toRemote(p))}`);
 				const m = r.toString().trim();
 				return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(m) ? m : null;
 			} catch {
@@ -61,30 +82,30 @@ function createRemoteReadOps(remote: string, remoteCwd: string, localCwd: string
 	};
 }
 
-function createRemoteWriteOps(remote: string, remoteCwd: string, localCwd: string): WriteOperations {
-	const toRemote = (p: string) => p.replace(localCwd, remoteCwd);
+function createRemoteWriteOps(remoteArgs: string[], remoteCwd: string, localCwd: string): WriteOperations {
+	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
 		writeFile: async (p, content) => {
 			const b64 = Buffer.from(content).toString("base64");
-			await sshExec(remote, `echo ${JSON.stringify(b64)} | base64 -d > ${JSON.stringify(toRemote(p))}`);
+			await sshExec(remoteArgs, `echo ${shellEscape(b64)} | base64 -d > ${shellEscape(toRemote(p))}`);
 		},
-		mkdir: (dir) => sshExec(remote, `mkdir -p ${JSON.stringify(toRemote(dir))}`).then(() => {}),
+		mkdir: (dir) => sshExec(remoteArgs, `mkdir -p ${shellEscape(toRemote(dir))}`).then(() => {}),
 	};
 }
 
-function createRemoteEditOps(remote: string, remoteCwd: string, localCwd: string): EditOperations {
-	const r = createRemoteReadOps(remote, remoteCwd, localCwd);
-	const w = createRemoteWriteOps(remote, remoteCwd, localCwd);
+function createRemoteEditOps(remoteArgs: string[], remoteCwd: string, localCwd: string): EditOperations {
+	const r = createRemoteReadOps(remoteArgs, remoteCwd, localCwd);
+	const w = createRemoteWriteOps(remoteArgs, remoteCwd, localCwd);
 	return { readFile: r.readFile, access: r.access, writeFile: w.writeFile };
 }
 
-function createRemoteBashOps(remote: string, remoteCwd: string, localCwd: string): BashOperations {
-	const toRemote = (p: string) => p.replace(localCwd, remoteCwd);
+function createRemoteBashOps(remoteArgs: string[], remoteCwd: string, localCwd: string): BashOperations {
+	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
 		exec: (command, cwd, { onData, signal, timeout }) =>
 			new Promise((resolve, reject) => {
-				const cmd = `cd ${JSON.stringify(toRemote(cwd))} && ${command}`;
-				const child = spawn("ssh", [remote, cmd], { stdio: ["ignore", "pipe", "pipe"] });
+				const cmd = `cd ${shellEscape(toRemote(cwd))} && ${command}`;
+				const child = spawn("ssh", [...remoteArgs, cmd], { stdio: ["ignore", "pipe", "pipe"] });
 				let timedOut = false;
 				const timer = timeout
 					? setTimeout(() => {
@@ -121,7 +142,7 @@ export default function (pi: ExtensionAPI) {
 	const localBash = createBashTool(localCwd);
 
 	// Resolved lazily on session_start (CLI flags not available during factory)
-	let resolvedSsh: { remote: string; remoteCwd: string } | null = null;
+	let resolvedSsh: { remoteArgs: string[]; remoteCwd: string } | null = null;
 
 	const getSsh = () => resolvedSsh;
 
@@ -131,7 +152,7 @@ export default function (pi: ExtensionAPI) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createReadTool(localCwd, {
-					operations: createRemoteReadOps(ssh.remote, ssh.remoteCwd, localCwd),
+					operations: createRemoteReadOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
 				});
 				return tool.execute(id, params, signal, onUpdate);
 			}
@@ -145,7 +166,7 @@ export default function (pi: ExtensionAPI) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createWriteTool(localCwd, {
-					operations: createRemoteWriteOps(ssh.remote, ssh.remoteCwd, localCwd),
+					operations: createRemoteWriteOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
 				});
 				return tool.execute(id, params, signal, onUpdate);
 			}
@@ -159,7 +180,7 @@ export default function (pi: ExtensionAPI) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createEditTool(localCwd, {
-					operations: createRemoteEditOps(ssh.remote, ssh.remoteCwd, localCwd),
+					operations: createRemoteEditOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
 				});
 				return tool.execute(id, params, signal, onUpdate);
 			}
@@ -173,7 +194,7 @@ export default function (pi: ExtensionAPI) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createBashTool(localCwd, {
-					operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd),
+					operations: createRemoteBashOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
 				});
 				return tool.execute(id, params, signal, onUpdate);
 			}
@@ -185,17 +206,35 @@ export default function (pi: ExtensionAPI) {
 		// Resolve SSH config now that CLI flags are available
 		const arg = pi.getFlag("ssh") as string | undefined;
 		if (arg) {
-			if (arg.includes(":")) {
-				const [remote, path] = arg.split(":");
-				resolvedSsh = { remote, remoteCwd: path };
+			let remoteStr = "";
+			let remoteCwd = "";
+			const idx = arg.indexOf(":");
+			if (idx !== -1) {
+				remoteStr = arg.slice(0, idx);
+				remoteCwd = arg.slice(idx + 1);
 			} else {
-				// No path given, evaluate pwd on remote
-				const remote = arg;
-				const pwd = (await sshExec(remote, "pwd")).toString().trim();
-				resolvedSsh = { remote, remoteCwd: pwd };
+				remoteStr = arg;
 			}
-			ctx.ui.setStatus("ssh", ctx.ui.theme.fg("accent", `SSH: ${resolvedSsh.remote}:${resolvedSsh.remoteCwd}`));
-			ctx.ui.notify(`SSH mode: ${resolvedSsh.remote}:${resolvedSsh.remoteCwd}`, "info");
+			const remoteArgs = remoteStr.split(/\s+/).filter(Boolean);
+
+			try {
+				if (remoteCwd === "") {
+					// Evaluate pwd on remote to test connection and get remote CWD
+					const pwd = (await sshExec(remoteArgs, "pwd")).toString().trim();
+					remoteCwd = pwd;
+				} else {
+					// Verify connection and check if the remote directory exists
+					await sshExec(remoteArgs, `test -d ${shellEscape(remoteCwd)}`);
+				}
+				resolvedSsh = { remoteArgs, remoteCwd };
+				
+				const displayString = remoteArgs.join(" ");
+				ctx.ui.setStatus("ssh", ctx.ui.theme.fg("accent", `SSH: ${displayString}:${resolvedSsh.remoteCwd}`));
+				ctx.ui.notify(`SSH mode: ${displayString}:${resolvedSsh.remoteCwd}`, "info");
+			} catch (e: any) {
+				resolvedSsh = null;
+				ctx.ui.notify(`⚠️ SSH connection failed: ${e.message}. Falling back to local execution.`, "error");
+			}
 		}
 	});
 
@@ -203,16 +242,17 @@ export default function (pi: ExtensionAPI) {
 	pi.on("user_bash", (_event) => {
 		const ssh = getSsh();
 		if (!ssh) return; // No SSH, use local execution
-		return { operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd) };
+		return { operations: createRemoteBashOps(ssh.remoteArgs, ssh.remoteCwd, localCwd) };
 	});
 
 	// Replace local cwd with remote cwd in system prompt
 	pi.on("before_agent_start", async (event) => {
 		const ssh = getSsh();
 		if (ssh) {
+			const displayString = ssh.remoteArgs.join(" ");
 			const modified = event.systemPrompt.replace(
 				`Current working directory: ${localCwd}`,
-				`Current working directory: ${ssh.remoteCwd} (via SSH: ${ssh.remote})`,
+				`Current working directory: ${ssh.remoteCwd} (via SSH: ${displayString})`,
 			);
 			return { systemPrompt: modified };
 		}

@@ -29,6 +29,7 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `critic-review.ts`: Objective auditing sandbox for code and markdown.
     *   `ask-question.ts`: Interactive TUI-based user prompts and menus.
     *   `ssh.ts`: Enables remote Linux management via SSH.
+    *   `plan-priming.ts`: Dynamically primes context with execution/update directives when PLAN.md is read or written.
 *   **Workspace Skills (`skills/`)**: Checklists and instruction sets loaded via the `use` command.
     *   *Source Directory*: [Pi_Config/agent/skills/](./Pi_Config/agent/skills/)
     *   `plan`: Architecture and planning framework.
