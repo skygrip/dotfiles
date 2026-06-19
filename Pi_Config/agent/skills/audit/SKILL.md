@@ -1,32 +1,60 @@
 ---
-name: audit
-description: Run a high-speed, isolated security, quality, and style audit on the active file or workspace.
+description: Audit code, config, or documentation for bugs, security issues, and style violations. Uses critic_review for isolated objective review when available, with manual fallback. Use before committing changes or at the end of a plan-execute cycle.
 ---
 
-# Audit Skill
+# Audit
 
-This skill provides a highly disciplined auditing routine to inspect workspace code, configurations, and documentation drafts before making permanent writes. It is designed to be fully portable across any environment or repository.
+Run a quality gate on one or more files before committing changes.
 
-## Audit Execution Routine
+## Single File Audit
 
-When you are asked to audit a file, project, or draft, load this skill and carry out these checks systematically.
+### 1. Read the target file
+Read the file you want to audit. You need its full contents.
 
-### 1. Isolate the Target
-- Identify the specific file, module, or code draft that needs to be audited.
-- Read its contents to parse its current state.
+### 2. Build your rules list
+Check for project-specific constraints first:
+- Read `.pi/APPEND_SYSTEM.md` for environment rules (line endings, shell syntax)
+- Read `EVOLUTION.md` for known gotchas
+- Check for linter configs (`.eslintrc`, `pyproject.toml`, `tsconfig.json`, etc.)
 
-### 2. Formulate the Constraints
-Identify the active constraints for the audit. In any environment, you must check for these three core pillars:
-- **Logical Correctness**: Syntax errors, broken imports, missing reference objects, or unhandled errors.
-- **Security & Privacy Constraints**: Exposed secrets, private API keys, or personal identifying data (maximum privacy).
-- **Style & Formatting Guidelines**: Project-local file preferences, carriage return formatting, or specific rules (such as avoiding numbered headings in Markdown).
+Combine with these defaults (skip any that don't apply to the file type):
+- No syntax errors, broken imports, or undefined references
+- No exposed secrets, API keys, tokens, or hardcoded credentials
+- No unhandled errors or missing null checks on external input
+- Consistent with existing code style in the project
 
-### 3. Execute the Critique Pass
-- **Automated Critique Option**: If the `critic_review` tool is active in your current tool inventory, execute it on your draft. **Crucially**, pass your code into the `draft` parameter, and pass your formulated constraints as an array of strings directly into the `rules` parameter.
-- **Manual Self-Critique Fallback**: If no automated review tools are available in your current environment, perform a manual, structured self-critique pass within your thoughts, systematically grading your draft against each of the three core pillars.
+### 3. Run the review
+**If `critic_review` tool is available:**
+```
+critic_review(
+  draft: <full file contents as string>,
+  rules: [
+    "No exposed secrets or hardcoded credentials",
+    "All imports must resolve",
+    "Handle null/undefined on external inputs",
+    <any project-specific rules from step 2>
+  ]
+)
+```
 
-### 4. Process Findings & Correct
-- Group findings into two severity levels:
-  - **Blocking**: Severe bugs, security vulnerabilities, or absolute guideline violations that must be corrected.
-  - **Advisory**: General stylistic advice, minor performance optimizations, or optional feedback.
-- If blocking errors are found, use the `sequential_thinking` tool to analyze alternative corrections, plan a surgical fix, and re-audit the updated draft.
+**If `critic_review` is not available:**
+Do a manual self-critique. Check the file against each rule from step 2 and the defaults above. List findings in this format:
+```
+* [BLOCKING] (Line X): description of the issue → Fix: what to change
+* [ADVISORY] (Line X): description of the suggestion
+```
+
+### 4. Act on findings
+- **PASS or no BLOCKING issues:** You're done. Move on.
+- **BLOCKING issues found:** Fix each one. Then re-run the audit on the fixed file to confirm the fix didn't introduce new issues. If a fix is non-trivial, use `sequential_thinking` to reason through the correction before editing.
+- **ADVISORY issues (3 or fewer):** Fix if quick (< 1 minute each). Otherwise note them for the user and move on.
+- **ADVISORY issues (4+):** Use `ask_question` with `type: 'select'` to present the list and let the user pick which ones matter. Don't spend time fixing advisories the user doesn't care about.
+
+## Multi-File Audit
+
+When auditing a set of changed files (e.g., at the end of a plan-execute cycle):
+
+1. Identify which files were changed during the session.
+2. Run the single file audit on each changed file.
+3. Skip files that were only read, not modified.
+4. Report a summary: how many files passed, how many had blocking issues, what was fixed.

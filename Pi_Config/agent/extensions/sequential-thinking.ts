@@ -475,28 +475,29 @@ export default function (pi: ExtensionAPI) {
   // 1. Register the Sequential Thinking tool with structured observation/reasoning schema
   pi.registerTool({
     name: "sequential_thinking",
-    label: "Sequential Thinking & Acting",
-    description: "A structured reasoning and execution sandbox for complex planning, debugging, and design evaluation. Each step separates observation (what you learned) from reasoning (what it means). Supports rewinding to a prior step to try an alternative approach — failed paths are automatically cleaned from context.",
-    promptSnippet: "Structured observation/reasoning steps with rewind-based branching and interleaved execution for complex planning, debugging, and implementation tasks.",
+    label: "Think & Execute",
+    description: "Step-by-step harness for executing plans and solving complex problems. Pairs observation with reasoning, interleaves action tools between steps, and supports rewinding to try alternative approaches.",
+    promptSnippet: "Step-by-step execution harness. Interleave reasoning with action tools between steps.",
     promptGuidelines: [
-      "Use sequential_thinking for complex planning, debugging, design evaluation, or multi-step implementation tasks. Skip it for simple, single-step actions.",
-      "On your first step, set `goal` to describe what you are solving and `exitInstruction` to describe what to do when done (e.g. 'mark task complete in PLAN.md and proceed to the next task').",
-      "In `observation`, state what you just learned — tool output, code you read, errors you saw, or the initial problem statement. In `reasoning`, analyze what it means and what approach to take.",
-      "Use `action: 'rewind'` with `rewindToStep` if your current approach hit a dead end. The failed path will be cleaned from context so you can try fresh.",
-      "Use `action: 'conclude'` when you have enough information to execute. Do not pad extra steps.",
-      "You may interleave action tools (edits, commands) between thinking steps to test a hypothesis. After any action tool, call sequential_thinking to analyze the result before taking further action."
+      "Use sequential_thinking for tasks needing >2-3 tool calls: plans, multi-file debugging, or complex implementations. Skip for quick single actions.",
+      "Before Step 1, read PLAN.md and EVOLUTION.md. On conclude, update both.",
+      "Step 1: set `goal` and `exitInstruction` (e.g. 'mark done in PLAN.md, check EVOLUTION.md, start next task').",
+      "Workflow: sequential_thinking → action tool → sequential_thinking → repeat → conclude.",
+      "Use `rewind` if your approach fails. Use `conclude` as soon as the goal is met.",
+      "If unsure about an API, library, or command, search/read docs first. Do not guess.",
     ],
     parameters: Type.Object({
-      observation: Type.String({ description: "What you just learned, noticed, or received from a tool result. On Step 1, state the problem or task." }),
-      reasoning: Type.String({ description: "Your analysis: what this means, what options exist, what you will try next." }),
+      observation: Type.String({ description: "What just happened. Step 1: the task. Later steps: last tool result." }),
+      reasoning: Type.String({ description: "What this means and your next move. Name the file, function, or command." }),
+      plan: Type.Optional(Type.String({ description: "Your next 1-3 concrete actions in order (e.g. '1. Read auth.ts 2. Add JWT import 3. Run tests'). Helps stay on track." })),
       action: Type.Union([
         Type.Literal("continue"),
         Type.Literal("rewind"),
         Type.Literal("conclude"),
-      ], { description: "'continue' for more steps, 'rewind' to abandon the current path and try from an earlier step, 'conclude' when done thinking." }),
-      rewindToStep: Type.Optional(Type.Integer({ description: "When action is 'rewind', the step number to branch from. A new alternative path starts from here." })),
-      goal: Type.Optional(Type.String({ description: "High-level objective for this reasoning session. Set on Step 1. Persisted in the system prompt as a reminder while the session is active." })),
-      exitInstruction: Type.Optional(Type.String({ description: "What to do immediately after concluding (e.g. 'update PLAN.md, then run the next task skill'). Set on Step 1. Surfaced as the directive when action is 'conclude'." })),
+      ], { description: "'continue' to keep working, 'rewind' to branch from earlier step, 'conclude' when done." }),
+      rewindToStep: Type.Optional(Type.Integer({ description: "Step to branch from on rewind." })),
+      goal: Type.Optional(Type.String({ description: "The task you're executing. Set on Step 1. Shown in system prompt while active." })),
+      exitInstruction: Type.Optional(Type.String({ description: "Post-conclude actions (e.g. 'mark done in PLAN.md, check EVOLUTION.md, start next task'). Set on Step 1." })),
     }),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const sessionKey = (ctx as any)?.sessionManager?.getSessionFile() ?? "ephemeral";
@@ -566,15 +567,17 @@ export default function (pi: ExtensionAPI) {
       let loopDirective: string;
       switch (params.action) {
         case "continue":
-          loopDirective = "Thought logged. Proceed to the next step, or interleave an action tool to test your hypothesis.";
+          loopDirective = thoughtNumber >= 8
+            ? `Thought logged (Step ${thoughtNumber}). ⚠️ You've been on this task for ${thoughtNumber} steps. Consider: is the task too large? Break it into subtasks, rewind to try a different approach, or ask the user for guidance.`
+            : "Thought logged. Proceed to the next step, or interleave an action tool to test your hypothesis.";
           break;
         case "rewind":
           loopDirective = `Rewinding to Step #${params.rewindToStep ?? "?"}. Previous path isolated from context. Continue reasoning on this new branch.`;
           break;
         case "conclude":
           loopDirective = customExit
-            ? `Thought process concluded. Next action: ${customExit}`
-            : "Thought process concluded. Return to the user's original request and proceed with execution.";
+            ? `Thought process concluded. Before proceeding: did you verify your changes work (build, test, or manual check)? If not, verify first. Then: ${customExit}`
+            : "Thought process concluded. Before proceeding: did you verify your changes work (build, test, or manual check)? If not, verify first. Then update your plan file and return to the user's original request.";
           break;
         default:
           loopDirective = "Thought logged. Proceed to the next step.";

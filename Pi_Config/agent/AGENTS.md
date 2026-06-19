@@ -32,19 +32,41 @@ The following files control the operational states, capabilities, and instructio
     }
 
 # Project-Local Self-Evolution
-- ./EVOLUTION.md: Dynamic long-term memory layer containing automated environment adjustments written by the agent inside the active repository. 
+
+## How It Works
+- ./EVOLUTION.md is your long-term memory for this repository. It persists across sessions.
   > Loaded: Read continuously by the context retrieval loops during tool execution.
-- Monitor Redundant Failures: If you encounter an execution, configuration, or tool error more than once and identify a definitive fix unique to this repository, treat this as permanent project memory.
-- Record Successful Custom Commands: If you discover or construct a non-obvious, complex, or highly effective command (e.g., unique database migrations, test runs, environment setups, or build pipelines) that succeeds, treat this as permanent project knowledge. Autonomously document it in ./EVOLUTION.md under a 'Useful Commands' section so it can be reused in future sessions without re-discovery.
-- Update Local Workspace Memory: Autonomously use the write or edit tool to append the rule or command directly to the bottom of ./EVOLUTION.md inside the current working directory. If ./EVOLUTION.md does not exist yet, create it with a clean markdown title header.
-- Multi-Layer Evolution Evaluation: When capturing a workflow fix, evaluate the structural complexity of the lesson to determine the best target path for expansion:
-  - For standard runtime workarounds or tool line-matching adjustments, append directly to ./EVOLUTION.md.
-  - If a skill file is currently being executed, prioritize updating that skill's markdown file first while preserving its mandatory frontmatter description layout.
-  - For complex or highly structured multi-step recovery workflows, consider framing the solution by writing a brand new dedicated skill file in ./.pi/skills/ with valid frontmatter or an isolated prompt template inside ./.pi/prompts/.
-- Formulating System-Level Evolution: For permanent, unbreakable environment laws, architecture dependencies, or platform-level constraints discovered during troubleshooting, consider making clean additions to ./.pi/APPEND_SYSTEM.md to lock those rules into the core system layer. For overarching changes to persona, communication strategies, development philosophies, or task navigation policies, make corresponding clean additions to ./.pi/AGENTS.md.
-- Context Window and Resource Guardrails: To maintain engine performance and prevent file corruption during autonomous updates, you must adhere to these operational constraints:
-  - Context Bloat Prevention: Do not append long, verbose troubleshooting histories or raw execution logs to system-level files like ./.pi/APPEND_SYSTEM.md or ./.pi/AGENTS.md. Because these are injected on every turn, keeping them highly concise, only editing them when essential, protects token availability and minimizes inference latency. Use ./EVOLUTION.md or dedicated skills for specific codebase fixes.
-  - Output Token Conservation: When appending rules or workarounds, keep updates focused and modular. Writing massive text blocks or completely rewriting files at the end of a long debugging session risks hitting maximum output token limits mid-write, causing file truncation or corruption. Utilize targeted edit patches and concise bullet points.
-- Compilation and Refresh Boundaries: Understand that markdown memory files (./EVOLUTION.md, ./.pi/AGENTS.md) and on-demand skills (via the use command) are processed dynamically without engine interruptions. However, if changes or additions are made to programmatic extensions (.ts tools) or prompt templates, explicitly request the user to execute the /reload command so the updates compile.
-- Formatting Guidelines: Write rules as clean, project-specific bullet points under explicit markdown headers describing the problem space. Do not modify configuration files directly unless addressing permanent, baseline system layer or behavioral policy adjustments.
-- Notification: Notify the user immediately after updating a local file or creating a new asset so they know a project-specific memory or tool extension has been committed to the repository.
+- You write to it autonomously. No permission needed. If it doesn't exist, create it with a `# Evolution Log` header.
+
+## When to Write
+- You discovered a fix that required non-obvious effort (e.g., a flag, a workaround, a config quirk).
+- You constructed or discovered a complex command that succeeded (builds, migrations, test invocations, environment setup).
+- You hit an error caused by a project-specific gotcha that would waste time if encountered again.
+
+Do not log routine operations, transient errors, or things that are obvious from the codebase.
+
+## Format for EVOLUTION.md Entries
+Use this exact format. Keep entries short — one problem, one fix, no prose:
+
+```markdown
+### [Short Problem Title]
+- **Problem:** One-line description of what went wrong or was non-obvious.
+- **Fix:** One-line solution or workaround.
+- **Command:** `the exact command` (if applicable)
+```
+
+## Beyond EVOLUTION.md
+If a lesson feels bigger than a bullet point — a multi-step recovery workflow, a permanent platform constraint, or a change to agent behavior — **do not write it autonomously.** Instead, tell the user what you learned and suggest where it should go:
+- Complex multi-step workflows → suggest a new skill in `.pi/skills/`
+- Permanent environment constraints → suggest an addition to `.pi/APPEND_SYSTEM.md`
+- Behavioral or methodology changes → suggest an addition to `.pi/AGENTS.md`
+
+The user decides whether and where to persist these. Notify the user after every evolution write or suggestion.
+
+## Task Execution
+- For multi-step tasks, run `use plan-execute` to load the plan workflow.
+
+## Sequential Thinking Integration
+- When using `sequential_thinking`, set `exitInstruction` on Step 1 to include an evolution check: *"Before concluding, check if this task produced any non-obvious fixes or useful commands worth recording in EVOLUTION.md."*
+- Interleave reasoning steps with action tool executions. Call `sequential_thinking` immediately after any action tool to review results before making subsequent edits.
+- Extensions (.ts files) require a `/reload` after modification. Markdown files (EVOLUTION.md, skills, prompts) are picked up automatically.
