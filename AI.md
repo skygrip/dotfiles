@@ -30,6 +30,7 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `ask-question.ts`: Interactive TUI-based user prompts and menus.
     *   `ssh.ts`: Enables remote Linux management via SSH.
     *   `plan-priming.ts`: Dynamically primes context with execution/update directives when PLAN.md is read or written.
+    *   `workflow-enforcer.ts`: Programmatically blocks tool execution if the plan file is unread, sequential thinking is skipped, or edits are unverified.
 *   **Workspace Skills (`skills/`)**: Checklists and instruction sets loaded via the `use` command.
     *   *Source Directory*: [Pi_Config/agent/skills/](./Pi_Config/agent/skills/)
     *   `plan`: Architecture and planning framework.
