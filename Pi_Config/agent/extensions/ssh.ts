@@ -1,16 +1,17 @@
 /**
- * SSH Remote Execution Example
+ * SSH Remote Execution Extension
  *
- * Demonstrates delegating tool operations to a remote machine via SSH.
- * When --ssh is provided, read/write/edit/bash run on the remote.
+ * This module allows delegating standard file operations (read, write, edit) and terminal commands
+ * (bash execution) to a remote machine over an SSH tunnel. It intercepts local tool calls and swaps
+ * the underlying file system and shell operations behind the scenes.
  *
  * Usage:
  *   pi --ssh user@host
  *   pi --ssh user@host:/remote/path
  *
  * Requirements:
- *   - SSH key-based auth (no password prompts)
- *   - bash on remote
+ *   - The user must have passwordless SSH key authentication set up with the target host.
+ *   - The remote machine must have basic Unix utilities (e.g. bash, cat, base64, mkdir).
  */
 
 import { spawn } from "node:child_process";
@@ -27,14 +28,30 @@ import {
 	type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
 
+/**
+ * Creates a path translator function that maps paths from the local machine CWD
+ * to the remote machine's targeted workspace directory.
+ * 
+ * @param remoteCwd - The working directory on the remote machine.
+ * @param localCwd - The local working directory.
+ * @returns A translator function that takes a local path and returns the resolved remote path.
+ */
 function createPathTranslator(remoteCwd: string, localCwd: string) {
 	const normalizedLocal = path.resolve(localCwd).replace(/\\/g, "/").toLowerCase();
 	const normalizedRemote = remoteCwd.replace(/\\/g, "/");
 
 	return (p: string) => {
+		// If it's already an absolute Unix-style path, return it directly
+		// to prevent Windows-native path resolution from corrupting it.
+		if (p.startsWith("/")) {
+			return p;
+		}
+
 		const resolved = path.resolve(p).replace(/\\/g, "/");
 		const normalizedResolved = resolved.toLowerCase();
 
+		// If the path resides within the local workspace directory,
+		// translate it to the corresponding path relative to the remote directory.
 		if (normalizedResolved.startsWith(normalizedLocal)) {
 			const relativePart = resolved.slice(normalizedLocal.length);
 			return (normalizedRemote + relativePart).replace(/\/+/g, "/");
@@ -43,15 +60,29 @@ function createPathTranslator(remoteCwd: string, localCwd: string) {
 	};
 }
 
+/**
+ * Safely wraps a shell argument in single quotes, escaping any internal single quotes.
+ * 
+ * @param arg - The argument string to escape.
+ * @returns The escaped argument safe for bash shell execution.
+ */
 function shellEscape(arg: string): string {
 	return "'" + arg.replace(/'/g, "'\\''") + "'";
 }
 
+/**
+ * Spawns an SSH child process to execute a single remote command synchronously-feeling (via Promise).
+ * 
+ * @param remoteArgs - Arguments containing user, host, and port (e.g., ["-p", "22", "user@host"]).
+ * @param command - The command string to execute on the remote machine.
+ * @returns A Promise resolving to a buffer of stdout. Rejects if exit code is non-zero.
+ */
 function sshExec(remoteArgs: string[], command: string): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
 		const child = spawn("ssh", [...remoteArgs, command], { stdio: ["ignore", "pipe", "pipe"] });
 		const chunks: Buffer[] = [];
 		const errChunks: Buffer[] = [];
+		
 		child.stdout.on("data", (data) => chunks.push(data));
 		child.stderr.on("data", (data) => errChunks.push(data));
 		child.on("error", reject);
@@ -65,11 +96,17 @@ function sshExec(remoteArgs: string[], command: string): Promise<Buffer> {
 	});
 }
 
+/**
+ * Implements ReadOperations using remote SSH calls (cat, file, test).
+ */
 function createRemoteReadOps(remoteArgs: string[], remoteCwd: string, localCwd: string): ReadOperations {
 	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
+		// Read a file remotely over SSH by running `cat`
 		readFile: (p) => sshExec(remoteArgs, `cat ${shellEscape(toRemote(p))}`),
+		// Test if file exists and is readable
 		access: (p) => sshExec(remoteArgs, `test -r ${shellEscape(toRemote(p))}`).then(() => {}),
+		// Detect image mimetype remotely using the `file` utility
 		detectImageMimeType: async (p) => {
 			try {
 				const r = await sshExec(remoteArgs, `file --mime-type -b ${shellEscape(toRemote(p))}`);
@@ -82,45 +119,78 @@ function createRemoteReadOps(remoteArgs: string[], remoteCwd: string, localCwd: 
 	};
 }
 
+/**
+ * Implements WriteOperations using remote SSH calls (mkdir -p, base64 write piping).
+ */
 function createRemoteWriteOps(remoteArgs: string[], remoteCwd: string, localCwd: string): WriteOperations {
 	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
-		writeFile: async (p, content) => {
-			const b64 = Buffer.from(content).toString("base64");
-			await sshExec(remoteArgs, `echo ${shellEscape(b64)} | base64 -d > ${shellEscape(toRemote(p))}`);
+		// Write a file remotely by piping the raw buffer over stdin directly to cat.
+		// This avoids base64-encoding overhead and E2BIG (Argument list too long) shell limits.
+		writeFile: (p, content) => {
+			return new Promise((resolve, reject) => {
+				const child = spawn("ssh", [...remoteArgs, `cat > ${shellEscape(toRemote(p))}`], {
+					stdio: ["pipe", "ignore", "pipe"],
+				});
+				child.stdin.write(content);
+				child.stdin.end();
+
+				const errChunks: Buffer[] = [];
+				child.stderr.on("data", (data) => errChunks.push(data));
+				child.on("error", reject);
+				child.on("close", (code) => {
+					if (code !== 0) {
+						reject(new Error(`SSH writeFile failed (${code}): ${Buffer.concat(errChunks).toString()}`));
+					} else {
+						resolve();
+					}
+				});
+			});
 		},
+		// Create remote directories recursively
 		mkdir: (dir) => sshExec(remoteArgs, `mkdir -p ${shellEscape(toRemote(dir))}`).then(() => {}),
 	};
 }
 
+/**
+ * Implements EditOperations by combining remote Read and Write operations.
+ */
 function createRemoteEditOps(remoteArgs: string[], remoteCwd: string, localCwd: string): EditOperations {
 	const r = createRemoteReadOps(remoteArgs, remoteCwd, localCwd);
 	const w = createRemoteWriteOps(remoteArgs, remoteCwd, localCwd);
 	return { readFile: r.readFile, access: r.access, writeFile: w.writeFile };
 }
 
+/**
+ * Implements BashOperations by spawning commands wrapped inside remote SSH processes.
+ */
 function createRemoteBashOps(remoteArgs: string[], remoteCwd: string, localCwd: string): BashOperations {
 	const toRemote = createPathTranslator(remoteCwd, localCwd);
 	return {
 		exec: (command, cwd, { onData, signal, timeout }) =>
 			new Promise((resolve, reject) => {
+				// Navigate to the translated remote working directory before running the command
 				const cmd = `cd ${shellEscape(toRemote(cwd))} && ${command}`;
 				const child = spawn("ssh", [...remoteArgs, cmd], { stdio: ["ignore", "pipe", "pipe"] });
 				let timedOut = false;
+				
 				const timer = timeout
 					? setTimeout(() => {
 							timedOut = true;
 							child.kill();
 						}, timeout * 1000)
 					: undefined;
+					
 				child.stdout.on("data", onData);
 				child.stderr.on("data", onData);
 				child.on("error", (e) => {
 					if (timer) clearTimeout(timer);
 					reject(e);
 				});
+				
 				const onAbort = () => child.kill();
 				signal?.addEventListener("abort", onAbort, { once: true });
+				
 				child.on("close", (code) => {
 					if (timer) clearTimeout(timer);
 					signal?.removeEventListener("abort", onAbort);
@@ -132,7 +202,12 @@ function createRemoteBashOps(remoteArgs: string[], remoteCwd: string, localCwd: 
 	};
 }
 
+/**
+ * Registers SSH commands, CLI flags, and intercepts tool calls to bind them
+ * to the remote environment when --ssh is active.
+ */
 export default function (pi: ExtensionAPI) {
+	// Register the command line flag configuration
 	pi.registerFlag("ssh", { description: "SSH remote: user@host or user@host:/path", type: "string" });
 
 	const localCwd = process.cwd();
@@ -141,10 +216,14 @@ export default function (pi: ExtensionAPI) {
 	const localEdit = createEditTool(localCwd);
 	const localBash = createBashTool(localCwd);
 
-	// Resolved lazily on session_start (CLI flags not available during factory)
+	// Holds the parsed connection details and CWD once established
 	let resolvedSsh: { remoteArgs: string[]; remoteCwd: string } | null = null;
-
 	const getSsh = () => resolvedSsh;
+
+	// ----------------------------------------------------
+	// Tool Overrides
+	// Intercept standard tools and inject remote operations if SSH is active.
+	// ----------------------------------------------------
 
 	pi.registerTool({
 		...localRead,
@@ -202,12 +281,18 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	// ----------------------------------------------------
+	// Event Listeners
+	// Initialize connection, handle terminal redirects, and update LLM context prompts.
+	// ----------------------------------------------------
+
 	pi.on("session_start", async (_event, ctx) => {
-		// Resolve SSH config now that CLI flags are available
 		const arg = pi.getFlag("ssh") as string | undefined;
 		if (arg) {
 			let remoteStr = "";
 			let remoteCwd = "";
+			
+			// Parse out the target remote working directory if appended with a colon (e.g. user@host:/path)
 			const idx = arg.indexOf(":");
 			if (idx !== -1) {
 				remoteStr = arg.slice(0, idx);
@@ -219,11 +304,11 @@ export default function (pi: ExtensionAPI) {
 
 			try {
 				if (remoteCwd === "") {
-					// Evaluate pwd on remote to test connection and get remote CWD
+					// Connection verification: evaluate pwd on remote to get the default home directory
 					const pwd = (await sshExec(remoteArgs, "pwd")).toString().trim();
 					remoteCwd = pwd;
 				} else {
-					// Verify connection and check if the remote directory exists
+					// Verify connection and assert that the specified remote directory exists
 					await sshExec(remoteArgs, `test -d ${shellEscape(remoteCwd)}`);
 				}
 				resolvedSsh = { remoteArgs, remoteCwd };
@@ -238,20 +323,27 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// Handle user ! commands via SSH
+	// Redirect interactive user shell commands (!) to the SSH connection
 	pi.on("user_bash", (_event) => {
 		const ssh = getSsh();
-		if (!ssh) return; // No SSH, use local execution
+		if (!ssh) return;
 		return { operations: createRemoteBashOps(ssh.remoteArgs, ssh.remoteCwd, localCwd) };
 	});
 
-	// Replace local cwd with remote cwd in system prompt
+	// Intercept and update the system prompt context so the LLM is aware of the remote working environment
 	pi.on("before_agent_start", async (event) => {
 		const ssh = getSsh();
 		if (ssh) {
 			const displayString = ssh.remoteArgs.join(" ");
+			
+			// Escape regex special chars in local CWD and construct a robust case-insensitive pattern 
+			// that accommodates both slash types to handle drive/separator casing mismatches on Windows.
+			const escapedLocal = localCwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			const regexStr = "Current working directory:\\s*" + escapedLocal.replace(/\\\\|\\/g, "[\\\\/]");
+			const regex = new RegExp(regexStr, "i");
+
 			const modified = event.systemPrompt.replace(
-				`Current working directory: ${localCwd}`,
+				regex,
 				`Current working directory: ${ssh.remoteCwd} (via SSH: ${displayString})`,
 			);
 			return { systemPrompt: modified };
