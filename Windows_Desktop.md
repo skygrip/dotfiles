@@ -302,6 +302,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
+| [jq](https://jqlang.github.io/jq/)                                                                       | winget install -e --id jqlang.jq                              |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools |
 | [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
