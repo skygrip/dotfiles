@@ -1,14 +1,10 @@
-# AI Tools & Configurations
-
-This document serves as a centralized index for the system configurations, custom extensions, and specialized skills used by AI agents in this workspace.
-
-> **Source of Truth**: All active configuration files, TypeScript extensions, and instruction sets have been moved to the [Pi_Config](./Pi_Config/agent/) directory for better organization and portability.
+# Pi Coding Agent Config
 
 ---
 
 ## Pi Coding Agent (`pi`)
 
-[Pi Coding Agent](https://github.com/earendil-works/pi) is an autonomous developer agent harness. It supports local extensions, custom system personas, specialized skills, and local/cloud LLMs.
+[Pi](https://github.com/earendil-works/pi) autonomous developer agent harness.
 
 ### Global Configuration & Local Source
 The global configuration is typically stored in `~/.pi/agent/`. In this repository, the source files are managed in:
@@ -34,20 +30,22 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `agent-config`: Configuration blueprints, templates, and setup guidelines.
     *   `plan-execute`: Architecture, planning, and task execution framework.
     *   `audit`: Security and quality audit routine.
+    *   `openscad`: Syntax reference, CSG modeling rules, and parametric templates to help design 3D parts.
 
 ---
 
 ### Setup & Installation
 
-#### 1. Dependencies
-To install required plugins in the global Pi environment:
+#### Install Dependencies and Plugins
+
 ```bash
 cd ~/.pi/agent/npm
-npm install pi-mcp-adapter pi-web-access
+npm install pi-mcp-adapter
+npm install pi-web-access
 ```
 
-#### 2. Restoring Extensions (PowerShell)
-To sync the extensions from this repository to your global configuration directory:
+#### Sync Extensions
+
 ```powershell
 # Create the directory
 New-Item -ItemType Directory -Force -Path "$HOME\.pi\agent\extensions"
@@ -56,28 +54,28 @@ New-Item -ItemType Directory -Force -Path "$HOME\.pi\agent\extensions"
 Copy-Item -Path ".\Pi_Config\agent\extensions\*" -Destination "$HOME\.pi\agent\extensions\" -Force
 ```
 
-#### 3. Installing Bundled Extensions (Global Source)
-Alternatively, you can install the official extensions directly from the global Pi installation or GitHub:
+#### Configure MCP Servers
 
-```powershell
-# Copy the SSH Extension directly from your global node_modules installation
-Copy-Item -Path "$env:APPDATA\npm\node_modules\@earendil-works\pi-coding-agent\examples\extensions\ssh.ts" -Destination "$HOME\.pi\agent\extensions\" -Force
+Add the OpenSCAD MCP server configuration to your `mcp.json` configuration file (either globally at `~/.pi/agent/mcp.json` or project-locally at `.mcp.json`):
 
-# Copy the official Plan Mode Extension directly from global node_modules
-Copy-Item -Path "$env:APPDATA\npm\node_modules\@earendil-works\pi-coding-agent\examples\extensions\plan-mode" -Destination "$HOME\.pi\agent\extensions\" -Recurse -Force
+```json
+{
+  "mcpServers": {
+    "openscad": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "git+https://github.com/quellant/openscad-mcp.git",
+        "openscad-mcp"
+      ],
+      "env": {
+        "OPENSCAD_PATH": "C:\\Program Files\\OpenSCAD (Nightly)\\openscad.exe"
+      }
+    }
+  }
+}
 ```
-
-Alternatively, for macOS/Linux or direct downloads:
-
-```bash
-# macOS/Linux (Shell Commands)
-mkdir -p ~/.pi/agent/extensions/plan-mode
-curl -fLo ~/.pi/agent/extensions/ssh.ts https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/examples/extensions/ssh.ts
-curl -fLo ~/.pi/agent/extensions/plan-mode/index.ts https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/examples/extensions/plan-mode/index.ts
-curl -fLo ~/.pi/agent/extensions/plan-mode/utils.ts https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/examples/extensions/plan-mode/utils.ts
-```
-
-> **Note**: After syncing, type `/reload` in the Pi terminal to compile and load the extensions.
 
 ---
 
@@ -95,4 +93,3 @@ npx skills add antvis/chart-visualization-skills
 # Tip: Search for more developer skills:
 npx skills find <keyword>
 ```
-,path:

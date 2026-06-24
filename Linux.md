@@ -301,25 +301,35 @@ Script that checks all active hardware sensors and routes alerts to Telegram usi
 
 Run the following to create `/usr/local/bin/sensors-notify.sh`:
 
-    tee /usr/local/bin/sensors-notify.sh > /dev/null << 'EOF'
+    sudo tee /usr/local/bin/sensors-notify.sh > /dev/null << 'EOF'
     #!/bin/bash
     # Check for active hardware temperature alarms using JSON output
-    
+
     STATE_FILE="/tmp/sensors-notify.state"
     COOLDOWN=14400 # 4 hours in seconds
-    
+    K10TEMP_LIMIT=85.0 # Max temp limit for CPU (TjMax is 95°C)
+
     # Get all active alarm lines from lm_sensors
-    ALARM_LINES=$(sensors -j | jq -r '
-      to_entries[] | .key as $chip | 
-      .value | to_entries[] | select(.key != "Adapter") | .key as $sensor | 
-      .value | . as $attrs | to_entries[] | select(.key | endswith("_alarm")) | select(.value > 0) | 
-      (.key | split("_")[0]) as $prefix |
-      ($prefix + "_input") as $input_key |
-      $attrs[$input_key] as $val |
-      (if .key | contains("temp") then "°C" else "" end) as $unit |
-      "\($chip) - \($sensor): \($val)\($unit) (\(.key))"
+    ALARM_LINES=$(sensors -j | jq -r --argjson limit "$K10TEMP_LIMIT" '
+    to_entries[] | .key as $chip | 
+    .value | to_entries[] | select(.key != "Adapter") | .key as $sensor | 
+    .value | . as $attrs | 
+    (
+        # Standard hardware alarms from drivers
+        (to_entries[] | select(.key | endswith("_alarm")) | select(.value > 0) | 
+        (.key | split("_")[0]) as $prefix |
+        ($prefix + "_input") as $input_key |
+        {val: $attrs[$input_key], alarm: .key})
+        ,
+        # Manual threshold for k10temp (which does not define alarms in the driver)
+        (select($chip | startswith("k10temp")) | 
+        to_entries[] | select(.key | endswith("_input")) | select(.value > $limit) | 
+        {val: .value, alarm: "manual_high_temp_limit"})
+    ) | 
+    (if .alarm | contains("temp") or .alarm == "manual_high_temp_limit" then "°C" else "" end) as $unit |
+    "\($chip) - \($sensor): \(.val)\($unit) (\(.alarm))"
     ')
-    
+
     if [ -n "$ALARM_LINES" ]; then
         NOW=$(date +%s)
         
@@ -359,7 +369,8 @@ Run the following to create `/usr/local/bin/sensors-notify.sh`:
         fi
     fi
     EOF
-    chmod +x /usr/local/bin/sensors-notify.sh
+    sudo chmod +x /usr/local/bin/sensors-notify.sh
+
 
 ### Schedule the Script
 

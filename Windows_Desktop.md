@@ -739,6 +739,24 @@ uv tool install jupytext
 uv tool install ruff
 ```
 
+## OpenSCAD and BOSL2 Setup
+
+OpenSCAD is installed via winget (listed in the Creative Tools software table). To install the **BOSL2 (Belfry OpenSCAD Library v2)** library on Windows:
+
+```powershell
+# Create the local OpenSCAD libraries directory
+New-Item -ItemType Directory -Force -Path "$HOME\Documents\OpenSCAD\libraries"
+
+# Clone the BOSL2 repository
+git clone https://github.com/revarbat/BOSL2.git "$HOME\Documents\OpenSCAD\libraries\BOSL2"
+```
+
+To use BOSL2 in your `.scad` scripts, include it at the top of your file:
+
+```openscad
+include <BOSL2/std.scad>
+```
+
 ## Google Antigravity Setup
 
 Install useful extensions.
@@ -777,118 +795,6 @@ antigravity --install-extension esbenp.prettier-vscode
 Activate the theme after
 
     Open the command palette (Ctrl+Shift+P or Cmd+Shift+P on macOS), type Material Icons: Activate Icon Theme, and select it.
-
-### MCP Configuration
-
-Antigravity (and other hosts like **Jan** and **LM Studio**) supports the **Model Context Protocol (MCP)**. This allows your local AI models to use external tools, search the web, and perform complex reasoning.
-
-| Server | Purpose | Method |
-| :--- | :--- | :--- |
-| **Sequential Thinking** | Advanced reasoning and iterative problem solving. | `npx` |
-| **DuckDuckGo Search** | Real-time web search capabilities (No API Key required). | `npx` |
-| **Brave Search** | Real-time web search capabilities (Requires API Key). | `npx` |
-| **OpenSCAD** | 3D Geometry and Model analysis. | `uv` |
-
-#### Example `mcp_config.json`
-
-```json
-{
-  "mcpServers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    },
-    "ddg-search": {
-      "command": "npx",
-      "args": ["-y", "@ericthered926/duckduckgo-mcp-server"]
-    },
-    "brave-search": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": {
-        "BRAVE_API_KEY": "YOUR_API_KEY"
-      }
-    },
-    "openscad": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--with",
-        "git+https://github.com/quellant/openscad-mcp.git",
-        "openscad-mcp"
-      ],
-      "env": {
-        "OPENSCAD_PATH": "C:\\Program Files\\OpenSCAD (Nightly)\\openscad.exe"
-      }
-    }
-  }
-}
-```
-
-## n8n
-
-n8n is an extendable workflow automation tool. The standalone desktop app is deprecated, and running via Docker is the recommended local method.
-
-### Docker
-
-Create a persistent volume for data:
-
-```powershell
-docker volume create n8n_data
-```
-
-Run the container:
-
-```powershell
-docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n docker.n8n.io/n8nio/n8n
-```
-
-Access via `http://localhost:5678`.
-
-## Ollama Setup
-
-Consider the following options if your hardware supports it:
-
-Enable Flash Attention:
-
-```powershell
-[Environment]::SetEnvironmentVariable("OLLAMA_FLASH_ATTENTION", "1", "User")
-```
-
-Enable KV Cache Quantization (Saves ~50% VRAM on context):
-
-```powershell
-[Environment]::SetEnvironmentVariable("OLLAMA_KV_CACHE_TYPE", "q8_0", "User")
-```
-
-Force Vulkan if your hardware needs it (Non NVIDIA Devices)
-
-```powershell
-[Environment]::SetEnvironmentVariable("OLLAMA_VULKAN", "1", "User")
-```
-
-Enable "Shared GPU Memory Override" on Intel devices and set to 80%
-## LLM Model Serving (vLLM & NVIDIA GPU)
-
-vLLM is a high-performance library for LLM inference.
-
-### Docker Desktop
-
-```powershell
-docker run -it --rm --gpus all `
-  -v ~/.cache/huggingface:/root/.cache/huggingface `
-  -v ~/.cache/vllm:/root/.cache/vllm `
-  -p 8000:8000 `
-  --ipc=host `
-  -e VLLM_SERVER_STREAM_OPTIONS_INCLUDE_USAGE=True `
-  vllm/vllm-openai:latest `
-  --model QuantTrio/Qwen3.5-4B-AWQ `
-  --host 0.0.0.0 `
-  --max-model-len 16384 `
-  --reasoning-parser qwen3 `
-  --kv-cache-dtype fp8 `
-  --override-generation-config '{"stream_options": {"include_usage": true}}'
-```
 
 ### WSL2 (Native)
 
@@ -1086,5 +992,6 @@ sudo sh -c 'echo "appendWindowsPath=false" >> /etc/wsl.conf'
 
  # #   R e g i s t r y   A u d i t   R e s u l t s 
  |   P a t h   |   N a m e   |   E x p e c t e d   |   A c t u a l   |   S t a t u s   | 
- |   : - - -   |   : - - -   |   : - - -   |   : - - -   |   : - - -   |  
+ |   : - - -   |   : - - -   |   : - - -   |   : - - -   |   : - - -   | 
+ 
  

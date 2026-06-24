@@ -14,6 +14,10 @@ A collection of light build guides and configuration files stored here for conve
 
 ## Application Specific
 
+[Pi Coding Agent](pi-agent/README.md)
+
+[LLama Swap](llama-swap/README.md)
+
 ### AWS CLI Config
 
 Enable auto prompt mode
