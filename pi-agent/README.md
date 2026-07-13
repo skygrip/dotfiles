@@ -40,8 +40,9 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
 
 ```bash
 cd ~/.pi/agent/npm
-npm install pi-mcp-adapter
-npm install pi-web-access
+pi install npm:pi-mcp-adapter
+pi install npm:pi-subagents
+pi install npm:pi-web-access
 ```
 
 #### Sync Extensions
