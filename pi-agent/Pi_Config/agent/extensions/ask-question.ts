@@ -22,35 +22,34 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ask_question",
     label: "Ask Question",
-    description: "Ask the user a clarifying question, request a choice from a menu, or ask for confirmation mid-execution without ending the current turn.",
+    description: "Prompt user for input, menu selection, or yes/no confirmation.",
 
     // Injected into the agent system prompt to advertise tool capability
-    promptSnippet: "Prompt the user for real-time clarifying input, menus, or yes/no confirmation.",
+    promptSnippet: "Prompt user for input, choices, or yes/no confirmation.",
 
     // Strict boundaries for the model to prevent over-use or bad parameterization
     promptGuidelines: [
-      "Use ask_question ONLY when you hit a genuine branch, ambiguity, or critical design decision that requires immediate user steering to proceed.",
-      "Use ask_question with type='select' and a list of 'choices' when presenting a distinct set of options.",
-      "Use ask_question with type='confirm' for simple binary yes/no confirmation or safety checkpoints.",
-      "Always provide a reasonable 'defaultValue' and a 'timeoutMs' (e.g., 15000 for 15s) so your execution doesn't hang indefinitely if the user is away."
+      "Use only for critical choices requiring user input.",
+      "Use 'select' for menus, 'confirm' for yes/no.",
+      "Specify timeoutMs and defaultValue to prevent hangs."
     ],
 
     // TypeBox schema definition used by the LLM for argument construction
     parameters: Type.Object({
       question: Type.Optional(Type.String({
-        description: "The question, prompt, or menu title to present to the user."
+        description: "Prompt text to display."
       })),
       type: StringEnum(["input", "confirm", "select"] as const, {
-        description: "The interaction mode: 'input' for freeform text, 'confirm' for Yes/No, or 'select' to pick from a list."
+        description: "Mode: input, confirm, or select."
       }),
       choices: Type.Optional(Type.Array(Type.String(), {
-        description: "The list of menu options to present. Required if type is 'select'."
+        description: "Menu options (required for select)."
       })),
       timeoutMs: Type.Optional(Type.Integer({
-        description: "Countdown timeout in milliseconds after which the dialog automatically dismisses."
+        description: "Timeout in milliseconds."
       })),
       defaultValue: Type.Optional(Type.String({
-        description: "The default value returned if the user cancels or the dialog times out."
+        description: "Fallback value returned on timeout."
       }))
     }),
 

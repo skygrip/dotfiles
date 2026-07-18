@@ -5,6 +5,8 @@
  * (bash execution) to a remote machine over an SSH tunnel. It intercepts local tool calls and swaps
  * the underlying file system and shell operations behind the scenes.
  *
+ * It also intercepts and suppresses APPEND_SYSTEM.md
+ *
  * Usage:
  *   pi --ssh user@host
  *   pi --ssh user@host:/remote/path
@@ -82,7 +84,7 @@ function sshExec(remoteArgs: string[], command: string): Promise<Buffer> {
 		const child = spawn("ssh", [...remoteArgs, command], { stdio: ["ignore", "pipe", "pipe"] });
 		const chunks: Buffer[] = [];
 		const errChunks: Buffer[] = [];
-		
+
 		child.stdout.on("data", (data) => chunks.push(data));
 		child.stderr.on("data", (data) => errChunks.push(data));
 		child.on("error", reject);
@@ -105,7 +107,7 @@ function createRemoteReadOps(remoteArgs: string[], remoteCwd: string, localCwd: 
 		// Read a file remotely over SSH by running `cat`
 		readFile: (p) => sshExec(remoteArgs, `cat ${shellEscape(toRemote(p))}`),
 		// Test if file exists and is readable
-		access: (p) => sshExec(remoteArgs, `test -r ${shellEscape(toRemote(p))}`).then(() => {}),
+		access: (p) => sshExec(remoteArgs, `test -r ${shellEscape(toRemote(p))}`).then(() => { }),
 		// Detect image mimetype remotely using the `file` utility
 		detectImageMimeType: async (p) => {
 			try {
@@ -148,7 +150,7 @@ function createRemoteWriteOps(remoteArgs: string[], remoteCwd: string, localCwd:
 			});
 		},
 		// Create remote directories recursively
-		mkdir: (dir) => sshExec(remoteArgs, `mkdir -p ${shellEscape(toRemote(dir))}`).then(() => {}),
+		mkdir: (dir) => sshExec(remoteArgs, `mkdir -p ${shellEscape(toRemote(dir))}`).then(() => { }),
 	};
 }
 
@@ -173,24 +175,24 @@ function createRemoteBashOps(remoteArgs: string[], remoteCwd: string, localCwd: 
 				const cmd = `cd ${shellEscape(toRemote(cwd))} && ${command}`;
 				const child = spawn("ssh", [...remoteArgs, cmd], { stdio: ["ignore", "pipe", "pipe"] });
 				let timedOut = false;
-				
+
 				const timer = timeout
 					? setTimeout(() => {
-							timedOut = true;
-							child.kill();
-						}, timeout * 1000)
+						timedOut = true;
+						child.kill();
+					}, timeout * 1000)
 					: undefined;
-					
+
 				child.stdout.on("data", onData);
 				child.stderr.on("data", onData);
 				child.on("error", (e) => {
 					if (timer) clearTimeout(timer);
 					reject(e);
 				});
-				
+
 				const onAbort = () => child.kill();
 				signal?.addEventListener("abort", onAbort, { once: true });
-				
+
 				child.on("close", (code) => {
 					if (timer) clearTimeout(timer);
 					signal?.removeEventListener("abort", onAbort);
@@ -291,7 +293,7 @@ export default function (pi: ExtensionAPI) {
 		if (arg) {
 			let remoteStr = "";
 			let remoteCwd = "";
-			
+
 			// Parse out the target remote working directory if appended with a colon (e.g. user@host:/path)
 			const idx = arg.indexOf(":");
 			if (idx !== -1) {
@@ -312,12 +314,14 @@ export default function (pi: ExtensionAPI) {
 					await sshExec(remoteArgs, `test -d ${shellEscape(remoteCwd)}`);
 				}
 				resolvedSsh = { remoteArgs, remoteCwd };
-				
+				process.env.PI_SSH_REMOTE_CWD = remoteCwd;
+
 				const displayString = remoteArgs.join(" ");
 				ctx.ui.setStatus("ssh", ctx.ui.theme.fg("accent", `SSH: ${displayString}:${resolvedSsh.remoteCwd}`));
 				ctx.ui.notify(`SSH mode: ${displayString}:${resolvedSsh.remoteCwd}`, "info");
 			} catch (e: any) {
 				resolvedSsh = null;
+				process.env.PI_SSH_REMOTE_CWD = undefined;
 				ctx.ui.notify(`⚠️ SSH connection failed: ${e.message}. Falling back to local execution.`, "error");
 			}
 		}
@@ -335,17 +339,23 @@ export default function (pi: ExtensionAPI) {
 		const ssh = getSsh();
 		if (ssh) {
 			const displayString = ssh.remoteArgs.join(" ");
-			
+
 			// Escape regex special chars in local CWD and construct a robust case-insensitive pattern 
 			// that accommodates both slash types to handle drive/separator casing mismatches on Windows.
 			const escapedLocal = localCwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 			const regexStr = "Current working directory:\\s*" + escapedLocal.replace(/\\\\|\\/g, "[\\\\/]");
 			const regex = new RegExp(regexStr, "i");
 
-			const modified = event.systemPrompt.replace(
+			let modified = event.systemPrompt.replace(
 				regex,
-				`Current working directory: ${ssh.remoteCwd} (via SSH: ${displayString})`,
+				`Current working directory: ${ssh.remoteCwd} (Connected via SSH: ${displayString})`,
 			);
+
+			// Suppress the local APPEND_SYSTEM.md instructions
+			if (event.systemPromptOptions?.appendSystemPrompt) {
+				modified = modified.replace(event.systemPromptOptions.appendSystemPrompt, "").trim();
+			}
+
 			return { systemPrompt: modified };
 		}
 	});

@@ -1,6 +1,6 @@
 ---
 name: agent-config
-description: Blueprints, templates, and documentation references for writing Extensions, custom Skills, and Prompt Templates. Use when creating or modifying Pi Coding Agent configurations.
+description: Blueprints and docs for Extensions, Skills, and Prompt Templates. Use when modifying agent configuration.
 ---
 
 # Agent Configuration Blueprint

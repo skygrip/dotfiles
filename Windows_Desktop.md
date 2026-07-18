@@ -312,6 +312,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
 | [Rust](https://www.rust-lang.org/tools/install)                                                          | winget install -e --id Rustlang.Rustup                         |
+| [Snyk CLI](https://snyk.io/)                                                                             | winget install -e --id Snyk.Snyk                               |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                       |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                            | winget install -e --id WinSCP.WinSCP                           |
@@ -988,11 +989,3 @@ sudo sh -c 'echo "appendWindowsPath=false" >> /etc/wsl.conf'
 
 # Apply changes (requires wsl --shutdown)
 ```
-
-
-
- # #   R e g i s t r y   A u d i t   R e s u l t s 
- |   P a t h   |   N a m e   |   E x p e c t e d   |   A c t u a l   |   S t a t u s   | 
- |   : - - -   |   : - - -   |   : - - -   |   : - - -   |   : - - -   | 
- 
- 

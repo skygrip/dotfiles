@@ -1,5 +1,6 @@
 ---
-description: Audit code, config, or documentation for bugs, security issues, and style violations. Uses critic_review for isolated objective review when available, with manual fallback. Use before committing changes or at the end of a plan-execute cycle.
+name: audit
+description: Audit code, config, or docs for bugs, style, and security issues. Consider using before committing or finishing tasks.
 ---
 
 # Audit
@@ -8,12 +9,11 @@ Run a quality gate on one or more files before committing changes.
 
 ## Session Rules Cache
 
-**Build your rules list once per session** at the start of the first audit. For all subsequent audits in the same session, reuse this rules list without re-reading config files (unless `EVOLUTION.md` was updated during the session). Append your session rules list to `EVOLUTION.md` using the **Persistent Playbook** format (defined in `AGENTS.md`) to persist it for future sessions.
+**Build your rules list once per session** at the start of the first audit. For all subsequent audits in the same session, reuse this rules list without re-reading config files.
 
 To build the session rules list, check:
-- `EVOLUTION.md` for known gotchas.
-- `.pi/APPEND_SYSTEM.md` for environment rules (line endings, shell syntax)
-- Project linter configs (`.eslintrc`, `pyproject.toml`, `tsconfig.json`, etc.)
+- `.pi/AGENTS.md` and `.pi/APPEND_SYSTEM.md` for project and environment rules (line endings, style, shell syntax).
+- Project linter configs (`.eslintrc`, `pyproject.toml`, `tsconfig.json`, etc.).
 
 Then combine with the default rules below.
 

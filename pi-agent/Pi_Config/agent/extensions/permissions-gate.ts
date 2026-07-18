@@ -61,8 +61,12 @@ export default function (pi: ExtensionAPI) {
    * Checks if a file path targets a sensitive location that should be gated.
    * Handles both Windows-local and Unix-remote (SSH) paths correctly by avoiding
    * path.resolve() on Unix-absolute paths when running on Windows.
+   * 
+   * @param filePath - The path to check.
+   * @param workspaceRoot - Optional Unix-style remote workspace root (used in SSH mode
+   *   to resolve relative paths correctly).
    */
-  function isSensitivePath(filePath: string): boolean {
+  function isSensitivePath(filePath: string, workspaceRoot?: string): boolean {
     if (!filePath) return false;
 
     const raw = filePath.replace(/\\/g, "/");
@@ -79,6 +83,9 @@ export default function (pi: ExtensionAPI) {
     let normalized: string;
     if (isUnixAbsolute) {
       normalized = raw.toLowerCase();
+    } else if (workspaceRoot) {
+      // Resolve relative path against remote workspace root in SSH/Unix mode using POSIX normalization
+      normalized = path.posix.normalize(workspaceRoot + "/" + raw).toLowerCase();
     } else {
       try {
         normalized = path.resolve(filePath).replace(/\\/g, "/").toLowerCase();
@@ -107,8 +114,8 @@ export default function (pi: ExtensionAPI) {
    * Checks if a file path is outside the project workspace.
    * 
    * @param filePath - The path to check.
-   * @param workspaceRoot - Optional override for the workspace root (used in SSH mode
-   *   to compare against the remote CWD instead of the local process CWD).
+   * @param workspaceRoot - Optional Unix-style remote workspace root (used in SSH mode
+   *   to compare and resolve relative paths correctly).
    */
   function isOutsideWorkspace(filePath: string, workspaceRoot?: string): boolean {
     if (!filePath) return false;
@@ -118,6 +125,9 @@ export default function (pi: ExtensionAPI) {
     let absolutePath: string;
     if (isUnixAbsolute) {
       absolutePath = filePath;
+    } else if (workspaceRoot) {
+      // In SSH mode, resolve relative paths against the remote Unix CWD using POSIX normalization
+      absolutePath = path.posix.normalize(workspaceRoot + "/" + filePath.replace(/\\/g, "/"));
     } else {
       try {
         absolutePath = path.resolve(filePath);
@@ -137,26 +147,27 @@ export default function (pi: ExtensionAPI) {
 
   /**
    * Resolves the effective workspace root for out-of-workspace checks.
-   * In SSH mode, attempts to determine the remote CWD from the --ssh flag value.
-   * Returns undefined if the remote CWD cannot be determined (agent falls back to
-   * isSensitivePath checks only for those cases).
+   * In SSH mode, attempts to determine the remote CWD from the --ssh flag value or
+   * the shared process.env.PI_SSH_REMOTE_CWD set by ssh.ts.
    */
   function getWorkspaceRoot(isSshActive: boolean): string | undefined {
     if (!isSshActive) return undefined; // Use default (local process.cwd())
 
     const sshArg = pi.getFlag("ssh") as string | undefined;
-    if (!sshArg) return undefined;
-
-    // Parse user@host:/remote/path — the colon separates host from path
-    const colonIdx = sshArg.indexOf(":");
-    if (colonIdx !== -1) {
-      const remotePath = sshArg.slice(colonIdx + 1);
-      if (remotePath) return remotePath;
+    if (sshArg) {
+      // Parse user@host:/remote/path — the colon separates host from path
+      const colonIdx = sshArg.indexOf(":");
+      if (colonIdx !== -1) {
+        const remotePath = sshArg.slice(colonIdx + 1);
+        if (remotePath) return remotePath;
+      }
     }
 
-    // No path in the flag (e.g. --ssh user@host) — remote CWD was resolved at
-    // runtime by ssh.ts but isn't accessible here. Return undefined so the caller
-    // skips the workspace-boundary check and relies on isSensitivePath instead.
+    // Fallback: Check if ssh.ts shared the dynamically resolved remote CWD
+    if (process.env.PI_SSH_REMOTE_CWD) {
+      return process.env.PI_SSH_REMOTE_CWD;
+    }
+
     return undefined;
   }
 
@@ -235,12 +246,12 @@ export default function (pi: ExtensionAPI) {
       const filePath = typeof event.input?.path === "string" ? event.input.path : "";
 
       if (filePath) {
-        const isSensitive = isSensitivePath(filePath);
+        const workspaceRoot = getWorkspaceRoot(isSshActive);
+        const isSensitive = isSensitivePath(filePath, workspaceRoot);
 
         // Workspace-boundary check: in SSH mode, compare against the remote workspace
         // root if known. If the remote CWD can't be determined (no path in --ssh flag),
-        // skip the boundary check and rely on isSensitivePath alone.
-        const workspaceRoot = getWorkspaceRoot(isSshActive);
+        // skip the boundary check and relies on isSensitivePath alone.
         const canCheckBoundary = !isSshActive || workspaceRoot !== undefined;
         const isOutside = canCheckBoundary && isOutsideWorkspace(filePath, workspaceRoot);
 

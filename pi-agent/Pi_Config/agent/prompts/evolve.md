@@ -1,3 +1,3 @@
 Review our conversation history from this session. Identify any non-obvious workarounds, successful complex CLI commands, config gotchas, or custom style playbooks we formulated. 
 
-If you find any, run a self-evolution check and write them to EVOLUTION.md immediately using the matching format from AGENTS.md (Category 1: Troubleshooting Logs, or Category 2: Persistent Playbooks). Keep entries short and direct.
+If you find any, propose them as additions to APPEND_SYSTEM.md (for environment/tools), AGENTS.md (for behavior/guidelines), or a custom skill under skills/ (for workflows) following the persistence rules in AGENTS.md. Show the exact proposed diffs or file content so the user can easily apply them.

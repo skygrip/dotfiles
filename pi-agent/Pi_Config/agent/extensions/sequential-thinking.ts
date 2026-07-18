@@ -16,12 +16,12 @@ export default function initExtension(pi: any) {
     pi.registerTool({
         name: "sequential_thinking",
         label: "Sequential Thinking",
-        description: "Use this tool to run an intermediate reasoning loop, think through complex logic, analyze data, or break down structural multi-file engineering problems step-by-step.",
+        description: "Run a step-by-step reasoning loop to think through complex logic or multi-file problems.",
 
         // Simple flat schema for tool-calling reliability
         parameters: Type.Object({
             thought: Type.String({
-                description: "The detailed reasoning step, hypothesis, or analytical breakdown."
+                description: "Reasoning step, hypothesis, or analysis."
             }),
         }),
 

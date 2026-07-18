@@ -28,7 +28,20 @@ function getLanguageFromPath(filePath: string): string {
     ".yaml": "YAML",
     ".toml": "TOML",
     ".html": "HTML",
-    ".css": "CSS"
+    ".css": "CSS",
+    ".php": "PHP",
+    ".rb": "Ruby",
+    ".go": "Go",
+    ".rs": "Rust",
+    ".c": "C",
+    ".h": "C",
+    ".cpp": "C++",
+    ".hpp": "C++",
+    ".cs": "C#",
+    ".java": "Java",
+    ".sql": "SQL",
+    ".lua": "Lua",
+    ".dockerfile": "Dockerfile",
   };
   return map[ext] || (ext ? ext.slice(1).toUpperCase() : "Unknown");
 }
@@ -48,27 +61,27 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "critic_review",
     label: "Critic Review",
-    description: "An objective, isolated auditing sandbox to review drafts of code, markdown, or config files against strict rules, security anti-patterns, formatting guidelines, and privacy constraints to guarantee zero confirmation bias before making writes.",
-    
+    description: "Run an isolated code/document audit against optional rules before writing files.",
+
     // Schema parameters definition for LLM tool call generation
     parameters: Type.Object({
-      draft: Type.Optional(Type.String({ 
-        description: "The raw draft of code, config, or markdown text to audit. Must be provided if filePath is not specified." 
+      draft: Type.Optional(Type.String({
+        description: "Raw text to audit. Required if filePath is omitted."
       })),
-      filePath: Type.Optional(Type.String({ 
-        description: "Optional path to the file to audit. If provided, the draft will be read from this file." 
+      filePath: Type.Optional(Type.String({
+        description: "Optional file path to audit."
       })),
-      startLine: Type.Optional(Type.Integer({ 
-        description: "Optional 1-based start line to audit from the file. Only applicable when filePath is provided." 
+      startLine: Type.Optional(Type.Integer({
+        description: "1-based start line (file mode only)."
       })),
-      endLine: Type.Optional(Type.Integer({ 
-        description: "Optional 1-based end line to audit to in the file. Only applicable when filePath is provided." 
+      endLine: Type.Optional(Type.Integer({
+        description: "1-based end line (file mode only)."
       })),
-      language: Type.Optional(Type.String({ 
-        description: "Optional language type (e.g. 'python', 'typescript', 'bash'). If omitted, it will be inferred from filePath extension or draft contents." 
+      language: Type.Optional(Type.String({
+        description: "Target language/extension. Auto-detected if omitted."
       })),
-      rules: Type.Optional(Type.Array(Type.String(), { 
-        description: "Optional list of strict rules or guidelines that the draft must comply with. If omitted, a general quality, security, and bug audit is performed." 
+      rules: Type.Optional(Type.Array(Type.String(), {
+        description: "Strict rules to enforce. Defaults to general audit."
       }))
     }),
 
@@ -142,14 +155,14 @@ export default function (pi: ExtensionAPI) {
             const normalized = absolutePath.replace(/\\/g, "/").toLowerCase();
 
             // Sensitive path protection
-            const isSensitive = 
-              normalized.includes("/.git/") || 
+            const isSensitive =
+              normalized.includes("/.git/") ||
               normalized.startsWith(".git/") ||
-              normalized === ".git" || 
+              normalized === ".git" ||
               normalized.endsWith("/.git") ||
-              normalized === ".env" || 
+              normalized === ".env" ||
               normalized.startsWith(".env/") ||
-              normalized.endsWith("/.env") || 
+              normalized.endsWith("/.env") ||
               normalized.includes("/.env/") ||
               normalized.includes(".env.") ||
               /^[a-z]:\/(windows|program files)/i.test(normalized) ||
@@ -168,7 +181,7 @@ export default function (pi: ExtensionAPI) {
 
             fileContent = await fs.readFile(absolutePath, "utf-8");
           }
-          
+
           if (params.startLine !== undefined || params.endLine !== undefined) {
             const lines = fileContent.split(/\r?\n/);
             const start = params.startLine !== undefined ? Math.max(1, params.startLine) - 1 : 0;
@@ -212,37 +225,45 @@ export default function (pi: ExtensionAPI) {
       const targetLanguage = params.language
         ? params.language
         : params.filePath
-        ? getLanguageFromPath(params.filePath)
-        : "Detect from context";
+          ? getLanguageFromPath(params.filePath)
+          : "Detect from context";
 
       // ----------------------------------------------------
       // 3. Isolated Auditor Prompt Setup
-      // Prepares the strict system system instruction for the critic model.
+      // Prepares a strict system instruction for the critic model.
       // Enforces distinct categorization of issues: BLOCKING vs ADVISORY.
       // ----------------------------------------------------
-      const systemPrompt = `You are an elite, merciless, and highly pragmatic code and document auditor operating in an isolated sandbox. Your goal is to review the provided draft with absolute objectivity.
+      const isSnippet = params.startLine !== undefined || params.endLine !== undefined;
+      const snippetNotice = isSnippet
+        ? `\nNOTE: This is a partial snippet (lines ${params.startLine ?? 1}–${params.endLine ?? "end"}). Do NOT flag missing imports, incomplete surrounding context, or issues that exist outside the provided range.`
+        : "";
+
+      const systemPrompt = `You are an elite, merciless, and highly pragmatic code and document auditor operating in an isolated sandbox. Your goal is to review the provided draft with absolute objectivity. Err on the side of passing — only flag issues you are confident about.
 
 TARGET LANGUAGE: ${targetLanguage}
-${params.filePath ? `TARGET FILE PATH: ${params.filePath}` : ""}
+${params.filePath ? `TARGET FILE PATH: ${params.filePath}` : ""}${snippetNotice}
 
 ${hasRules ? `STRICT RULES TO ENFORCE:\n${rulesFormatted}` : `GENERAL AUDIT GUIDELINES:\n${rulesFormatted}`}
 
-CRITICAL OUTPUT FORMATTING INSTRUCTIONS:
-1. If the draft is of high quality, fully complies with all rules, and has no functional bugs, security vulnerabilities, or syntax errors, output exactly the word "PASS" in all capital letters with absolutely no other text.
-2. If there are issues, you must output them grouped into exactly these two categories:
-   * [BLOCKING]: Severe functional bugs, syntax errors, security risks, or explicit violations of the strict rules.
+OUTPUT FORMAT:
+1. Categorize every issue as exactly one of:
+   * [BLOCKING]: Functional bugs, syntax errors, security vulnerabilities, or explicit violations of the strict rules above.
    * [ADVISORY]: Style improvements, performance optimizations, design smells, or minor optional suggestions.
-3. Each issue must be formatted strictly as a list item starting with either the '* [BLOCKING]' or '* [ADVISORY]' prefix.
-4. Every issue must be contextualized with a line number using the format '(Line X)' or '(Global)' if the issue spans the entire file.
-5. All code modifications or replacements within a fix must be formatted inside explicit fenced markdown code blocks.
-   Example format:
+2. Format each issue as a list item with the prefix '* [BLOCKING]' or '* [ADVISORY]'.
+3. Contextualize each issue with '(Line X)' or '(Global)' if it spans the entire file.
+4. Include a suggested fix inside a fenced markdown code block when applicable.
+   Example:
    * [BLOCKING] (Line 12): Soft equality used instead of strict equality.
      -> Fix:
      \`\`\`typescript
      if (a === b) {
      \`\`\`
-6. Do not invent pedantic nitpicks (e.g. demanding comments, complaining about double vs single quotes, or minor spacing differences) unless they are explicitly violated by a strict rule.
-7. If there are no [BLOCKING] issues, you must end your entire output with a "PASS" recommendation on a new line.`;
+5. Do not invent pedantic nitpicks (e.g. demanding comments, complaining about quote style, or minor spacing differences) unless they explicitly violate a strict rule.
+
+VERDICT:
+- If there are zero issues of any kind, output exactly: PASS
+- If there are [ADVISORY] issues but zero [BLOCKING] issues, list the advisories then output: PASS
+- If there are any [BLOCKING] issues, list all issues then output: FAIL`;
 
       // ----------------------------------------------------
       // 4. API Query Execution
@@ -268,16 +289,19 @@ CRITICAL OUTPUT FORMATTING INSTRUCTIONS:
           {
             role: "user" as const,
             content: [
-              { type: "text" as const, text: `System Instruction: ${systemPrompt}\n\nPlease audit this draft:\n\n${draftText}` }
+              { type: "text" as const, text: `Audit this draft:\n\n${draftText}` }
             ],
             timestamp: Date.now()
           }
         ];
 
-        // Execute raw LLM completion call via pi-ai module
+        // Execute isolated, context-free LLM completion call via pi-ai module.
+        // The systemPrompt is passed via Context.systemPrompt (system role), not embedded
+        // in the user message, ensuring proper instruction authority and true isolation
+        // from the main agent's conversation history.
         const response = await complete(
           model,
-          { messages: auditMessages },
+          { systemPrompt, messages: auditMessages },
           {
             apiKey: auth.apiKey,
             headers: auth.headers,
@@ -343,7 +367,7 @@ CRITICAL OUTPUT FORMATTING INSTRUCTIONS:
 
       const countLines = lines.length;
       const headerText = previewHeader + (countLines > 0 ? theme.fg("dim", ` (${countLines} lines)`) : "");
-      
+
       let text = headerText;
       if (countLines > 0) {
         const previewLines = lines.slice(0, 6).map(l => {
@@ -364,11 +388,11 @@ CRITICAL OUTPUT FORMATTING INSTRUCTIONS:
 
     /**
      * Renders the resolved results block in the TUI console history.
-     * Colors results semantically: bold red for [BLOCKING], accent for [ADVISORY], and green for PASS.
+     * Displays the raw critic output — the calling agent interprets the content.
      */
     renderResult(result, _options, theme, _context) {
       const details = result.details as { review?: string; error?: string } | undefined;
-      
+
       if (details?.error) {
         return new Text(theme.fg("warning", `✗ ERROR: ${details.error}`), 0, 0);
       }
@@ -379,31 +403,7 @@ CRITICAL OUTPUT FORMATTING INSTRUCTIONS:
         return new Text(text?.type === "text" ? text.text : "", 0, 0);
       }
 
-      if (review === "PASS") {
-        return new Text(theme.fg("success", "✓ PASS"), 0, 0);
-      }
-
-      // Highlight line results semantically
-      const lines = review.split("\n");
-      const formattedLines = lines.map(line => {
-        const lower = line.toLowerCase();
-        if (lower.includes("[blocking]") || lower.includes("blocking:")) {
-          // Style blocking issues in bold red/warning color
-          return theme.fg("warning", theme.bold(`  ${line.trim()}`));
-        } else if (lower.includes("[advisory]") || lower.includes("advisory:")) {
-          // Style advisories in dynamic/accent color
-          return theme.fg("accent", `  ${line.trim()}`);
-        } else if (lower.includes("pass")) {
-          return theme.fg("success", `  ${line.trim()}`);
-        }
-        return `  ${line}`;
-      }).join("\n");
-
-      const titleBlock = theme.fg("warning", theme.bold("✗ AUDIT ISSUES DETECTED\n")) +
-                         theme.fg("dim", "  " + "─".repeat(50) + "\n");
-      const footerBlock = theme.fg("dim", "\n  " + "─".repeat(50));
-      
-      return new Text(titleBlock + formattedLines + footerBlock, 0, 0);
+      return new Text(review, 0, 0);
     }
   });
 }

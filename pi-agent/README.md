@@ -55,6 +55,18 @@ New-Item -ItemType Directory -Force -Path "$HOME\.pi\agent\extensions"
 Copy-Item -Path ".\Pi_Config\agent\extensions\*" -Destination "$HOME\.pi\agent\extensions\" -Force
 ```
 
+#### Configure External Editor
+
+To use VS Code as your external editor when pressing `Ctrl+G` in the Pi TUI, edit your global settings file (`~/.pi/agent/settings.json` or `%USERPROFILE%\.pi\agent\settings.json` on Windows) to include the `externalEditor` setting:
+
+```json
+{
+  "externalEditor": "code --wait"
+}
+```
+
+The `--wait` flag is required so that Pi pauses and waits for you to save and close the file/tab in VS Code before reading your input back into the terminal.
+
 #### Configure MCP Servers
 
 Add the OpenSCAD MCP server configuration to your `mcp.json` configuration file (either globally at `~/.pi/agent/mcp.json` or project-locally at `.mcp.json`):

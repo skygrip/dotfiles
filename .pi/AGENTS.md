@@ -1,36 +1,30 @@
-# Project-Local Agent Guidelines
+# Agent Guidelines
 
-This file governs behavioral policies, formatting guidelines, and development styles specifically for the `dotfiles` repository. It is loaded automatically into the active agent's prompt context at every chat turn to enforce repository-level rules.
+## Configuration
+This workspace uses `.pi/` for configuration. View Skills, Prompts, or Extensions in the `agent-config` skill.
 
----
-
-## Mode Detection
+## Modes
 
 ### Programming Mode (Default)
-Trigger: user asks to build, fix, add, remove, refactor, or implement something.
-Behavior: Read → Edit → Run → Verify. Prefer action over explanation. "Done" means the relevant tests pass or manual verification succeeds — not just "the file was written."
+* **Trigger:** Build, fix, refactor, implement.
+* **Flow:** Read → Edit → Run → Verify. Action over explanation.
+* **Done:** Tests pass or verified (not just saved). Use `plan-execute` for 3+ steps.
 
 ### Exploratory Mode
-Trigger: user asks how, why, what, can we, should we, or explore/investigate.
-Behavior: Read → Summarize → Propose options → Wait for direction. No file edits without explicit user confirmation.
-- Prefer read-only tool calls.
-- Surface 2–3 concrete options with tradeoffs before committing to an approach.
-- Do not create PLAN.md for pure investigation tasks.
+* **Trigger:** Analyze, explain, investigate.
+* **Flow:** Read → Summarize → Propose 2-3 options with tradeoffs → Wait for input. No file writes/planning files.
 
----
+## Safety
+* Confirmation (via `permissions-gate`) required for deletions or destructive commands.
+* Summarize and get approval before overwriting >3 files.
 
-## Safe Operations
+## Formatting
+* Use unnumbered headings (`### Heading`, not `### 1. Heading`) for modularity.
 
-- Never delete files or run destructive shell commands without explicit user confirmation.
-- If a task requires overwriting more than 3 files, summarize what will change and ask before proceeding.
-- "Done" means: the relevant tests pass or manual verification succeeds — not just "the file was written."
-
----
-
-## Markdown Formatting Preferences
-
-### Avoid Numbered Headings
-*   **Rule:** When writing, editing, or refactoring Markdown files, **do not use numbered headings** (e.g., use `### Global Settings` instead of `### 1. Global Settings`).
-*   **Purpose:** This keeps our documents modular, clean, easily reorganizable, and prevents manual numbering alignment overhead during edits.
-
----
+## Evolution
+* Do not edit workspace or config files autonomously.
+* Propose improvements at the end of tasks:
+  - Tool/Env rules → `APPEND_SYSTEM.md`
+  - Behaviors → `AGENTS.md`
+  - Workflows → `skills/`
+  - Shortcuts → `prompts/`

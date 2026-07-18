@@ -1,6 +1,6 @@
 ---
 name: plan-execute
-description: Plan-and-execute workflow for multi-task implementations. Creates a living PLAN.md to work through tasks one by one, updating the plan as reality changes. Use when starting a project, feature, or multi-step task.
+description: Plan-execute workflow for complex tasks. Creates a living PLAN.md to track progress. Use for multi-step tasks.
 ---
 
 # Plan & Execute
@@ -22,7 +22,6 @@ Use this skill only when the task has **3 or more distinct steps** that each dep
 Complete each sub-step before moving on:
 
 - [ ] Does `PLAN.md` exist? → If yes, read it. If no, create it from the template below.
-- [ ] Does `EVOLUTION.md` exist? → If yes, scan for entries matching the current stack (language, framework, tools). Note any relevant lessons before starting.
 - [ ] Is the goal ambiguous? → If yes, ask focused questions before writing the plan. (See "When the Task is Ambiguous" below.)
 - [ ] Review the draft plan for correct dependency ordering before executing.
 
@@ -38,7 +37,7 @@ Use this exact structure:
 ```markdown
 # PLAN — [Brief Project/Feature Name]
 
-> **Workflow:** Execute with `use plan-execute`. See `plan-execute/SKILL.md`. Check `EVOLUTION.md` for past lessons before starting.
+> **Workflow:** Execute with `use plan-execute`. See `plan-execute/SKILL.md`.
 
 > ## Goal
 - [ ] What success looks like.

@@ -1,5 +1,6 @@
 ---
-description: OpenSCAD anti-patterns, best practices, and MCP workflow for AI-driven 3D part creation. Load this before writing any OpenSCAD code.
+name: openscad
+description: OpenSCAD workflow, best practices, and anti-patterns. Load before writing OpenSCAD code.
 ---
 
 # OpenSCAD Agent Guide
