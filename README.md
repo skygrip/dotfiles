@@ -14,6 +14,8 @@ A collection of light build guides and configuration files stored here for conve
 
 ## Application Specific
 
+[VS Code Setup](VSCode.md)
+
 [Pi Coding Agent](pi-agent/README.md)
 
 [LLama Swap](llama-swap/README.md)

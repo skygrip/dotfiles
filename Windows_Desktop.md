@@ -265,14 +265,12 @@ Configure the following Host settings in the Parsec app:
 | Application                                                        | Winget ID / Install Command                  |
 | ------------------------------------------------------------------ | -------------------------------------------- |
 | [AnythingLLM](https://useanything.com/)                            | winget install -e --id MintplexLabs.AnythingLLM |
+| [Google Antigravity CLI](https://github.com/google/antigravity)    | npm install -g @google/antigravity            |
 | [Google Gemini CLI](https://github.com/google/gemini-cli)          | npm install -g @google/gemini-cli            |
-| [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) | uv tool install huggingface_hub[cli]         |
+| [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) | uv tool install hf                           |
 | [Jan](https://jan.ai/)                                             | winget install -e --id Jan.Jan               |
 | [LM Studio](https://lmstudio.ai/)                                  | winget install -e --id ElementLabs.LMStudio  |
 | [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) | winget install -e --id Nvidia.CUDA           |
-| [Ollama](https://ollama.com/download)                              | winget install -e --id Ollama.Ollama          |
-| [OpenCode CLI](https://opencode.ai/)                               | npm install -g opencode-ai                   |
-| [OpenCode Desktop](https://opencode.ai/download)                   | winget install -e --id SST.OpenCodeDesktop  |
 | [Pi Coding Agent](https://github.com/earendil-works/pi-coding-agent) | npm install -g @earendil-works/pi-coding-agent |
 | [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)     |  |
 | [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)         | winget install -e --id TopazLabs.TopazPhotoAI |
@@ -298,6 +296,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                | winget install -e --id Google.PlatformTools                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
 | [CMake](https://cmake.org/)                                                                              | winget install -e --id Kitware.CMake                           |
+| [DuckDB CLI](https://duckdb.org/)                                                                        | winget install -e --id DuckDB.cli                              |
 | [GitHub CLI](https://cli.github.com/)                                                                    | winget install -e --id GitHub.cli                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
@@ -329,12 +328,13 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [ImHex](https://imhex.werwolv.net/)                                                               | winget install -e --id WerWolv.ImHex                         |
 | [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape) |                                                              |
 | [Maltego](https://www.maltego.com/downloads/)                                                     |                                                              |
-| [pdf-tools](https://blog.didierstevens.com/programs/pdf-tools/)                                   |                                                              |
 | [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)                                              |                                                              |
 | [Plaso](https://github.com/log2timeline/plaso)                                                    |                                                              |
 | [RegRipper](https://github.com/keydet89/RegRipper3.0)                                             |                                                              |
 | [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)                                    |                                                              |
+| [VirusTotal CLI](https://github.com/VirusTotal/vt-cli)                                            | winget install -e --id VirusTotal.vt                         |
 | [Volatility](https://github.com/volatilityfoundation/volatility3)                                 |                                                              |
+| [YARA](https://github.com/VirusTotal/yara)                                                        | winget install -e --id VirusTotal.YARA                       |
 | [Zimmerman Tools](https://ericzimmerman.github.io/)                                               |                                                              |
 
 ### Network Security Tools
@@ -724,21 +724,26 @@ Use the `--default` flag to make python.exe available for general shell commands
 
 ```powershell
 winget install -e --id astral-sh.uv
-uv python install --default
-uv python install 3.12
+uv python install 3.13 --default
 ```
 
-Install [ruff](https://docs.astral.sh/ruff/) globally via `uv` so the IDE plugin works.
+Pre-install global essential libraries for AI agents & general scripts:
 
 ```powershell
-uv pip install --system -U jupyter ipykernel pandas matplotlib seaborn scikit-learn plotnine ollama
+uv pip install --python 3.13 --system --break-system-packages -U requests httpx beautifulsoup4 lxml pandas numpy pillow pyyaml python-dotenv pydantic tqdm openpyxl duckdb orjson rich loguru
 ```
 
-Install certain python tools to PATH
+Install global CLI tools to PATH:
 
 ```powershell
-uv tool install jupytext
 uv tool install ruff
+uv tool install ipython
+uv tool install pip-audit
+uv tool install bandit
+uv tool install jupytext
+uv tool install hf
+uv tool install oletools
+uv tool install pdfx
 ```
 
 ## OpenSCAD and BOSL2 Setup
@@ -758,90 +763,6 @@ To use BOSL2 in your `.scad` scripts, include it at the top of your file:
 ```openscad
 include <BOSL2/std.scad>
 ```
-
-## Google Antigravity Setup
-
-Install useful extensions.
-*Replaces standard Python linting tools with `ruff` for speed.*
-
-```powershell
-# Python & Data Science
-antigravity --install-extension charliermarsh.ruff
-antigravity --install-extension ms-python.python
-antigravity --install-extension ms-python.vscode-pylance
-antigravity --install-extension ms-python.debugpy
-antigravity --install-extension ms-toolsai.datawrangler
-antigravity --install-extension ms-toolsai.jupyter
-antigravity --install-extension ms-toolsai.jupyter-keymap
-antigravity --install-extension ms-toolsai.jupyter-renderers
-antigravity --install-extension ms-toolsai.vscode-jupyter-cell-tags
-antigravity --install-extension ms-toolsai.vscode-jupyter-slideshow
-
-# Utilities & File Handlers
-antigravity --install-extension ms-vscode.powershell
-antigravity --install-extension redhat.vscode-xml
-antigravity --install-extension mechatroner.rainbow-csv
-antigravity --install-extension emilast.LogFileHighlighter
-antigravity --install-extension ms-vscode.hexeditor
-antigravity --install-extension ms-vscode.vscode-serial-monitor
-antigravity --install-extension tomoki1207.pdf
-antigravity --install-extension streetsidesoftware.code-spell-checker
-antigravity --install-extension bierner.markdown-mermaid
-antigravity --install-extension saoudrizwan.claude-dev
-
-# Aesthetics
-antigravity --install-extension PKief.material-icon-theme
-antigravity --install-extension esbenp.prettier-vscode
-```
-
-Activate the theme after
-
-    Open the command palette (Ctrl+Shift+P or Cmd+Shift+P on macOS), type Material Icons: Activate Icon Theme, and select it.
-
-### WSL2 (Native)
-
-```bash
-# Setup via 'uv'
-uv venv
-source .venv/bin/activate
-uv pip install vllm
-
-# Run server with full optimizations (Adding --host 0.0.0.0 for external access)
-python -m vllm.entrypoints.openai.api_server \
-  --model QuantTrio/Qwen3.5-4B-AWQ \
-  --host 0.0.0.0 \
-  --max-model-len 16384 \
-  --reasoning-parser qwen3 \
-  --kv-cache-dtype fp8 \
-  --speculative-config '{"method": "mtp", "num_speculative_tokens": 1}'
-```
-
-## Open WebUI
-
-```powershell
-docker run -d -p 3000:8080 `
-  --add-host=host.docker.internal:host-gateway `
-  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 `
-  -e OPENAI_API_BASE_URL=http://host.docker.internal:8000/v1 `
-  -e OPENAI_API_CONFIG='{"stream_options": {"include_usage": true}}' `
-  -v ~/.cache/open-webui:/app/backend/data `
-  --name open-webui `
-  ghcr.io/open-webui/open-webui:main
-```
-
-### Connection Setup:
-After starting Open WebUI, navigate to `http://localhost:3000` to configure your connections.
-
-#### 1. Native Windows Ollama
-1. Go to **Settings > General > Ollama API**.
-2. Set the **API URL** to `http://host.docker.internal:11434`. (Ensure Ollama is running on the host).
-3. Any models pulled in Windows Ollama (e.g., `ollama pull qwen3.5:9b`) will automatically appear.
-
-#### 2. Docker vLLM (OpenAI API Compatibility)
-1. Go to **Settings > General > OpenAI API**.
-2. Set **API URL** to `http://host.docker.internal:8000/v1`. (Check that vLLM logs say "Uvicorn running on http://0.0.0.0:8000").
-3. Set **API Key** to `none`.
-4. vLLM models will now appear alongside your Ollama models in the same search selection bar.
 
 ## WSL2
 

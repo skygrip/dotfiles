@@ -30,6 +30,7 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `agent-config`: Configuration blueprints, templates, and setup guidelines.
     *   `plan-execute`: Architecture, planning, and task execution framework.
     *   `audit`: Security and quality audit routine.
+    *   `data-analysis`: Dataset exploration, schema discovery, and log searching using DuckDB and orjson.
     *   `openscad`: Syntax reference, CSG modeling rules, and parametric templates to help design 3D parts.
 
 ---
