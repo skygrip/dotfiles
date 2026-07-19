@@ -123,23 +123,24 @@ Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 ##### Parsec
 
 Install via Winget
+
 ```powershell
 winget install --id Parsec.Parsec --override "/percomputer /silent" --accept-package-agreements --accept-source-agreements
 ```
 
 Configure the following Host settings in the Parsec app:
-   *   **Hosting**: `Enabled`
-   *   **Install Parsec Virtual Display Driver**
-   *   **Virtual Displays**: Set to `1`
-   *   **Fallback to Virtual Display**: `Enabled`
-   *   **Resolution**: Set to **`Use Client Resolution`** 
-   *   **Decoder/Encoder**: Ensure H.265 (HEVC) codec is **`Enabled`** 
-   *   **Audio Source**: Set to **`Parsec Virtual Audio`**
+
+- **Hosting**: `Enabled`
+- **Install Parsec Virtual Display Driver**
+- **Virtual Displays**: Set to `1`
+- **Fallback to Virtual Display**: `Enabled`
+- **Resolution**: Set to **`Use Client Resolution`**
+- **Decoder/Encoder**: Ensure H.265 (HEVC) codec is **`Enabled`**
+- **Audio Source**: Set to **`Parsec Virtual Audio`**
 
 #### Automatic Maintenance (Optional)
 
 - Configure Windows Update to automatically download and install updates.
-
   - Set Active Hours
   - Configure windows updates to auto install at 3am and reboot if necessary
   - `New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Force`
@@ -156,11 +157,11 @@ Configure the following Host settings in the Parsec app:
 
 ### Package Managers
 
-| Application                                      | Winget ID / Install Command                  |
-| ------------------------------------------------ | -------------------------------------------- |
-| [Git](https://git-scm.com/downloads)             | winget install -e -i --id Git.Git            |
-| [Node.js (npm / npx)](https://nodejs.org/)       | winget install -e --id OpenJS.NodeJS         |
-| [uv](https://astral.sh/uv/)                      | winget install -e --id astral-sh.uv          |
+| Application                                | Winget ID / Install Command          |
+| ------------------------------------------ | ------------------------------------ |
+| [Git](https://git-scm.com/downloads)       | winget install -e -i --id Git.Git    |
+| [Node.js (npm / npx)](https://nodejs.org/) | winget install -e --id OpenJS.NodeJS |
+| [uv](https://astral.sh/uv/)                | winget install -e --id astral-sh.uv  |
 
 ### General Tools
 
@@ -183,17 +184,16 @@ Configure the following Host settings in the Parsec app:
 
 ### System Tools
 
-| Application                                                                                                            | Winget ID                                        |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| [Afterburner Beta](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                     | winget install -e --id Guru3D.Afterburner.Beta   |
-| [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme  |
-| [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO             |
-| [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell      |
-| [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS               |
-| [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat     |
-| [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal |
+| Application                                                                                                            | Winget ID                                          |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [Afterburner Beta](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                     | winget install -e --id Guru3D.Afterburner.Beta     |
+| [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme    |
+| [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO               |
+| [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell        |
+| [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS                 |
+| [WinDirStat](https://windirstat.net/)                                                                                  | winget install -e --id WinDirStat.WinDirStat       |
+| [Windows Terminal](https://aka.ms/terminal)                                                                            | winget install -e --id Microsoft.WindowsTerminal   |
 | [Winget-AutoUpdate](https://github.com/Romanitho/Winget-AutoUpdate)                                                    | winget install -e --id Romanitho.Winget-AutoUpdate |
-
 
 ### Office Applications
 
@@ -231,7 +231,7 @@ Configure the following Host settings in the Parsec app:
 | [GIMP](https://www.gimp.org/)                                                                             | winget install -e --id GIMP.GIMP                 |
 | [Handbrake](https://handbrake.fr/downloads.php)                                                           | winget install -e --id HandBrake.HandBrake       |
 | [Hugin](http://hugin.sourceforge.net/download/)                                                           | winget install -e --id Hugin.Hugin               |
-| [ImageMagick](https://imagemagick.org/script/download.php)                                               | winget install -e --id ImageMagick.ImageMagick  |
+| [ImageMagick](https://imagemagick.org/script/download.php)                                                | winget install -e --id ImageMagick.ImageMagick   |
 | [Inkscape](https://inkscape.org/)                                                                         | winget install -e --id Inkscape.Inkscape         |
 | [KiCad](https://www.kicad.org/)                                                                           | winget install -e --id KiCad.KiCad               |
 | [Luminance HDR](http://qtpfsgui.sourceforge.net)                                                          |                                                  |
@@ -262,59 +262,58 @@ Configure the following Host settings in the Parsec app:
 
 ### AI Tools
 
-| Application                                                        | Winget ID / Install Command                  |
-| ------------------------------------------------------------------ | -------------------------------------------- |
-| [AnythingLLM](https://useanything.com/)                            | winget install -e --id MintplexLabs.AnythingLLM |
-| [Google Antigravity CLI](https://github.com/google/antigravity)    | npm install -g @google/antigravity            |
-| [Google Gemini CLI](https://github.com/google/gemini-cli)          | npm install -g @google/gemini-cli            |
-| [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) | uv tool install hf                           |
-| [Jan](https://jan.ai/)                                             | winget install -e --id Jan.Jan               |
-| [LM Studio](https://lmstudio.ai/)                                  | winget install -e --id ElementLabs.LMStudio  |
-| [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) | winget install -e --id Nvidia.CUDA           |
-| [Pi Coding Agent](https://github.com/earendil-works/pi-coding-agent) | npm install -g @earendil-works/pi-coding-agent |
-| [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)     |  |
-| [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)         | winget install -e --id TopazLabs.TopazPhotoAI |
+| Application                                                          | Winget ID / Install Command                     |
+| -------------------------------------------------------------------- | ----------------------------------------------- |
+| [AnythingLLM](https://useanything.com/)                              | winget install -e --id MintplexLabs.AnythingLLM |
+| [Google Antigravity](https://github.com/google/antigravity)          | winget install -e --id Google.Antigravity       |
+| [Google Antigravity CLI](https://github.com/google/antigravity)      | winget install -e --id Google.AntigravityCLI    |
+| [Jan](https://jan.ai/)                                               | winget install -e --id Jan.Jan                  |
+| [LM Studio](https://lmstudio.ai/)                                    | winget install -e --id ElementLabs.LMStudio     |
+| [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)   | winget install -e --id Nvidia.CUDA              |
+| [Pi Coding Agent](https://github.com/earendil-works/pi-coding-agent) | npm install -g @earendil-works/pi-coding-agent  |
+| [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)       |                                                 |
+| [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)           | winget install -e --id TopazLabs.TopazPhotoAI   |
 
 For advanced AI configurations, global settings, prompt templates, local LLM endpoints, and custom agent extensions, see [AI.md](./AI.md).
 
 ### IDEs & Editors
 
-| Application                                                                                              | Winget ID                                                      |
-| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [Arduino IDE](https://www.arduino.cc/en/software/)                                                       | winget install -e --id ArduinoSA.IDE.stable                    |
-| [Google Antigravity](https://antigravity.google)                                                         | winget install -e --id Google.Antigravity                      |
-| [Mu Editor](https://codewith.mu/en/download)                                                             | winget install -e --id Mu.Mu                                   |
-| [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases)                             | winget install -e --id Notepad++.Notepad++                     |
-| [Sublime Text](https://www.sublimetext.com/)                                                             | winget install -e --id SublimeHQ.SublimeText.4                 |
-| [Thonny IDE](https://thonny.org/)                                                                        | winget install -e --id AivarAnnamaa.Thonny                     |
-| [Visual Studio Code](https://code.visualstudio.com/)                                                     | winget install -e --id Microsoft.VisualStudioCode --scope user |
+| Application                                                                  | Winget ID                                                      |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Arduino IDE](https://www.arduino.cc/en/software/)                           | winget install -e --id ArduinoSA.IDE.stable                    |
+| [Google Antigravity](https://antigravity.google)                             | winget install -e --id Google.Antigravity                      |
+| [Mu Editor](https://codewith.mu/en/download)                                 | winget install -e --id Mu.Mu                                   |
+| [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases) | winget install -e --id Notepad++.Notepad++                     |
+| [Sublime Text](https://www.sublimetext.com/)                                 | winget install -e --id SublimeHQ.SublimeText.4                 |
+| [Thonny IDE](https://thonny.org/)                                            | winget install -e --id AivarAnnamaa.Thonny                     |
+| [Visual Studio Code](https://code.visualstudio.com/)                         | winget install -e --id Microsoft.VisualStudioCode --scope user |
 
 ### Development Tools
 
-| Application                                                                                              | Winget ID                                                      |
-| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                | winget install -e --id Google.PlatformTools                    |
-| [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                     | winget install -e --id Amazon.AWSCLI                           |
-| [CMake](https://cmake.org/)                                                                              | winget install -e --id Kitware.CMake                           |
-| [DuckDB CLI](https://duckdb.org/)                                                                        | winget install -e --id DuckDB.cli                              |
-| [GitHub CLI](https://cli.github.com/)                                                                    | winget install -e --id GitHub.cli                              |
-| [GitHub Desktop](https://desktop.github.com/)                                                            | winget install -e --id GitHub.GitHubDesktop --scope user       |
-| [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                             | winget install -e --id Google.CloudSDK                         |
-| [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                       |
-| [jq](https://jqlang.github.io/jq/)                                                                       | winget install -e --id jqlang.jq                              |
-| [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                   | winget install -e --id Microsoft.SQLServerManagementStudio     |
-| [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools |
-| [Podman](https://github.com/containers/podman/)                                                          | winget install -e --id RedHat.Podman                           |
-| [PowerBI](https://powerbi.microsoft.com/en-us/)                                                          | winget install -e --id Microsoft.PowerBI                       |
-| [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                             |
-| [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                             | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
-| [Rufus](https://github.com/pbatard/rufus)                                                                | winget install -e --id Rufus.Rufus                             |
-| [RunJS](https://runjs.app/?ref=winstall)                                                                 | winget install -e --id lukehaas.RunJS --scope user             |
-| [Rust](https://www.rust-lang.org/tools/install)                                                          | winget install -e --id Rustlang.Rustup                         |
-| [Snyk CLI](https://snyk.io/)                                                                             | winget install -e --id Snyk.Snyk                               |
-| [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                       |
-| [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro                   |
-| [WinSCP](https://winscp.net/eng/download.php)                                                            | winget install -e --id WinSCP.WinSCP                           |
+| Application                                                                                                             | Winget ID                                                      |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                               | winget install -e --id Google.PlatformTools                    |
+| [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                                    | winget install -e --id Amazon.AWSCLI                           |
+| [CMake](https://cmake.org/)                                                                                             | winget install -e --id Kitware.CMake                           |
+| [DuckDB CLI](https://duckdb.org/)                                                                                       | winget install -e --id DuckDB.cli                              |
+| [GitHub CLI](https://cli.github.com/)                                                                                   | winget install -e --id GitHub.cli                              |
+| [GitHub Desktop](https://desktop.github.com/)                                                                           | winget install -e --id GitHub.GitHubDesktop --scope user       |
+| [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                                            | winget install -e --id Google.CloudSDK                         |
+| [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                                 | winget install -e --id Google.IAPDesktop                       |
+| [jq](https://jqlang.github.io/jq/)                                                                                      | winget install -e --id jqlang.jq                               |
+| [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                                  | winget install -e --id Microsoft.SQLServerManagementStudio     |
+| [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools       |
+| [Podman](https://github.com/containers/podman/)                                                                         | winget install -e --id RedHat.Podman                           |
+| [PowerBI](https://powerbi.microsoft.com/en-us/)                                                                         | winget install -e --id Microsoft.PowerBI                       |
+| [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                                 | winget install -e --id PuTTY.PuTTY                             |
+| [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                                            | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
+| [Rufus](https://github.com/pbatard/rufus)                                                                               | winget install -e --id Rufus.Rufus                             |
+| [RunJS](https://runjs.app/?ref=winstall)                                                                                | winget install -e --id lukehaas.RunJS --scope user             |
+| [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
+| [Snyk CLI](https://snyk.io/)                                                                                            | winget install -e --id Snyk.Snyk                               |
+| [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
+| [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
+| [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
 
 ### Forensics Tools
 
@@ -339,16 +338,16 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 
 ### Network Security Tools
 
-| Application                                         | Winget ID                                            |
-| --------------------------------------------------- | ---------------------------------------------------- |
+| Application                                                            | Winget ID                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------ |
 | [Burp Suite Community](https://portswigger.net/burp/communitydownload) | winget install -e --id PortSwigger.BurpSuite.Community |
-| [MITMProxy](https://github.com/mitmproxy/mitmproxy) | winget install -e --id mitmproxy.mitmproxy           |
-| [Nmap](https://nmap.org/)                           | winget install -e --id Insecure.Nmap                 |
-| [Postman](https://www.getpostman.com/downloads/)    | winget install -e --id Postman.Postman --scope user  |
-| [Snort](https://www.snort.org/)                     |                                                      |
-| [Wireshark](https://www.wireshark.org/)             | winget install -e --id WiresharkFoundation.Wireshark |
-| [ZAProxy](https://github.com/zaproxy/zaproxy)       | winget install -e --id OWASP.ZAP                     |
-| [Zeek](https://www.zeek.org/)                       |                                                      |
+| [MITMProxy](https://github.com/mitmproxy/mitmproxy)                    | winget install -e --id mitmproxy.mitmproxy             |
+| [Nmap](https://nmap.org/)                                              | winget install -e --id Insecure.Nmap                   |
+| [Postman](https://www.getpostman.com/downloads/)                       | winget install -e --id Postman.Postman --scope user    |
+| [Snort](https://www.snort.org/)                                        |                                                        |
+| [Wireshark](https://www.wireshark.org/)                                | winget install -e --id WiresharkFoundation.Wireshark   |
+| [ZAProxy](https://github.com/zaproxy/zaproxy)                          | winget install -e --id OWASP.ZAP                       |
+| [Zeek](https://www.zeek.org/)                                          |                                                        |
 
 ### Video Game Launchers
 
@@ -801,7 +800,7 @@ sudo pacman -S --needed --noconfirm \
     fd \
     bat \
     eza
-    
+
 # Configure ZSH (using Grml)
 sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
 sudo chsh -s /bin/zsh $USER

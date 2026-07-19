@@ -30,6 +30,8 @@ Setup, extension suite, and configuration settings for Visual Studio Code.
 
   // Git Settings
   "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
 
   // UI & Appearance
   "workbench.colorTheme": "Dark Modern",
@@ -53,6 +55,9 @@ Setup, extension suite, and configuration settings for Visual Studio Code.
   "terminal.integrated.scrollback": 10000,
   "terminal.integrated.smoothScrolling": true,
   "terminal.integrated.cursorBlinking": true,
+
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": false,
 
   // Python & Ruff Tuning
   "[python]": {
@@ -83,7 +88,8 @@ code --install-extension streetsidesoftware.code-spell-checker
 code --install-extension ms-vscode.hexeditor
 code --install-extension tomoki1207.pdf
 
-# Markdown & Diagrams
+# Markdown & Formatting
+code --install-extension esbenp.prettier-vscode
 code --install-extension bierner.markdown-mermaid
 code --install-extension bierner.markdown-preview-github-styles
 
