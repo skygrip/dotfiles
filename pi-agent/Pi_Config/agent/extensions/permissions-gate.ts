@@ -203,6 +203,18 @@ export default function (pi: ExtensionAPI) {
     // 1. Bash command validation
     if (event.toolName === "bash") {
       const command = typeof event.input?.command === "string" ? event.input.command : "";
+
+      // Prevent recursive / nested Pi execution (hard block to prevent agent nesting / loops)
+      const recursivePiPatterns = [
+        /(?:^|[;&|`\n]|\bdo|\bthen)\s*(?:[A-Z0-9_]+=\S+\s+)*\bpi\b/i,
+        /\bnpx\s+(@[a-z0-9-]+\/)?pi\b/i,
+        /\b(npm|yarn|pnpm|bun|deno)\s+(run\s+|exec\s+)?pi\b/i
+      ];
+      const matchedRecursivePi = recursivePiPatterns.find((p) => p.test(command));
+      if (matchedRecursivePi) {
+        return { block: true, reason: `Recursive execution of "pi" is blocked to prevent agent nesting / loops.` };
+      }
+
       const matchedPattern = dangerousBashPatterns.find((p) => p.test(command));
 
       if (matchedPattern) {
