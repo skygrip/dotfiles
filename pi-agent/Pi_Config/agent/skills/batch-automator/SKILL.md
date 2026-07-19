@@ -26,6 +26,12 @@ Do NOT attempt to process files one-by-one inside our active conversation histor
 
 ---
 
+## 🛑 Anti-Self-Execution Guardrail
+
+* **NEVER** run the commands in this skill file yourself; only instruct the user to run them.
+
+---
+
 ## 🚦 Strategy Selection (Shell/Python is Default)
 
 1. **The Default: Shell/Python Loop (Option B - Highly Recommended)**
