@@ -1,11 +1,11 @@
 ---
 name: log-analysis
-description: Explore, inspect, schema-discover, search, detect outliers, scan for PII/secrets, and run ML/AI analysis (Isolation Forest, fastembed, openai/privacy-filter) on log files and datasets (JSON/JSONL, CSV, Parquet) using DuckDB CLI, jq, ripgrep, Miller, and Pi Agent.
+description: Explore, inspect, schema-discover, search, detect outliers, scan for PII/secrets, run semantic searches (sff.exe), and run ML/AI analysis (Isolation Forest, fastembed, openai/privacy-filter) on log files and datasets (JSON/JSONL, CSV, Parquet) using DuckDB CLI, jq, ripgrep, Miller, sff.exe, and Pi Agent.
 ---
 
 # Log & Data Analysis Exploration
 
-This skill provides a systematic routine for exploring, schema-discovering, searching, detecting statistical & ML outliers, and scanning for PII/secrets in unknown or unusual datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **DuckDB CLI**, **jq**, **ripgrep (`rg`)**, **Miller (`mlr`)**, **scikit-learn**, **OpenAI Privacy Filter**, and **Pi Agent (`pi`)**.
+This skill provides a systematic routine for exploring, schema-discovering, searching, detecting statistical & ML outliers, and scanning for PII/secrets in unknown or unusual datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **DuckDB CLI**, **jq**, **ripgrep (`rg`)**, **Miller (`mlr`)**, **Semantic File Finder (`sff.exe`)**, **scikit-learn**, **OpenAI Privacy Filter**, and **Pi Agent (`pi`)**.
 
 ---
 
@@ -29,6 +29,7 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 | **M365 Nested JSON Parsing** | `DuckDB SQL` | `duckdb -c "WITH p AS (SELECT parse_json(AuditData) a FROM 'm365.json') SELECT a.UserId, a.ClientIP FROM p;"` |
 | **Statistical Outliers (Z-Score)** | `DuckDB SQL` | `duckdb -c "SELECT *, (val - AVG(val) OVER()) / NULLIF(STDDEV_POP(val) OVER(), 0) AS z FROM 'data.csv' WHERE ABS(z) > 3.0;"` |
 | **Multi-Variable ML Anomalies** | `scikit-learn` | `clean_df['anomaly_label'] = IsolationForest(contamination=0.01).fit_predict(feature_df)` |
+| **Semantic Log Search (CLI)** | `sff` | `sff -e log,json,txt -r -m minishlab/potion-code-16M-v2 "unauthorized privilege escalation"` |
 | **Semantic Log Clustering** | `fastembed` | `TextEmbedding('snowflake/snowflake-arctic-embed-m-v1.5').embed(cleaned_lines)` |
 | **PII & Secret Audit Scan** | Python (`privacy-filter`) | Python Script (Phase 4B): `pii_grep("./logs/", batch_size=64, output_csv="pii_audit.csv")` |
 | **AI Threat Summarization** | `DuckDB` + `pi` | `duckdb -c "SELECT ... FROM 'm365.json'" \| pi "Analyze suspicious security events"` |
@@ -37,6 +38,18 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 ---
 
 ## 1. Phase 1: Fast Raw Triaging & Stream Processing
+
+### 🧭 Tool Selection Matrix (Pick the Right Tool for the Job)
+
+* **Exact String / Known Pattern Match?** $\rightarrow$ Use **`ripgrep` (`rg`)** (instant regex).
+* **Natural Language / Concept Search (*"find database connection failures"*)?** $\rightarrow$ Use **`sff.exe`** (Rust semantic search).
+* **Structured SQL, Nested JSON Structs, M365 Logs, or Statistical Outliers?** $\rightarrow$ Use **`DuckDB CLI`** (parallel SQL).
+* **Format Conversion (`JSONL` $\leftrightarrow$ `CSV`) or Column Re-ordering?** $\rightarrow$ Use **`Miller` (`mlr`)**.
+* **Quick One-Line JSON Field Inspection?** $\rightarrow$ Use **`jq`**.
+* **Multi-Variable Anomaly Detection across Columns?** $\rightarrow$ Use **`IsolationForest`** (scikit-learn).
+* **PII & Secret Audit Scanning?** $\rightarrow$ Use **`openai/privacy-filter`** (`pii_grep`).
+
+---
 
 ### A. Fast Raw Text Search & Stack Trace Capture (`ripgrep`)
 
@@ -290,11 +303,32 @@ print(f"Detected {len(anomalies)} anomalies out of {len(clean_df)} records:")
 print(anomalies.head(10))
 ```
 
-### C. Semantic Log Clustering & Rare Event Detection (`fastembed` / Hugging Face)
+### C. Fast Semantic Log Search via `sff.exe` (Rust CLI — Recommended Default)
 
-**Context**: Groups unstructured text log lines into semantic clusters and flags rare, unseen log categories.
+**Context**: `sff.exe` (Semantic File Finder) uses Rust-native `model2vec-rs` for ultra-fast, zero-dependency CPU semantic search across log directories (`.log`, `.json`, `.txt`, `.csv`). It replaces heavy Python/PyTorch dependencies for most CLI search use cases and executes in milliseconds.
 
-**Recommended State-of-the-Art Embedding Models**:
+**Recommended Embedding Models for Log Analysis (`-m` / `--model`)**:
+* **`minishlab/potion-code-16M-v2`** ⭐ *(Recommended for logs & code)*: Trained on technical text, code identifiers, and structured log payloads.
+* **`minishlab/potion-retrieval-32M`** ⭐ *(Default)*: Ultra-fast 32M static model, excellent for natural language log queries.
+* **`BAAI/bge-small-en-v1.5`**: High-accuracy 384-dim dense retrieval model for complex prose/event descriptions.
+* **`nomic-ai/nomic-embed-text-v1.5`**: Best for long stack traces and multi-line context blocks.
+
+```bash
+# 1. Search logs recursively for semantic concepts using the potion-code model
+sff -e log,json,txt -r -m minishlab/potion-code-16M-v2 "unauthorized privilege escalation or admin role changes"
+
+# 2. Search for database timeouts and return top 20 results as JSON for DuckDB/jq parsing
+sff -e log,json -l 20 --json "database connection pool exhausted or timeout"
+
+# 3. Search raw application logs using the default 32M retrieval model
+sff -e log -r "unhandled exception in authentication workflow"
+```
+
+### D. Semantic Log Clustering & Rare Event Detection (`fastembed` / Hugging Face)
+
+**Context**: Used for programmatic Python pipelines when computing vector distance matrices (e.g. flagging top 2% rare, unseen log categories).
+
+**Recommended Embedding Models**:
 * **`snowflake/snowflake-arctic-embed-m-v1.5`** ⭐ *(Recommended for logs & enterprise code/JSON)*: Ultra-high precision on technical text (512-token context limit).
 * **`nomic-ai/nomic-embed-text-v1.5`** ⭐ *(Best for long stack traces)*: Supports **8,192 token context window**.
 
@@ -324,40 +358,6 @@ print("=== RARE LOG ANOMALIES DETECTED ===")
 for orig, dist in zip(raw_lines, distances):
     if dist > threshold:
         print(f"[Anomaly Score: {dist:.2f}] {orig}")
-```
-
-### D. Semantic Natural Language Search over Logs (Vector Embeddings)
-
-**Context**: Allows searching log files using natural language concepts (e.g. *"Find suspicious privilege escalations or credential access attempts"*) without needing exact keyword matches.
-
-```python
-import numpy as np
-from fastembed import TextEmbedding
-
-# 1. Load & clean logs
-raw_logs = read_log_file('server_app.log')
-cleaned_logs = [clean_log_text(line) for line in raw_logs]
-
-# 2. Generate embeddings for all log lines
-embedding_model = TextEmbedding(model_name="snowflake/snowflake-arctic-embed-m-v1.5")
-log_embeddings = np.array(list(embedding_model.embed(cleaned_logs)))
-
-# 3. Embed the natural language search query
-user_query = "Find any unauthorized privilege escalation or admin role changes"
-query_embedding = list(embedding_model.embed([user_query]))[0]
-
-# 4. Compute Cosine Similarity between query vector and log vectors
-norm_logs = log_embeddings / np.linalg.norm(log_embeddings, axis=1, keepdims=True)
-norm_query = query_embedding / np.linalg.norm(query_embedding)
-similarity_scores = np.dot(norm_logs, norm_query)
-
-# 5. Extract Top 10 most semantically relevant log entries
-top_k_indices = np.argsort(similarity_scores)[::-1][:10]
-
-print(f"=== TOP MATCHES FOR QUERY: '{user_query}' ===")
-for idx in top_k_indices:
-    score = similarity_scores[idx]
-    print(f"[Similarity: {score:.4f}] {raw_logs[idx]}")
 ```
 
 ---
@@ -571,8 +571,8 @@ COPY (
 
 ```bash
 # CLI Tools
-winget install DuckDB.cli BurntSushi.ripgrep.MSVC johnkerl.miller jqlang.jq
+winget install DuckDB.cli BurntSushi.ripgrep.MSVC johnkerl.miller jqlang.jq sff
 
-# Python Libraries
+# Python Libraries (for ML tabular & PII scripts)
 uv pip install duckdb pandas scikit-learn fastembed transformers torch rich
 ```
