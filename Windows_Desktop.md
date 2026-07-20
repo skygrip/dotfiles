@@ -744,6 +744,9 @@ uv tool install jupytext
 uv tool install hf
 uv tool install oletools
 uv tool install pdfx
+uv tool install docling
+# Enable DirectML (DirectX 12) GPU acceleration for Docling layout & table models on Intel/AMD/Nvidia GPUs
+uv pip install onnxruntime-directml --python "$env:APPDATA\uv\tools\docling"
 ```
 
 ## OpenSCAD and BOSL2 Setup

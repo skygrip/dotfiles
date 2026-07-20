@@ -36,6 +36,9 @@ Before implementing a multi-step workflow, check if a relevant skill already exi
 * **Trigger:** Tasks that span multiple modes or don't fit any category.
 * **Flow:** Use judgment. Prefer action for well-scoped requests; prefer clarification for open-ended ones.
 
+## Document & Media Parsing
+* **Parsing & Extraction:** For reading and parsing non-plain-text documents, audio, or video (e.g. PDF, DOCX, PPTX, HTML, MP3, MP4), use `docling <file_path> --output <output_dir>` to convert them to clean Markdown. Use `--no-ocr` for fast digital PDF conversion, and `--image-export-mode placeholder` to prevent repeating image/logo dumps. After conversion, read the generated `<filename>.md` file.
+
 ## Clarification
 * If a request is ambiguous or has more than one valid interpretation, state your assumption and ask before proceeding.
 * Prefer one targeted question over multiple back-and-forths.
