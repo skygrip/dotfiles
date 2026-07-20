@@ -571,7 +571,7 @@ COPY (
 
 ```bash
 # CLI Tools
-winget install DuckDB.cli BurntSushi.ripgrep.MSVC johnkerl.miller jqlang.jq sff
+winget install DuckDB.cli BurntSushi.ripgrep.MSVC Miller.Miller jqlang.jq sff
 
 # Python Libraries (for ML tabular & PII scripts)
 uv pip install duckdb pandas scikit-learn fastembed transformers torch rich
