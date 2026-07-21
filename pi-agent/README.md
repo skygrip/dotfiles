@@ -37,6 +37,30 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
 
 ### Setup & Installation
 
+#### Install Pi Coding Agent
+
+Install Pi globally using `npm`:
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+```
+
+#### Add Binaries to PATH
+
+Add `.pi\agent\bin` (`$HOME\.pi\agent\bin`) to your user PATH:
+
+**PowerShell (Windows):**
+
+```powershell
+[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$HOME\.pi\agent\bin", "User")
+```
+
+**Bash / Zsh (Linux / macOS):**
+
+```bash
+echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
+```
+
 #### Install Dependencies and Plugins
 
 ```bash

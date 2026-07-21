@@ -102,6 +102,9 @@ code --install-extension ms-azuretools.vscode-docker
 # Shell Scripting & Tooling
 code --install-extension timonwong.shellcheck
 
+# Data Science & Analysis
+code --install-extension ms-toolsai.vscode-data-wrangler
+
 # Python Development (Ruff + Debugger)
 code --install-extension charliermarsh.ruff
 code --install-extension ms-python.python
