@@ -307,6 +307,11 @@ print(anomalies.head(10))
 
 **Context**: `sff.exe` (Semantic File Finder) uses Rust-native `model2vec-rs` for ultra-fast, zero-dependency CPU semantic search across log directories (`.log`, `.json`, `.txt`, `.csv`). It replaces heavy Python/PyTorch dependencies for most CLI search use cases and executes in milliseconds.
 
+**Key Flags**:
+* **`-r` (`--recursive`)**: Always specify `-r` to search recursively through subdirectories (recursion is off by default).
+* **`--json`**: Output results in JSON format instead of table output when parsing with `jq`, DuckDB, or scripts.
+* **`-m` (`--model`)**: Specify custom embedding model (e.g. `minishlab/potion-code-16M-v2`) only when searching code/technical log payloads.
+
 **Recommended Embedding Models for Log Analysis (`-m` / `--model`)**:
 * **`minishlab/potion-code-16M-v2`** ⭐ *(Recommended for logs & code)*: Trained on technical text, code identifiers, and structured log payloads.
 * **`minishlab/potion-retrieval-32M`** ⭐ *(Default)*: Ultra-fast 32M static model, excellent for natural language log queries.
@@ -317,10 +322,10 @@ print(anomalies.head(10))
 # 1. Search logs recursively for semantic concepts using the potion-code model
 sff -e log,json,txt -r -m minishlab/potion-code-16M-v2 "unauthorized privilege escalation or admin role changes"
 
-# 2. Search for database timeouts and return top 20 results as JSON for DuckDB/jq parsing
-sff -e log,json -l 20 --json "database connection pool exhausted or timeout"
+# 2. Search recursively for database timeouts and return top 20 results as JSON for DuckDB/jq parsing
+sff -e log,json -r -l 20 --json "database connection pool exhausted or timeout"
 
-# 3. Search raw application logs using the default 32M retrieval model
+# 3. Search raw application logs recursively using the default 32M retrieval model
 sff -e log -r "unhandled exception in authentication workflow"
 ```
 

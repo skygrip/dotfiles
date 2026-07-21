@@ -14,5 +14,5 @@
 * Prefer fast Rust utilities:
   - `rg` over `grep`
   - `fd` over `find`
-  - `sff` for semantic searches (e.g., `sff -m minishlab/potion-code-16M-v2 "query"`)
+  - `sff` for semantic searches (e.g., `sff -r -m minishlab/potion-code-16M-v2 "query"`; pass `-r` to recurse subdirectories, `--json` for JSON output. Use `-m` for Model only when searching code)
 * Use `/tmp` (never `C:/tmp`).
