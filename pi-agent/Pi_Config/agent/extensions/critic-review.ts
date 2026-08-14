@@ -590,7 +590,15 @@ export default function (pi: ExtensionAPI) {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme, _context) {
+    renderResult(result, options, theme, _context) {
+      // 1. Live streaming state while sub-call is in progress
+      if (options?.isPartial) {
+        const textBlock = result.content?.[0];
+        const liveText = textBlock?.type === "text" ? textBlock.text : "Auditing in progress...";
+        return new Text(theme.fg("toolOutput", liveText), 0, 0);
+      }
+
+      // 2. Finalized execution state
       const details = result.details as CriticReviewDetails | undefined;
       if (!details) {
         const text = result.content?.[0];
