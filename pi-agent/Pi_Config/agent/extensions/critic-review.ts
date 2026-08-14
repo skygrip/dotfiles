@@ -6,7 +6,29 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
 /**
- * Mapping of common file extensions to programming languages for markdown formatting.
+ * ============================================================================
+ * CRITIC REVIEW EXTENSION FOR PI CODING AGENT
+ * ============================================================================
+ * 
+ * Provides an isolated "LLM-as-a-Judge" code auditing tool (`critic_review`).
+ * 
+ * Key Architecture & Features:
+ * 1. Isolated Context: Audits code drafts and slices in a clean sub-call with zero
+ *    knowledge of the main agent's conversational rationalizations, eliminating
+ *    confirmation bias and sycophancy.
+ * 2. Point-of-Use Auditor Selection: Interactive TUI component allowing the user
+ *    to choose any active model (cloud or local) to act as the auditor, with instant
+ *    multi-term search and a 12-item scrolling viewport.
+ * 3. Real-Time Token Streaming: Streams both reasoning thoughts and markdown review
+ *    tokens live into the terminal via `streamSimple`.
+ * 4. Token & Cost Accounting: Calculates exact monetary cost via `calculateCost()`
+ *    and tracks usage metrics directly in session details.
+ * 5. Small Model Hardening: Includes pre-validation argument normalizers and flexible
+ *    markdown returns to ensure rock-solid compatibility with 12B local models.
+ */
+
+/**
+ * Mapping of common file extensions to markdown code block language identifiers.
  */
 const EXTENSION_MAP: Record<string, string> = {
   ".js": "javascript",
@@ -38,13 +60,19 @@ const EXTENSION_MAP: Record<string, string> = {
   ".md": "markdown"
 };
 
+/**
+ * Resolves the programming language identifier from a file path for markdown formatting.
+ * 
+ * @param filePath - The absolute or relative path to the file.
+ * @returns The resolved language identifier (e.g. 'typescript', 'python'), or 'text' fallback.
+ */
 function getLanguageFromPath(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   return EXTENSION_MAP[ext] || "text";
 }
 
 /**
- * Schema for the critic_review tool parameters exposed to the LLM.
+ * TypeBox Schema for the `critic_review` tool parameters exposed to the LLM.
  */
 export const CriticReviewSchema = Type.Object({
   draft: Type.Optional(Type.String({
@@ -67,8 +95,14 @@ export const CriticReviewSchema = Type.Object({
   }))
 });
 
+/**
+ * Inferred TypeScript parameter interface from CriticReviewSchema.
+ */
 export type CriticReviewParams = Static<typeof CriticReviewSchema>;
 
+/**
+ * Structure of tool result metadata persisted in session logs and rendered in the TUI.
+ */
 export interface CriticReviewDetails {
   auditorModel?: string;
   sourceTarget?: string;
@@ -79,6 +113,9 @@ export interface CriticReviewDetails {
   error?: string;
 }
 
+/**
+ * Specialized system prompt enforcing skeptical, anti-bias code auditing.
+ */
 const CRITIC_SYSTEM_PROMPT = `You are a Principal Code Reviewer and Quality Auditor.
 Your objective is to provide a rigorous, skeptical, and constructive technical review of the submitted draft or code slice.
 
@@ -107,7 +144,12 @@ Format your review using these standard Markdown headers:
   - <concise justification of why the code is sound>`;
 
 /**
- * Prefixes each code line with 1-based line numbers to anchor review citations.
+ * Prefixes each line of code with 1-based, right-padded line numbers.
+ * Ensures the auditor model cites exact, accurate line numbers in its review findings.
+ * 
+ * @param code - Raw source code string.
+ * @param startLine - 1-based starting line offset.
+ * @returns Formatted string with anchored line numbers.
  */
 function formatWithLineNumbers(code: string, startLine = 1): string {
   const lines = code.split("\n");
@@ -122,6 +164,9 @@ function formatWithLineNumbers(code: string, startLine = 1): string {
     .join("\n");
 }
 
+/**
+ * Extension entry point registering the `critic_review` custom tool.
+ */
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "critic_review",
@@ -138,7 +183,9 @@ export default function (pi: ExtensionAPI) {
     parameters: CriticReviewSchema,
 
     /**
-     * Pre-validation argument normalizer to handle 12B model property aliases.
+     * Pre-validation argument normalizer.
+     * Intercepts common 12B model property hallucinations (e.g. 'file'/'path' -> 'filePath',
+     * 'code'/'content'/'snippet' -> 'draft') before TypeBox schema validation.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
@@ -162,13 +209,16 @@ export default function (pi: ExtensionAPI) {
       return copy;
     },
 
+    /**
+     * Executes the critic review tool.
+     */
     async execute(_toolCallId, params: CriticReviewParams, signal, onUpdate, ctx) {
       if (signal?.aborted) {
         return { content: [{ type: "text", text: "[Critic Review Aborted]" }], details: { error: "Aborted" } };
       }
 
       // ----------------------------------------------------
-      // 1. Resolve Target Code / Content
+      // Phase 1: Resolve Target Code / Content
       // ----------------------------------------------------
       let codeToReview = "";
       let resolvedLang = params.language || "text";
@@ -218,7 +268,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // ----------------------------------------------------
-      // 2. Point-of-Use Auditor Model Selection (TUI with Scrolling SelectList)
+      // Phase 2: Point-of-Use Auditor Model Selection (TUI)
       // ----------------------------------------------------
       let selectedModel: Model | undefined = ctx.model;
 
@@ -226,6 +276,7 @@ export default function (pi: ExtensionAPI) {
         try {
           const sessionModelDesc = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "Active Model";
           
+          // Collect all configured models from registry
           let allModels: readonly Model[] = [];
           if (ctx.modelRegistry) {
             if (typeof ctx.modelRegistry.getModels === "function") {
@@ -239,7 +290,8 @@ export default function (pi: ExtensionAPI) {
 
           const modelMap = new Map<string, Model>();
 
-          const items: SelectItem[] = [
+          // Pre-populate Option 1 with Active Session Model as default
+          const items: Array<{ value: string; label: string; description?: string }> = [
             {
               value: "__session__",
               label: `Active Session Model (${sessionModelDesc})`,
@@ -271,9 +323,13 @@ export default function (pi: ExtensionAPI) {
           let selectedValue: string | null = null;
 
           if (typeof ctx.ui.custom === "function") {
+            /**
+             * Interactive, searchable scrolling model selector component.
+             * Features a fixed 12-item viewport, live multi-term search, and key navigation.
+             */
             class SearchableModelSelector {
-              private allItems: SelectItem[];
-              private filtered: SelectItem[];
+              private allItems: Array<{ value: string; label: string; description?: string }>;
+              private filtered: Array<{ value: string; label: string; description?: string }>;
               private selectedIdx = 0;
               private filterText = "";
               private maxVisibleRows = 12;
@@ -281,13 +337,16 @@ export default function (pi: ExtensionAPI) {
               public onSelectCallback?: (value: string) => void;
               public onCancelCallback?: () => void;
 
-              constructor(itemsList: SelectItem[], maxRows: number, themeObj: any) {
+              constructor(itemsList: Array<{ value: string; label: string; description?: string }>, maxRows: number, themeObj: any) {
                 this.allItems = itemsList;
                 this.filtered = itemsList;
                 this.maxVisibleRows = maxRows;
                 this.uiTheme = themeObj;
               }
 
+              /**
+               * Filters models based on exact phrase or whitespace-separated multi-term matching.
+               */
               private applyFilter(newQuery: string) {
                 this.filterText = newQuery;
                 const q = this.filterText.trim().toLowerCase();
@@ -305,6 +364,9 @@ export default function (pi: ExtensionAPI) {
                 this.selectedIdx = 0;
               }
 
+              /**
+               * Keyboard input dispatcher.
+               */
               handleInput(data: string): void {
                 if (matchesKey(data, Key.up)) {
                   if (this.filtered.length > 0) {
@@ -337,14 +399,17 @@ export default function (pi: ExtensionAPI) {
                 }
               }
 
+              /**
+               * Renders the selector modal lines.
+               */
               render(width: number): string[] {
                 const lines: string[] = [];
 
-                // 1. Header & Search Input Display
+                // 1. Header & Live Search Input
                 const title = this.uiTheme.bold(this.uiTheme.fg("accent", "Select Auditor Model for Critic Review"));
                 const searchBar = this.filterText
                   ? `${this.uiTheme.fg("accent", "🔍 Search: ")}${this.uiTheme.bold(this.filterText)}${this.uiTheme.fg("dim", " █")}`
-                  : `${this.uiTheme.fg("muted", "🔍 Type to fuzzy-search...")} ${this.uiTheme.fg("dim", "(↑↓ scroll, Esc default, Enter pick)")}`;
+                  : `${this.uiTheme.fg("muted", "🔍 Type to search models...")} ${this.uiTheme.fg("dim", "(↑↓ scroll, Esc default, Enter pick)")}`;
                 
                 lines.push(title);
                 lines.push(searchBar);
@@ -442,7 +507,7 @@ export default function (pi: ExtensionAPI) {
       const auditorModelName = `${selectedModel.provider}/${selectedModel.id}`;
 
       // ----------------------------------------------------
-      // 3. Assemble Audit Messages
+      // Phase 3: Assemble Audit Messages
       // ----------------------------------------------------
       let userPrompt = `Please audit the following ${resolvedLang} code (${targetDesc}):\n\n`;
       if (params.rules && params.rules.length > 0) {
@@ -459,7 +524,7 @@ export default function (pi: ExtensionAPI) {
       ];
 
       // ----------------------------------------------------
-      // 4. Execute Sub-Call
+      // Phase 4: Execute Sub-Call with Live Streaming & Cost Accounting
       // ----------------------------------------------------
       onUpdate?.({
         content: [{ type: "text", text: `Auditing ${targetDesc} with ${auditorModelName}...` }]
@@ -519,7 +584,7 @@ export default function (pi: ExtensionAPI) {
             }
           }
         } else {
-          // 2. Fallback to complete
+          // 2. Fallback to complete if streamSimple is unavailable
           const response = await complete(
             selectedModel,
             {
@@ -543,11 +608,12 @@ export default function (pi: ExtensionAPI) {
           }
         }
 
-        // If no text was produced but thinking was, fallback to thinking
+        // If no text was produced but thinking was, fallback to thinking text
         if (!reviewText.trim() && thinkingText.trim()) {
           reviewText = thinkingText;
         }
 
+        // Compute monetary cost of the sub-call
         let calculatedCost = 0;
         try {
           if (typeof calculateCost === "function" && usage) {
@@ -580,6 +646,9 @@ export default function (pi: ExtensionAPI) {
       }
     },
 
+    /**
+     * Renders the collapsed/pending call card in the TUI.
+     */
     renderCall(args: any, theme, _context) {
       const target = args?.filePath ?? (args?.draft ? "Inline Draft" : "Unknown");
       let text = theme.fg("toolTitle", theme.bold("critic_review")) +
@@ -590,6 +659,9 @@ export default function (pi: ExtensionAPI) {
       return new Text(text, 0, 0);
     },
 
+    /**
+     * Renders the live streaming state or finalized audit report in the TUI.
+     */
     renderResult(result, options, theme, _context) {
       // 1. Live streaming state while sub-call is in progress
       if (options?.isPartial) {
@@ -613,6 +685,7 @@ export default function (pi: ExtensionAPI) {
         return new Text(theme.fg("muted", `⊘ CRITIC SKIPPED by user`), 0, 0);
       }
 
+      // Status header with auditor model and monetary cost
       let outputText = theme.fg("success", `✓ AUDITED: `) +
         theme.fg("dim", `(${details.auditorModel ?? "Auditor"}) on ${details.sourceTarget ?? "Target"}`);
 
@@ -620,6 +693,7 @@ export default function (pi: ExtensionAPI) {
         outputText += theme.fg("dim", ` [$${details.cost.toFixed(5)}]`);
       }
 
+      // Full markdown report body
       const reviewBlock = result.content?.[0];
       if (reviewBlock?.type === "text" && reviewBlock.text) {
         outputText += "\n\n" + theme.fg("toolOutput", reviewBlock.text);
