@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { complete, type Message, type Model } from "@earendil-works/pi-ai";
+import { complete, calculateCost, type Message, type Model } from "@earendil-works/pi-ai";
 import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import * as fs from "node:fs/promises";
@@ -73,6 +73,9 @@ export interface CriticReviewDetails {
   auditorModel?: string;
   sourceTarget?: string;
   skipped?: boolean;
+  inputTokens?: number;
+  outputTokens?: number;
+  cost?: number;
   error?: string;
 }
 
@@ -321,31 +324,89 @@ export default function (pi: ExtensionAPI) {
           auth = await ctx.modelRegistry.getProviderAuth(selectedModel.provider);
         }
 
-        const response = await complete(
-          selectedModel,
-          {
-            systemPrompt: CRITIC_SYSTEM_PROMPT,
-            messages
-          },
-          {
-            apiKey: auth?.apiKey,
-            headers: auth?.headers,
-            signal
-          }
-        );
-
         let reviewText = "";
-        for (const block of response.content) {
-          if (block.type === "text" && block.text) {
-            reviewText += block.text;
-          } else if ((block as any).type === "thought" && (block as any).thought && !reviewText) {
-            // Optional fallback if reasoning model returned review inside thought block
-            reviewText += (block as any).thought;
+        let thinkingText = "";
+        let usage: any = undefined;
+
+        // 1. Attempt live streaming via streamSimple
+        if (typeof ctx.modelRegistry?.streamSimple === "function") {
+          const eventStream = ctx.modelRegistry.streamSimple(
+            selectedModel,
+            {
+              systemPrompt: CRITIC_SYSTEM_PROMPT,
+              messages
+            },
+            {
+              apiKey: auth?.apiKey,
+              headers: auth?.headers,
+              signal
+            }
+          );
+
+          for await (const event of eventStream) {
+            if (signal?.aborted) break;
+
+            if (event.type === "thinking_delta" && event.delta) {
+              thinkingText += event.delta;
+              const lastSnippet = thinkingText.slice(-120).replace(/\r?\n/g, " ").trim();
+              onUpdate?.({
+                content: [{
+                  type: "text",
+                  text: `Auditing ${targetDesc} with ${auditorModelName}...\n🧠 *Thinking (${thinkingText.length} chars):* ${lastSnippet}...`
+                }]
+              });
+            } else if (event.type === "text_delta" && event.delta) {
+              reviewText += event.delta;
+              onUpdate?.({
+                content: [{
+                  type: "text",
+                  text: `### Independent Critic Review (${auditorModelName}) [Live]\n**Target**: \`${targetDesc}\`\n\n${reviewText}`
+                }]
+              });
+            } else if (event.type === "done") {
+              usage = (event as any).message?.usage;
+            } else if (event.type === "error") {
+              throw (event as any).error ?? new Error("Stream error occurred during critic review");
+            }
+          }
+        } else {
+          // 2. Fallback to complete
+          const response = await complete(
+            selectedModel,
+            {
+              systemPrompt: CRITIC_SYSTEM_PROMPT,
+              messages
+            },
+            {
+              apiKey: auth?.apiKey,
+              headers: auth?.headers,
+              signal
+            }
+          );
+
+          usage = response.usage;
+          for (const block of response.content) {
+            if (block.type === "text" && block.text) {
+              reviewText += block.text;
+            } else if ((block as any).type === "thought" && (block as any).thought && !reviewText) {
+              reviewText += (block as any).thought;
+            }
           }
         }
 
-        if (!reviewText.trim() && response.content.length > 0) {
-          reviewText = response.content.map(b => (b as any).text ?? (b as any).thought ?? JSON.stringify(b)).join("\n");
+        // If no text was produced but thinking was, fallback to thinking
+        if (!reviewText.trim() && thinkingText.trim()) {
+          reviewText = thinkingText;
+        }
+
+        let calculatedCost = 0;
+        try {
+          if (typeof calculateCost === "function" && usage) {
+            const costObj = calculateCost(selectedModel, usage);
+            calculatedCost = typeof costObj === "number" ? costObj : costObj?.total ?? 0;
+          }
+        } catch {
+          // Ignore cost calculation errors
         }
 
         const formattedResult = `### Independent Critic Review (${auditorModelName})\n**Target**: \`${targetDesc}\`\n\n${reviewText.trim()}`;
@@ -355,7 +416,10 @@ export default function (pi: ExtensionAPI) {
           details: {
             auditorModel: auditorModelName,
             sourceTarget: targetDesc,
-            skipped: false
+            skipped: false,
+            inputTokens: usage?.inputTokens,
+            outputTokens: usage?.outputTokens,
+            cost: calculatedCost
           } as CriticReviewDetails
         };
       } catch (err) {
