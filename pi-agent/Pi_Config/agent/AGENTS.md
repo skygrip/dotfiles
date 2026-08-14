@@ -5,6 +5,7 @@ This workspace uses `.pi/` for configuration. View Skills, Prompts, or Extension
 
 ## Execution Principles
 * **Code Implementation**: Action over explanation. Flow: Read → Edit → Test/Verify. Consider using `plan-execute` for tasks with 3+ steps.
+* **Reasoning Scratchpad**: Use `sequential_thinking` for complex multi-step reasoning, architectural planning, or diagnosing subtle bugs before modifying code.
 * **Exploration & Research**: When asked to investigate, summarize findings and propose options before modifying files. Timebox deep research to 2-3 levels.
 * **Task Resumption**: If work was in progress, inspect existing state and summarize remaining steps before acting; never re-run completed steps.
 * **Document & Media Parsing**: For PDF, DOCX, PPTX, HTML, or media, run `docling <file> --output <dir> --no-ocr --image-export-mode placeholder` to convert to Markdown, then read the generated output.
