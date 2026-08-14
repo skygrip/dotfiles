@@ -1,441 +1,463 @@
-/**
- * @fileoverview Pi Coding Agent Permissions Gate Extension.
- * @description Intercepts bash commands and file operations (read/write/edit) to enforce:
- *   1. Dangerous command blocking (e.g. recursive deletes, privilege escalation, disk/partition wipe).
- *   2. Agent recursion prevention (blocks nested 'pi' invocation).
- *   3. Secret & credential read protection (e.g. .env, ssh keys, AWS/Kube/Docker configs, shadow/sudoers).
- *   4. Sensitive system folder protection (e.g. /etc, /System, ~/Library, C:\Windows, ~/.ssh, ~/.bashrc).
- *   5. Out-of-workspace boundary enforcement with cross-platform path canonicalization,
- *      environment variable expansion (%VAR%, $VAR, ${VAR}), and tilde (~) resolution.
- * @author Glen
- * @version 1.2.1
- */
-
-import os from "node:os";
-import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import * as path from "node:path";
+import * as os from "node:os";
 
-export default function (pi: ExtensionAPI) {
-  let isGateEnabled = true;
+/**
+ * State and configuration for permissions-gate.
+ */
+let gateEnabled = true;
 
-  /**
-   * High-risk terminal command patterns that require explicit user approval
-   * in interactive mode, and are automatically rejected in headless mode.
-   */
-  const dangerousBashPatterns = [
-    // RM commands (recursive/force, Unix/Windows equivalents)
-    /\brm\s+.*(?:-[a-zA-Z]*[rR]|--recursive)\b/i,
-    /\b(Remove-Item|del|rm|ri)\b.*-(Recurse|Force)/i,
-    /\bdel\b.*(\/s|\/q|\/f)/i,
-    /\b(rmdir|rd)\b.*(\/s|-Recurse)/i,
-    
-    // Privilege escalation / admin / local accounts / user modification
-    /\bsudo\b/i,
-    /\bnet\s+(user|localgroup|group)\s+/i,
-    /\b(passwd|useradd|groupadd|userdel|groupdel|usermod)\b/i,
-    
-    // Permissions and ACL modifications
-    /\bchmod\b/i,
-    /\bchown\b/i,
-    /\bicacls\b/i,
-    /\bcacls\b/i,
-    /\btakeown\b/i,
-    /\bchattr\b/i,
-    
-    // Git destructive operations
-    /\bgit\s+reset\s+--(hard|mixed)/i,
-    /\bgit\s+clean\s+-[fdx]+/i,
-    /\bgit\s+push\b.*(--force\b|\s-f(?:\s|$)|\+)/i,
-    /\bgit\s+branch\s+-[dD]\b/i,
+/**
+ * Dangerous bash command regex patterns with human-readable violation explanations.
+ */
+interface DangerousPattern {
+  name: string;
+  regex: RegExp;
+  reason: string;
+}
 
-    // Disk/Partition manipulation and destructive copying
-    /\b(format|mkfs|fdisk|parted|wipefs|blkdiscard)\b/i,
-    /\bdd\s+.*(if=|of=)/i,
+const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
+  {
+    name: "Recursive Agent Execution",
+    regex: /(?:^|\s|;|&&|\|\|)(?:npx\s+|bunx\s+|pnpm\s+dlx\s+)?pi(?:\.exe)?(?:\s+|$)(?!-v|--version|-h|--help)/i,
+    reason: "Prevented recursive Pi agent invocation within shell."
+  },
+  {
+    name: "Filesystem Destruction",
+    regex: /\brm\s+-[a-zA-Z]*r[a-zA-Z]*f\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])/i,
+    reason: "Root or home directory recursive forceful removal is forbidden."
+  },
+  {
+    name: "Disk Partitioning & Formatting",
+    regex: /\b(?:mkfs|wipefs|fdisk|parted|gdisk|dd\s+if=)\b/i,
+    reason: "Low-level disk format/write operations are blocked."
+  },
+  {
+    name: "Unsafe Permission Modification",
+    regex: /\bchmod\s+-[a-zA-Z]*R\s+777\s+(?:[\/\\]|~|\$HOME)/i,
+    reason: "Unrestricted global recursive permission modification is blocked."
+  },
+  {
+    name: "Fork Bomb",
+    regex: /:\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/,
+    reason: "Fork bomb execution pattern detected."
+  },
+  {
+    name: "Destructive Git Reset/Clean",
+    regex: /\bgit\s+(?:clean\s+-[a-zA-Z]*f[a-zA-Z]*d|reset\s+--hard)\b/i,
+    reason: "Unrecoverable git destructive reset/clean requires confirmation."
+  },
+  {
+    name: "Elevated Privileges",
+    regex: /(?:^|\s|;|&&|\|\|)(?:sudo|doas|runas)\s+/i,
+    reason: "Command requests elevated/root privileges."
+  }
+];
 
-    // System Shutdown / Reboot
-    /\b(shutdown|reboot|poweroff|init\s+0)\b/i,
+/**
+ * Regex for detecting sensitive credential inspection or access via ANY bash command
+ * (cat, rg, grep, ls, dir, find, fd, node, python, powershell, etc.).
+ */
+const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
 
-    // Service and Registry manipulation
-    /(?:^|[;&|]\s*)sc(?:\.exe)?\s+(config|create|delete|start|stop)\b/i,
-    /\breg\s+(add|delete|import|export)\b/i,
+/**
+ * Sensitive credential file regex patterns for tool calls.
+ */
+const CREDENTIAL_FILE_PATTERNS = [
+  /(?:^|[\\\/])\.env(?:\.local|\.production|\.development|\.staging|\.test|\.example)?$/i,
+  /(?:^|[\\\/])\.ssh(?:[\\\/](?:id_rsa|id_ed25519|id_ecdsa|id_dsa|authorized_keys|known_hosts|config))?$/i,
+  /(?:^|[\\\/])\.aws(?:[\\\/](?:credentials|config))?$/i,
+  /(?:^|[\\\/])\.kube(?:[\\\/]config)?$/i,
+  /(?:^|[\\\/])\.git-credentials$/i,
+  /(?:^|[\\\/])\.npmrc$/i,
+  /(?:^|[\\\/])\.pypirc$/i,
+  /(?:^|[\\\/])\.netrc$/i,
+  /(?:^|[\\\/])\.gnupg(?:[\\\/]|$)/i,
+  /(?:^|[\\\/])\.docker[\\\/]config\.json$/i,
+  /(?:^|[\\\/])(?:\.bash_history|\.zsh_history|\.ps_history)$/i,
+  /(?:^|[\\\/])(?:etc[\\\/]shadow|etc[\\\/]master\.passwd)$/i,
+  /(?:^|[\\\/]).*\.(?:pem|key|p12|pfx)$/i,
+  /(?:^|[\\\/])(?:service_account|client_secret).*\.json$/i
+];
 
-    // Dangerous download & execution (Pipe-to-shell, WebClient IEX)
-    /\|\s*(bash|sh|zsh|powershell|pwsh)\b/i,
-    /\b(iex|Invoke-Expression)\b/i,
-    /new-object\s+system\.net\.webclient/i,
+/**
+ * Normalizes and expands paths for uniform analysis.
+ */
+function normalizePath(targetPath: string): string {
+  if (!targetPath) return "";
+  let p = targetPath.trim().replace(/\\/g, "/");
 
-    // Nested SSH tunnelling / data exfiltration (prevents agent hopping to other machines)
-    /\bssh\s+/i,
-    /\b(scp|rsync)\s+/i,
-  ];
-
-  /**
-   * Regex matching known credential, secret, and authentication token file basenames/paths.
-   * Used to gate read access to high-value credentials and private keys.
-   */
-  const credentialFilePatterns = /(?:^|\/)(?:\.env(?:\..+)?|id_rsa|id_ed25519|id_ecdsa|id_dsa|\.ssh\/(?:config|known_hosts|authorized_keys)|\.aws\/(?:credentials|config)|\.docker\/config\.json|\.kube\/(?:config|.*token.*)|\.npmrc|\.pypirc|\.cargo\/credentials(?:\.toml)?|\.git-credentials|\.netrc|\.pgpass|shadow|sudoers)$|\.(?:pem|key|pfx|p12|pkcs12)$/i;
-
-  /**
-   * Helper to retrieve common cross-platform environment variables with fallbacks.
-   */
-  function getEnvVar(name: string): string | undefined {
-    if (process.env[name] !== undefined) {
-      return process.env[name];
-    }
-    // Cross-platform fallbacks for HOME / USERPROFILE / TMPDIR
-    if (name === "HOME" || name === "USERPROFILE") {
-      return process.env.HOME ?? process.env.USERPROFILE ?? os.homedir();
-    }
-    if (name === "TMPDIR" || name === "TEMP" || name === "TMP") {
-      return process.env.TMPDIR ?? process.env.TEMP ?? process.env.TMP ?? os.tmpdir();
-    }
-    return undefined;
+  // Tilde expansion
+  if (p === "~" || p.startsWith("~/")) {
+    const home = os.homedir().replace(/\\/g, "/");
+    p = home + p.slice(1);
   }
 
-  /**
-   * Canonicalizes and fully expands a file path by:
-   * 1. Expanding Windows environment variables (%VAR%) via process.env.
-   * 2. Expanding POSIX environment variables ($VAR, ${VAR}) via process.env.
-   * 3. Expanding tilde (~) to os.homedir() (or remote home marker in SSH).
-   * 4. Normalizing Git Bash drive paths (/c/... -> C:/...) on Windows hosts.
-   * 5. Resolving relative paths, dot-dot (..) segments, and path separators.
-   * 
-   * @param filePath - The raw input path from the tool call.
-   * @param isSshActive - Whether the session is operating in remote SSH mode.
-   * @param workspaceRoot - The remote workspace root directory (if in SSH mode).
-   * @returns Canonical path, whether any unresolvable variables exist, and if it targets home.
-   */
-  function expandPath(
-    filePath: string,
-    isSshActive: boolean,
-    workspaceRoot?: string
-  ): { canonicalPath: string; hasUnresolvedVars: boolean; isHomePath: boolean } {
-    if (!filePath) return { canonicalPath: "", hasUnresolvedVars: false, isHomePath: false };
+  // Windows drive normalization: /c/Users/... -> C:/Users/...
+  if (process.platform === "win32" && /^\/([a-zA-Z])\//.test(p)) {
+    p = p.replace(/^\/([a-zA-Z])\//, (_, drive) => `${drive.toUpperCase()}:/`);
+  }
 
-    let p = filePath.trim();
+  try {
+    return path.resolve(p).replace(/\\/g, "/");
+  } catch {
+    return p;
+  }
+}
 
-    // 1. Expand Windows-style environment variables: %VAR%
-    p = p.replace(/%([^%]+)%/g, (_, name) => {
-      const val = getEnvVar(name);
-      return val !== undefined ? val : `__UNRESOLVED_${name}__`;
-    });
+/**
+ * Sensitive system paths (strictly anchored to home/system roots).
+ */
+function isSensitiveSystemPath(targetPath: string): boolean {
+  if (!targetPath) return false;
+  const raw = targetPath.trim().replace(/\\/g, "/").toLowerCase();
+  const norm = normalizePath(targetPath).toLowerCase();
+  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
 
-    // 2. Expand POSIX-style environment variables:
-    // a) Explicitly wrapped: ${VAR}
-    p = p.replace(/\$\{([A-Za-z0-9_]+)\}/g, (_, name) => {
-      const val = getEnvVar(name);
-      return val !== undefined ? val : `__UNRESOLVED_${name}__`;
-    });
+  // Root / system sensitive directories
+  const sensitiveRegex = /^(?:[a-z]:)?\/(?:etc|var|usr|bin|sbin|sys|proc|dev|boot|root|System|Library|Windows|Program Files|Program Files \(x86\)|ProgramData)\b/i;
+  if (sensitiveRegex.test(raw) || sensitiveRegex.test(norm)) {
+    return true;
+  }
 
-    // b) Unwrapped at segment boundary: $VAR (e.g. $HOME/..., /$USER/...)
-    // Avoids false positives on valid filename identifiers like user$.ts
-    p = p.replace(/(^|[\/\\])\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, prefix, name) => {
-      const val = getEnvVar(name);
-      if (val !== undefined) {
-        return prefix + val;
+  // Home-anchored user configuration
+  if (norm.startsWith(`${home}/.config/`) ||
+      norm.startsWith(`${home}/.cargo/`) ||
+      norm.startsWith(`${home}/.gnupg`) ||
+      norm.startsWith(`${home}/.npmrc`)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Checks if a target path refers to a sensitive credential or secret file.
+ */
+function isCredentialFile(targetPath: string): boolean {
+  if (!targetPath) return false;
+  const raw = targetPath.trim();
+  const norm = normalizePath(raw);
+  return CREDENTIAL_FILE_PATTERNS.some(p => p.test(raw) || p.test(norm));
+}
+
+/**
+ * Resolves the active workspace root (local or remote SSH).
+ */
+function getWorkspaceRoot(): string {
+  if (process.env.PI_SSH_REMOTE_CWD) {
+    return process.env.PI_SSH_REMOTE_CWD;
+  }
+  return process.cwd();
+}
+
+/**
+ * Checks if a target path is outside the workspace root.
+ */
+function isOutsideWorkspace(targetPath: string): boolean {
+  const workspaceRoot = getWorkspaceRoot();
+  const isRemote = Boolean(process.env.PI_SSH_REMOTE_CWD);
+
+  if (isRemote) {
+    // POSIX path resolution
+    const resolved = path.posix.resolve(workspaceRoot, targetPath.replace(/\\/g, "/"));
+    const normRoot = path.posix.normalize(workspaceRoot);
+    return !resolved.startsWith(normRoot + "/") && resolved !== normRoot;
+  }
+
+  // Local filesystem path resolution
+  const resolved = path.resolve(workspaceRoot, targetPath);
+  const normRoot = path.resolve(workspaceRoot);
+  const rel = path.relative(normRoot, resolved);
+  return rel.startsWith("..") || path.isAbsolute(rel);
+}
+
+const BENIGN_SHELL_PATHS = new Set([
+  "/dev/null",
+  "/dev/stdin",
+  "/dev/stdout",
+  "/dev/stderr",
+  "/dev/zero",
+  "/dev/random",
+  "/dev/urandom"
+]);
+
+/**
+ * Extracts potential path arguments from a shell command string (e.g. rg, ck, fd, cat, python).
+ */
+function extractPathTokens(command: string): string[] {
+  if (!command) return [];
+
+  // Match path tokens:
+  // 1. Tildes: ~/foo or ~
+  // 2. Directory traversals: .. or ../ or ./.. or ./../foo or ../../foo
+  // 3. Windows drives: C:\foo or C:/foo
+  // 4. Root/system paths: /c/foo, /etc/foo, /var/foo, /Users/foo, etc.
+  const pathRegex = /(?:^|[\s"'=<>|&;])((?:~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
+
+  const results: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = pathRegex.exec(command)) !== null) {
+    const raw = (match[1] || "").trim();
+    if (!raw) continue;
+
+    const norm = raw.replace(/\\/g, "/").toLowerCase();
+    if (BENIGN_SHELL_PATHS.has(norm)) continue;
+
+    const clean = raw.replace(/['"]+$/, "");
+    results.push(clean);
+  }
+
+  return results;
+}
+
+export default function (pi: ExtensionAPI) {
+  // ----------------------------------------------------
+  // 1. Slash Command: /gate
+  // ----------------------------------------------------
+  pi.registerCommand("gate", {
+    description: "Toggle or inspect permissions gate (usage: /gate [status|on|off|toggle])",
+    handler: async (args, ctx) => {
+      const sub = (args || "").trim().toLowerCase();
+
+      if (sub === "status" || sub === "info") {
+        ctx.ui.notify(`Permissions Gate is currently: ${gateEnabled ? "ENABLED (Active)" : "DISABLED (Bypassed)"}`, "info");
+        return;
       }
-      return `${prefix}__UNRESOLVED_${name}__`;
-    });
 
-    // Flag if any environment variable could not be resolved statically
-    const hasUnresolvedVars = p.includes("__UNRESOLVED_");
-
-    // Standardize slashes to forward slashes for uniform analysis
-    p = p.replace(/\\/g, "/");
-
-    // 3. Tilde expansion (~, ~/, ~\, ~user)
-    let isHomePath = false;
-    if (p === "~" || p.startsWith("~/") || p.startsWith("~\\") || /^~[a-zA-Z0-9_-]+(\/|$)/.test(p)) {
-      isHomePath = true;
-      if (isSshActive) {
-        // In remote SSH mode, ~ represents the remote user's home directory.
-        p = p.startsWith("~") ? "/~" + p.slice(1) : p;
+      if (sub === "on" || sub === "enable") {
+        gateEnabled = true;
+      } else if (sub === "off" || sub === "disable") {
+        gateEnabled = false;
       } else {
-        if (p === "~" || p.startsWith("~/") || p.startsWith("~\\")) {
-          const home = os.homedir().replace(/\\/g, "/");
-          p = home + p.slice(1);
-        } else {
-          // ~otheruser path in local mode
-          p = "/home/" + p.slice(1);
+        // Default: toggle
+        gateEnabled = !gateEnabled;
+      }
+
+      const stateText = gateEnabled ? "ENABLED (Enforcing safety & credential rules)" : "DISABLED (Bypassing guards)";
+      ctx.ui.setStatus("gate", gateEnabled ? undefined : "⚠️ Gate: OFF");
+      ctx.ui.notify(`Permissions Gate: ${stateText}`, gateEnabled ? "info" : "warning");
+    }
+  });
+
+  // ----------------------------------------------------
+  // 2. Event Hook: tool_call Interception
+  // ----------------------------------------------------
+  pi.on("tool_call", async (event, ctx) => {
+    if (!gateEnabled) return;
+
+    // --------------------------------------------------
+    // A. Bash Tool Safety Inspection
+    // --------------------------------------------------
+    if (isToolCallEventType("bash", event)) {
+      const command = event.input.command || "";
+
+      // 1. Dangerous Command Regex Patterns
+      for (const pattern of DANGEROUS_BASH_PATTERNS) {
+        if (pattern.regex.test(command)) {
+          if (!ctx.hasUI || !ctx.ui) {
+            return {
+              block: true,
+              reason: `[SAFETY GUARD]: ${pattern.reason} Command: "${command}". (Headless mode auto-blocked)`
+            };
+          }
+
+          const approved = await ctx.ui.confirm(
+            "⚠️ Dangerous Command Alert",
+            `The agent wants to execute:\n\n${command}\n\nReason: ${pattern.reason}\n\nAllow execution?`
+          );
+
+          if (!approved) {
+            return {
+              block: true,
+              reason: `[SAFETY GUARD BLOCKED BY USER]: ${pattern.reason}. Please choose a safer alternative.`
+            };
+          }
+        }
+      }
+
+      // 2. Secret Credential Access via Bash
+      if (BASH_CREDENTIAL_ACCESS_REGEX.test(command)) {
+        if (!ctx.hasUI || !ctx.ui) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION]: Shell access to credential files is blocked in headless mode. Command: "${command}"`
+          };
+        }
+
+        const approved = await ctx.ui.confirm(
+          "🔒 Credential Access Alert",
+          `The agent wants to access sensitive secrets via shell:\n\n${command}\n\nAllow execution?`
+        );
+
+        if (!approved) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION BLOCKED BY USER]: Direct shell access to credential files was denied.`
+          };
+        }
+      }
+
+      // 3. Out-of-Workspace & Sensitive System Path Access via Shell (rg, ck, sc, fd, find, cat, etc.)
+      const pathTokens = extractPathTokens(command);
+      for (const token of pathTokens) {
+        if (isSensitiveSystemPath(token)) {
+          if (!ctx.hasUI || !ctx.ui) {
+            return {
+              block: true,
+              reason: `[SECRET PROTECTION]: Shell access to sensitive system path "${token}" is blocked in headless mode. Command: "${command}"`
+            };
+          }
+
+          const approved = await ctx.ui.confirm(
+            "🔒 Sensitive System Path Access",
+            `The agent wants to access a sensitive system path via shell:\n\nCommand: ${command}\nDetected Path: ${token}\n\nAllow execution?`
+          );
+
+          if (!approved) {
+            return {
+              block: true,
+              reason: `[SECRET PROTECTION BLOCKED BY USER]: Shell access to "${token}" was denied.`
+            };
+          }
+          break;
+        }
+
+        if (isOutsideWorkspace(token)) {
+          const workspace = getWorkspaceRoot();
+          if (!ctx.hasUI || !ctx.ui) {
+            return {
+              block: true,
+              reason: `[WORKSPACE CONFINEMENT]: Shell command references path "${token}" outside workspace "${workspace}". Blocked in headless mode.`
+            };
+          }
+
+          const approved = await ctx.ui.confirm(
+            "⚠️ Out-of-Workspace Shell Access",
+            `The agent wants to execute a command targeting an external path:\n\nCommand: ${command}\nDetected Path: ${token}\nWorkspace: ${workspace}\n\nAllow execution?`
+          );
+
+          if (!approved) {
+            return {
+              block: true,
+              reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Shell command targeting "${token}" outside workspace "${workspace}" was denied.`
+            };
+          }
+          break;
         }
       }
     }
 
-    // 4. Git Bash / MSYS drive path normalization on Windows: /c/Users/... -> C:/Users/...
-    if (!isSshActive && process.platform === "win32" && /^\/([a-zA-Z])\//.test(p)) {
-      p = p.replace(/^\/([a-zA-Z])\//, (_, drive) => `${drive.toUpperCase()}:/`);
-    }
+    // --------------------------------------------------
+    // B. Read Tool Secret, System Path & Workspace Inspection
+    // --------------------------------------------------
+    if (isToolCallEventType("read", event)) {
+      const targetPath = event.input.path || "";
 
-    // 5. Canonical Path Resolution
-    let canonicalPath: string;
-    const isUnixAbsolute = p.startsWith("/");
+      // 1. Sensitive file / credential protection
+      if (isCredentialFile(targetPath) || isSensitiveSystemPath(targetPath)) {
+        if (!ctx.hasUI || !ctx.ui) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION]: Read access to sensitive file "${targetPath}" is blocked in headless mode.`
+          };
+        }
 
-    if (isSshActive) {
-      if (isUnixAbsolute) {
-        canonicalPath = path.posix.normalize(p);
-      } else if (workspaceRoot) {
-        canonicalPath = path.posix.normalize(workspaceRoot.replace(/\\/g, "/") + "/" + p);
-      } else {
-        canonicalPath = path.posix.normalize(p);
+        const approved = await ctx.ui.confirm(
+          "🔒 Sensitive File Access",
+          `The agent wants to read sensitive file:\n\n${targetPath}\n\nAllow read access?`
+        );
+
+        if (!approved) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION BLOCKED BY USER]: Reading "${targetPath}" was denied by user.`
+          };
+        }
       }
-    } else {
-      try {
-        canonicalPath = path.resolve(p).replace(/\\/g, "/");
-      } catch {
-        canonicalPath = p;
-      }
-    }
 
-    // Check if canonical path resides within local user home directory
-    if (!isSshActive && !isHomePath) {
-      const homeNormalized = os.homedir().replace(/\\/g, "/").toLowerCase();
-      const canonicalLower = canonicalPath.toLowerCase();
-      if (canonicalLower === homeNormalized || canonicalLower.startsWith(homeNormalized + "/")) {
-        isHomePath = true;
-      }
-    }
+      // 2. Out of Workspace Read Confinement
+      if (isOutsideWorkspace(targetPath)) {
+        const workspace = getWorkspaceRoot();
+        if (!ctx.hasUI || !ctx.ui) {
+          return {
+            block: true,
+            reason: `[WORKSPACE CONFINEMENT]: Reading file "${targetPath}" outside active workspace "${workspace}" is blocked in headless mode.`
+          };
+        }
 
-    return { canonicalPath, hasUnresolvedVars, isHomePath };
-  }
+        const approved = await ctx.ui.confirm(
+          "⚠️ Out-of-Workspace Read Access",
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to read a file outside the project workspace.\n\nAllow read access?`
+        );
 
-  /**
-   * Checks if a file path targets a sensitive system or user configuration location.
-   * Covers Git internals, .env files, OS system directories (Windows, Linux, macOS),
-   * and user shell/startup/keychain configurations.
-   * 
-   * @param filePath - The path to check.
-   * @param isSshActive - Whether running in remote SSH mode.
-   * @param workspaceRoot - Optional remote workspace root.
-   */
-  function isSensitivePath(filePath: string, isSshActive: boolean, workspaceRoot?: string): boolean {
-    if (!filePath) return false;
-
-    const { canonicalPath, hasUnresolvedVars, isHomePath } = expandPath(filePath, isSshActive, workspaceRoot);
-
-    // Fail-closed on unresolved variables in path
-    if (hasUnresolvedVars) return true;
-
-    const rawLower = filePath.replace(/\\/g, "/").toLowerCase();
-    const normalizedLower = canonicalPath.toLowerCase();
-
-    // Check raw input & canonical path for .git / .env
-    if (rawLower === ".git" || rawLower.startsWith(".git/")) return true;
-    if (normalizedLower.includes("/.git/") || normalizedLower.endsWith("/.git")) return true;
-    if (/(?:^|\/)\.env(?:\..+)?$/.test(rawLower) || /(?:^|\/)\.env(?:\..+)?$/.test(normalizedLower)) return true;
-
-    // Sensitive Home Directory files & folders (handles Windows, Linux ~/.config, and macOS ~/Library)
-    if (/(?:^|\/)(?:\.ssh|\.aws|\.gnupg|\.kube|\.docker|\.config|\.bashrc|\.zshrc|\.profile|\.bash_profile|\.gitconfig|\.npmrc|\.pypirc|\.cargo|\.git-credentials|Library\/Keychains)(?:\/|$)/i.test(normalizedLower) ||
-        /(?:^|\/)(?:\.ssh|\.aws|\.gnupg|\.kube|\.docker|\.config|\.bashrc|\.zshrc|\.profile|\.bash_profile|\.gitconfig|\.npmrc|\.pypirc|\.cargo|\.git-credentials|Library\/Keychains)(?:\/|$)/i.test(rawLower)) {
-      return true;
-    }
-
-    // Sensitive Windows folders
-    if (/^[a-z]:\/(windows|program files|program files \(x86\)|programdata)/i.test(normalizedLower)) return true;
-
-    // Sensitive Unix & macOS system directories (with optional drive prefix for Windows Git Bash)
-    if (/^(?:[a-z]:)?\/(etc|var|usr|bin|sbin|lib|sys|proc|dev|boot|root|System|Library|private)\b/i.test(normalizedLower) ||
-        /^\/(etc|var|usr|bin|sbin|lib|sys|proc|dev|boot|root|System|Library|private)\b/i.test(rawLower)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Checks if a file path falls outside the current project workspace directory.
-   * Handles local workspaces (with root drive edge-case protection) and remote SSH workspaces.
-   * 
-   * @param filePath - The path to check.
-   * @param isSshActive - Whether running in remote SSH mode.
-   * @param workspaceRoot - Optional remote workspace root.
-   */
-  function isOutsideWorkspace(filePath: string, isSshActive: boolean, workspaceRoot?: string): boolean {
-    if (!filePath) return false;
-
-    const { canonicalPath, hasUnresolvedVars, isHomePath } = expandPath(filePath, isSshActive, workspaceRoot);
-
-    // Fail-closed on unresolved environment variables
-    if (hasUnresolvedVars) return true;
-
-    const rawWorkspace = (workspaceRoot ?? path.resolve(process.cwd())).replace(/\\/g, "/").toLowerCase();
-    const cleanWorkspaceDir = rawWorkspace.endsWith("/") && rawWorkspace.length > 1 ? rawWorkspace.slice(0, -1) : rawWorkspace;
-    const normalizedFile = canonicalPath.toLowerCase();
-
-    // In SSH mode with ~, unless the workspace itself is ~ or the home directory, it's outside workspace
-    if (isHomePath && isSshActive) {
-      const wsNormalized = (workspaceRoot ?? "").replace(/\\/g, "/").toLowerCase();
-      if (wsNormalized !== "~" && wsNormalized !== "/~" && !wsNormalized.startsWith("/home/")) {
-        return true;
+        if (!approved) {
+          return {
+            block: true,
+            reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Reading outside workspace "${workspace}" was denied.`
+          };
+        }
       }
     }
 
-    // Check if the path is exactly the workspace directory or inside it
-    const isInside = cleanWorkspaceDir === "/"
-      ? true
-      : normalizedFile === cleanWorkspaceDir || normalizedFile.startsWith(cleanWorkspaceDir.endsWith("/") ? cleanWorkspaceDir : cleanWorkspaceDir + "/");
-    return !isInside;
-  }
+    // --------------------------------------------------
+    // C. Write & Edit Tool Confinement & Secret Overwrite
+    // --------------------------------------------------
+    if (isToolCallEventType("write", event) || isToolCallEventType("edit", event)) {
+      const targetPath = event.input.path || "";
 
-  /**
-   * Resolves the effective workspace root for out-of-workspace checks.
-   * In SSH mode, parses the --ssh flag or retrieves process.env.PI_SSH_REMOTE_CWD set by ssh.ts.
-   */
-  function getWorkspaceRoot(isSshActive: boolean): string | undefined {
-    if (!isSshActive) return undefined; // Use default (local process.cwd())
+      // 1. Block secret file overwrites
+      if (isCredentialFile(targetPath) || isSensitiveSystemPath(targetPath)) {
+        if (!ctx.hasUI || !ctx.ui) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION]: Modifying sensitive file "${targetPath}" is blocked in headless mode.`
+          };
+        }
 
-    const sshArg = pi.getFlag("ssh") as string | undefined;
-    if (sshArg) {
-      const colonIdx = sshArg.indexOf(":");
-      if (colonIdx !== -1) {
-        const remotePath = sshArg.slice(colonIdx + 1);
-        if (remotePath) return remotePath;
+        const approved = await ctx.ui.confirm(
+          "⚠️ Sensitive File Modification",
+          `The agent wants to write/edit sensitive file:\n\n${targetPath}\n\nAllow modification?`
+        );
+
+        if (!approved) {
+          return {
+            block: true,
+            reason: `[SECRET PROTECTION BLOCKED BY USER]: Modifying "${targetPath}" was denied by user.`
+          };
+        }
       }
-    }
 
-    // Fallback: Check if ssh.ts shared the dynamically resolved remote CWD
-    if (process.env.PI_SSH_REMOTE_CWD) {
-      return process.env.PI_SSH_REMOTE_CWD;
-    }
+      // 2. Out of Workspace Confinement
+      if (isOutsideWorkspace(targetPath)) {
+        const workspace = getWorkspaceRoot();
+        if (!ctx.hasUI || !ctx.ui) {
+          return {
+            block: true,
+            reason: `[WORKSPACE CONFINEMENT]: File "${targetPath}" is outside the active workspace "${workspace}". Blocked in headless mode.`
+          };
+        }
 
-    return undefined;
-  }
+        const approved = await ctx.ui.confirm(
+          "⚠️ Out-of-Workspace Modification",
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to modify a file outside the project workspace.\n\nAllow modification?`
+        );
 
-  // Register command to check status or toggle permission gate
-  pi.registerCommand("gate", {
-    description: "Toggle or check status of the permissions gate. Usage: /gate [on|off]",
-    handler: async (args: any, ctx: any) => {
-      const isString = typeof args === "string";
-      const hasOn = isString ? args.trim().toLowerCase() === "on" : Array.isArray(args) && args.includes("on");
-      const hasOff = isString ? args.trim().toLowerCase() === "off" : Array.isArray(args) && args.includes("off");
-
-      if (hasOn) {
-        isGateEnabled = true;
-        ctx.ui.notify("Permissions Gate is now ENABLED", "info");
-      } else if (hasOff) {
-        isGateEnabled = false;
-        ctx.ui.notify("⚠️ Permissions Gate is now DISABLED", "warning");
-      } else {
-        isGateEnabled = !isGateEnabled;
-        const status = isGateEnabled ? "ENABLED" : "DISABLED";
-        const type = isGateEnabled ? "info" : "warning";
-        ctx.ui.notify(`Permissions Gate is now ${status}`, type);
+        if (!approved) {
+          return {
+            block: true,
+            reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Modification outside workspace "${workspace}" was denied.`
+          };
+        }
       }
     }
   });
 
-  // Intercept tool calls before execution to enforce safety policies
-  pi.on("tool_call", async (event: any, ctx: any) => {
-    if (!isGateEnabled) return undefined;
-
-    // Detect SSH mode for workspace-boundary logic
-    const isSshActive = !!pi.getFlag("ssh");
-    const workspaceRoot = getWorkspaceRoot(isSshActive);
-
-    // 1. Bash command validation
-    if (event.toolName === "bash") {
-      const command = typeof event.input?.command === "string" ? event.input.command : "";
-
-      // Prevent recursive / nested Pi execution (hard block to prevent agent nesting / loops)
-      const recursivePiPatterns = [
-        /(?:^|[;&|`\n]|\bdo|\bthen)\s*(?:[A-Z0-9_]+=\S+\s+)*\bpi\b/i,
-        /\bnpx\s+(@[a-z0-9-]+\/)?pi\b/i,
-        /\b(npm|yarn|pnpm|bun|deno)\s+(run\s+|exec\s+)?pi\b/i
-      ];
-      const matchedRecursivePi = recursivePiPatterns.find((p) => p.test(command));
-      if (matchedRecursivePi) {
-        return { block: true, reason: `Recursive execution of "pi" is blocked to prevent agent nesting / loops.` };
-      }
-
-      const matchedPattern = dangerousBashPatterns.find((p) => p.test(command));
-
-      if (matchedPattern) {
-        if (!ctx.hasUI || !ctx.ui) {
-          return { block: true, reason: `Dangerous command "${command}" blocked in headless mode (matched: ${matchedPattern}).` };
-        }
-
-        const choice = await ctx.ui.select(
-          `⚠️ Dangerous command detected!\n\n  ${command}\n\nMatched Safety Pattern: ${matchedPattern}\nDo you want to allow this operation?`,
-          ["No, Block it", "Yes, Allow it"]
-        );
-
-        if (choice !== "Yes, Allow it") {
-          return { block: true, reason: `Blocked by user (matched dangerous pattern: ${matchedPattern})` };
-        }
-      }
+  pi.on("session_start", async (_event, ctx) => {
+    if (!gateEnabled) {
+      ctx.ui.setStatus("gate", "⚠️ Gate: OFF");
     }
-
-    // 2. Credential and Sensitive file read-gating
-    if (event.toolName === "read") {
-      const filePath = typeof event.input?.path === "string" ? event.input.path : "";
-
-      if (filePath) {
-        const { canonicalPath, hasUnresolvedVars, isHomePath } = expandPath(filePath, isSshActive, workspaceRoot);
-        const rawLower = filePath.replace(/\\/g, "/").toLowerCase();
-        const canonicalLower = canonicalPath.toLowerCase();
-
-        const isSensitive = isSensitivePath(filePath, isSshActive, workspaceRoot);
-        const isCredential = isSensitive ||
-                             credentialFilePatterns.test(rawLower) ||
-                             credentialFilePatterns.test(canonicalLower) ||
-                             hasUnresolvedVars ||
-                             (isHomePath && /(?:^|\/)(?:\.ssh|\.aws|\.gnupg|\.kube|\.docker|\.config|\.git-credentials|\.npmrc|\.pypirc|\.cargo|\.bash_history)(?:\/|$)/i.test(canonicalLower));
-
-        if (isCredential) {
-          if (!ctx.hasUI || !ctx.ui) {
-            return { block: true, reason: `Read of credential/sensitive file "${filePath}" blocked in headless mode.` };
-          }
-
-          const choice = await ctx.ui.select(
-            `⚠️ Read access to credential/sensitive file detected!\n\n  ${filePath}\n  (Resolved: ${canonicalPath})\n\nDo you want to allow this operation?`,
-            ["No, Block it", "Yes, Allow it"]
-          );
-
-          if (choice !== "Yes, Allow it") {
-            return { block: true, reason: "Blocked by user (credential/sensitive file read protection active)" };
-          }
-        }
-      }
-    }
-
-    // 3. Sensitive path or Out-of-Workspace validation (write / edit tools)
-    if (event.toolName === "write" || event.toolName === "edit") {
-      const filePath = typeof event.input?.path === "string" ? event.input.path : "";
-
-      if (filePath) {
-        const { canonicalPath, hasUnresolvedVars } = expandPath(filePath, isSshActive, workspaceRoot);
-        const isSensitive = isSensitivePath(filePath, isSshActive, workspaceRoot);
-
-        // Workspace-boundary check: in SSH mode, compare against the remote workspace root if known.
-        const canCheckBoundary = !isSshActive || workspaceRoot !== undefined;
-        const isOutside = hasUnresolvedVars || (canCheckBoundary && isOutsideWorkspace(filePath, isSshActive, workspaceRoot));
-
-        if (isSensitive || isOutside) {
-          if (!ctx.hasUI || !ctx.ui) {
-            const reason = isSensitive 
-              ? `Modification of sensitive path "${filePath}" blocked in headless mode.`
-              : `Out-of-workspace file modification on "${filePath}" blocked in headless mode.`;
-            return { block: true, reason };
-          }
-
-          const messageTitle = isSensitive
-            ? `⚠️ Modification of sensitive path detected!\n\n  ${filePath}\n  (Resolved: ${canonicalPath})`
-            : `⚠️ File modification OUTSIDE the project workspace detected!\n\n  ${filePath}\n  (Resolved: ${canonicalPath})`;
-
-          const choice = await ctx.ui.select(
-            `${messageTitle}\n\nDo you want to allow this operation?`,
-            ["No, Block it", "Yes, Allow it"]
-          );
-
-          if (choice !== "Yes, Allow it") {
-            const blockReason = isSensitive 
-              ? "Blocked by user (sensitive path protection active)" 
-              : "Blocked by user (out-of-workspace write protection active)";
-            return { block: true, reason: blockReason };
-          }
-        }
-      }
-    }
-
-    return undefined;
   });
 }

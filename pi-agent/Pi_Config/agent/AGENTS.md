@@ -10,12 +10,14 @@ This workspace uses `.pi/` for configuration. View Skills, Prompts, or Extension
 * **Document & Media Parsing**: For PDF, DOCX, PPTX, HTML, or media, run `docling <file> --output <dir> --no-ocr --image-export-mode placeholder` to convert to Markdown, then read the generated output.
 
 ## Safety & Boundaries
-* Explicit confirmation required before deleting files, running destructive commands (`rm`, `format`), restarting services, or overwriting system configs.
+* **Interactive Confirmation**: Invoke `ask_question` (`type: 'confirm'`) before deleting files, running destructive commands (`rm`, `format`), restarting services, or modifying sensitive configurations.
 * Prefer `--dry-run` or preview flags when available.
 
-## Error Handling & Clarification
-* If a request is genuinely ambiguous, state your assumption with one targeted question.
-* On error, immediately stop and report: what failed, why, and the proposed next step. Never silently retry or bypass errors.
+## Proactive Alignment & Clarification
+* **Tool-First Clarification**: When facing architectural choices, library trade-offs, or ambiguity, proactively call `ask_question` (`type: 'select'`) with 2-4 concrete choices before writing code.
+* **Freeform Input**: Use `ask_question` (`type: 'input'`) when missing necessary environment variables or user-specific preferences.
+* **Quality Gate**: Use `critic_review` for isolated audits on complex drafts or critical security paths.
+* **Error Escalation**: On error, immediately stop and report: what failed, why, and the proposed next step. Never silently retry or bypass errors.
 
 ## Response Style
 * Match verbosity to task: terse for commands/edits, structured for explanations.

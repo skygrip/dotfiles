@@ -1,362 +1,335 @@
-/**
- * SSH Remote Execution Extension
- *
- * This module allows delegating standard file operations (read, write, edit) and terminal commands
- * (bash execution) to a remote machine over an SSH tunnel. It intercepts local tool calls and swaps
- * the underlying file system and shell operations behind the scenes.
- *
- * It also intercepts and suppresses APPEND_SYSTEM.md
- *
- * Usage:
- *   pi --ssh user@host
- *   pi --ssh user@host:/remote/path
- *
- * Requirements:
- *   - The user must have passwordless SSH key authentication set up with the target host.
- *   - The remote machine must have basic Unix utilities (e.g. bash, cat, base64, mkdir).
- */
-
 import { spawn } from "node:child_process";
-import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
-	type BashOperations,
-	createBashTool,
-	createEditTool,
-	createReadTool,
-	createWriteTool,
-	type EditOperations,
-	type ReadOperations,
-	type WriteOperations,
+  type BashOperations,
+  createBashTool,
+  createEditTool,
+  createReadTool,
+  createWriteTool,
+  type EditOperations,
+  type ReadOperations,
+  type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
+import * as path from "node:path";
 
 /**
- * Creates a path translator function that maps paths from the local machine CWD
- * to the remote machine's targeted workspace directory.
- * 
- * @param remoteCwd - The working directory on the remote machine.
- * @param localCwd - The local working directory.
- * @returns A translator function that takes a local path and returns the resolved remote path.
+ * Default OpenSSH arguments configuring connection timeout and native ControlMaster multiplexing.
+ * ControlPath uses ~/.ssh/pi-mux-%C which is safe, short (<45 chars), and cross-platform on Windows/Linux.
+ */
+const DEFAULT_SSH_OPTS = [
+  "-o", "BatchMode=yes",
+  "-o", "ConnectTimeout=10",
+  "-o", "ControlMaster=auto",
+  "-o", "ControlPersist=10m",
+  "-o", "ControlPath=~/.ssh/pi-mux-%C"
+];
+
+/**
+ * Spawns an SSH command with ControlMaster connection multiplexing.
+ */
+function sshExec(remote: string, command: string, signal?: AbortSignal): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      return reject(new Error("aborted"));
+    }
+
+    const args = [...DEFAULT_SSH_OPTS, remote, command];
+    const child = spawn("ssh", args, { stdio: ["ignore", "pipe", "pipe"] });
+    const chunks: Buffer[] = [];
+    const errChunks: Buffer[] = [];
+
+    child.stdout.on("data", (data) => chunks.push(data));
+    child.stderr.on("data", (data) => errChunks.push(data));
+
+    const onAbort = () => child.kill();
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    child.on("error", (err) => {
+      signal?.removeEventListener("abort", onAbort);
+      reject(err);
+    });
+
+    child.on("close", (code) => {
+      signal?.removeEventListener("abort", onAbort);
+      if (signal?.aborted) {
+        reject(new Error("aborted"));
+      } else if (code !== 0) {
+        const stderrMsg = Buffer.concat(errChunks).toString().trim();
+        reject(new Error(`SSH command failed (${code}): ${stderrMsg || `exit code ${code}`}`));
+      } else {
+        resolve(Buffer.concat(chunks));
+      }
+    });
+  });
+}
+
+/**
+ * Creates a POSIX path translator between local and remote environments.
  */
 function createPathTranslator(remoteCwd: string, localCwd: string) {
-	const normalizedLocal = path.resolve(localCwd).replace(/\\/g, "/").toLowerCase();
-	const normalizedRemote = remoteCwd.replace(/\\/g, "/");
+  const normLocal = path.resolve(localCwd).replace(/\\/g, "/");
 
-	return (p: string) => {
-		// If it's already an absolute Unix-style path, return it directly
-		// to prevent Windows-native path resolution from corrupting it.
-		if (p.startsWith("/")) {
-			return p;
-		}
+  return (inputPath: string): string => {
+    let clean = inputPath.trim().replace(/^@/, "");
+    if (!clean) return remoteCwd;
 
-		const resolved = path.resolve(p).replace(/\\/g, "/");
-		const normalizedResolved = resolved.toLowerCase();
+    // Expand ~
+    if (clean === "~" || clean.startsWith("~/")) {
+      return clean;
+    }
 
-		// If the path resides within the local workspace directory,
-		// translate it to the corresponding path relative to the remote directory.
-		if (normalizedResolved.startsWith(normalizedLocal)) {
-			const relativePart = resolved.slice(normalizedLocal.length);
-			return (normalizedRemote + relativePart).replace(/\/+/g, "/");
-		}
-		return resolved;
-	};
+    // Convert MSYS /c/Users/... -> C:/Users/... on Windows
+    if (process.platform === "win32" && /^\/([a-zA-Z])\//.test(clean)) {
+      clean = clean.replace(/^\/([a-zA-Z])\//, (_, drive) => `${drive.toUpperCase()}:/`);
+    }
+
+    // Check if path is within local working directory and project it onto remoteCwd
+    try {
+      const resolvedLocal = path.resolve(normLocal, clean).replace(/\\/g, "/");
+      if (resolvedLocal.toLowerCase() === normLocal.toLowerCase()) {
+        return remoteCwd;
+      }
+
+      if (resolvedLocal.toLowerCase().startsWith((normLocal + "/").toLowerCase())) {
+        const rel = resolvedLocal.slice(normLocal.length + 1);
+        return path.posix.join(remoteCwd, rel);
+      }
+    } catch {
+      // Fall through
+    }
+
+    // Absolute POSIX path (already formatted for remote host)
+    if (clean.startsWith("/")) {
+      return path.posix.normalize(clean);
+    }
+
+    // Otherwise resolve relative to remoteCwd
+    return path.posix.resolve(remoteCwd, clean.replace(/\\/g, "/"));
+  };
 }
 
-/**
- * Safely wraps a shell argument in single quotes, escaping any internal single quotes.
- * 
- * @param arg - The argument string to escape.
- * @returns The escaped argument safe for bash shell execution.
- */
-function shellEscape(arg: string): string {
-	return "'" + arg.replace(/'/g, "'\\''") + "'";
+function createRemoteReadOps(remote: string, remoteCwd: string, localCwd: string): ReadOperations {
+  const toRemote = createPathTranslator(remoteCwd, localCwd);
+
+  return {
+    readFile: (p) => sshExec(remote, `cat ${JSON.stringify(toRemote(p))}`),
+    access: (p) => sshExec(remote, `test -r ${JSON.stringify(toRemote(p))}`).then(() => {}),
+    detectImageMimeType: async (p) => {
+      try {
+        const res = await sshExec(remote, `file --mime-type -b ${JSON.stringify(toRemote(p))}`);
+        const mime = res.toString().trim();
+        return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mime) ? mime : null;
+      } catch {
+        return null;
+      }
+    }
+  };
 }
 
-/**
- * Spawns an SSH child process to execute a single remote command synchronously-feeling (via Promise).
- * 
- * @param remoteArgs - Arguments containing user, host, and port (e.g., ["-p", "22", "user@host"]).
- * @param command - The command string to execute on the remote machine.
- * @returns A Promise resolving to a buffer of stdout. Rejects if exit code is non-zero.
- */
-function sshExec(remoteArgs: string[], command: string): Promise<Buffer> {
-	return new Promise((resolve, reject) => {
-		const child = spawn("ssh", [...remoteArgs, command], { stdio: ["ignore", "pipe", "pipe"] });
-		const chunks: Buffer[] = [];
-		const errChunks: Buffer[] = [];
+function createRemoteWriteOps(remote: string, remoteCwd: string, localCwd: string): WriteOperations {
+  const toRemote = createPathTranslator(remoteCwd, localCwd);
 
-		child.stdout.on("data", (data) => chunks.push(data));
-		child.stderr.on("data", (data) => errChunks.push(data));
-		child.on("error", reject);
-		child.on("close", (code) => {
-			if (code !== 0) {
-				reject(new Error(`SSH failed (${code}): ${Buffer.concat(errChunks).toString()}`));
-			} else {
-				resolve(Buffer.concat(chunks));
-			}
-		});
-	});
+  return {
+    writeFile: async (p, content) => {
+      const target = toRemote(p);
+      const b64 = Buffer.from(content).toString("base64");
+      // Auto-create parent directories on write
+      const cmd = `mkdir -p $(dirname ${JSON.stringify(target)}) && echo ${JSON.stringify(b64)} | base64 -d > ${JSON.stringify(target)}`;
+      await sshExec(remote, cmd);
+    },
+    mkdir: (dir) => sshExec(remote, `mkdir -p ${JSON.stringify(toRemote(dir))}`).then(() => {})
+  };
 }
 
-/**
- * Implements ReadOperations using remote SSH calls (cat, file, test).
- */
-function createRemoteReadOps(remoteArgs: string[], remoteCwd: string, localCwd: string): ReadOperations {
-	const toRemote = createPathTranslator(remoteCwd, localCwd);
-	return {
-		// Read a file remotely over SSH by running `cat`
-		readFile: (p) => sshExec(remoteArgs, `cat ${shellEscape(toRemote(p))}`),
-		// Test if file exists and is readable
-		access: (p) => sshExec(remoteArgs, `test -r ${shellEscape(toRemote(p))}`).then(() => { }),
-		// Detect image mimetype remotely using the `file` utility
-		detectImageMimeType: async (p) => {
-			try {
-				const r = await sshExec(remoteArgs, `file --mime-type -b ${shellEscape(toRemote(p))}`);
-				const m = r.toString().trim();
-				return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(m) ? m : null;
-			} catch {
-				return null;
-			}
-		},
-	};
+function createRemoteEditOps(remote: string, remoteCwd: string, localCwd: string): EditOperations {
+  const r = createRemoteReadOps(remote, remoteCwd, localCwd);
+  const w = createRemoteWriteOps(remote, remoteCwd, localCwd);
+  return { readFile: r.readFile, access: r.access, writeFile: w.writeFile };
 }
 
-/**
- * Implements WriteOperations using remote SSH calls (mkdir -p, base64 write piping).
- */
-function createRemoteWriteOps(remoteArgs: string[], remoteCwd: string, localCwd: string): WriteOperations {
-	const toRemote = createPathTranslator(remoteCwd, localCwd);
-	return {
-		// Write a file remotely by piping the raw buffer over stdin directly to cat.
-		// This avoids base64-encoding overhead and E2BIG (Argument list too long) shell limits.
-		writeFile: (p, content) => {
-			return new Promise((resolve, reject) => {
-				const child = spawn("ssh", [...remoteArgs, `cat > ${shellEscape(toRemote(p))}`], {
-					stdio: ["pipe", "ignore", "pipe"],
-				});
-				child.stdin.write(content);
-				child.stdin.end();
+function createRemoteBashOps(remote: string, remoteCwd: string, localCwd: string): BashOperations {
+  const toRemote = createPathTranslator(remoteCwd, localCwd);
 
-				const errChunks: Buffer[] = [];
-				child.stderr.on("data", (data) => errChunks.push(data));
-				child.on("error", reject);
-				child.on("close", (code) => {
-					if (code !== 0) {
-						reject(new Error(`SSH writeFile failed (${code}): ${Buffer.concat(errChunks).toString()}`));
-					} else {
-						resolve();
-					}
-				});
-			});
-		},
-		// Create remote directories recursively
-		mkdir: (dir) => sshExec(remoteArgs, `mkdir -p ${shellEscape(toRemote(dir))}`).then(() => { }),
-	};
+  return {
+    exec: (command, cwd, { onData, signal, timeout }) =>
+      new Promise((resolve, reject) => {
+        const targetCwd = toRemote(cwd);
+        // Ensure non-interactive execution flags to prevent hanging prompts
+        const remoteCmd = `export DEBIAN_FRONTEND=noninteractive CI=true GIT_TERMINAL_PROMPT=0; cd ${JSON.stringify(targetCwd)} && ${command}`;
+        const args = [...DEFAULT_SSH_OPTS, remote, remoteCmd];
+
+        const child = spawn("ssh", args, { stdio: ["ignore", "pipe", "pipe"] });
+        let timedOut = false;
+
+        const timer = timeout
+          ? setTimeout(() => {
+              timedOut = true;
+              child.kill();
+            }, timeout * 1000)
+          : undefined;
+
+        if (onData) {
+          child.stdout.on("data", onData);
+          child.stderr.on("data", onData);
+        }
+
+        child.on("error", (err) => {
+          if (timer) clearTimeout(timer);
+          reject(err);
+        });
+
+        const onAbort = () => child.kill();
+        signal?.addEventListener("abort", onAbort, { once: true });
+
+        child.on("close", (code) => {
+          if (timer) clearTimeout(timer);
+          signal?.removeEventListener("abort", onAbort);
+          if (signal?.aborted) {
+            reject(new Error("aborted"));
+          } else if (timedOut) {
+            reject(new Error(`timeout:${timeout}`));
+          } else {
+            resolve({ exitCode: code ?? 0 });
+          }
+        });
+      })
+  };
 }
 
-/**
- * Implements EditOperations by combining remote Read and Write operations.
- */
-function createRemoteEditOps(remoteArgs: string[], remoteCwd: string, localCwd: string): EditOperations {
-	const r = createRemoteReadOps(remoteArgs, remoteCwd, localCwd);
-	const w = createRemoteWriteOps(remoteArgs, remoteCwd, localCwd);
-	return { readFile: r.readFile, access: r.access, writeFile: w.writeFile };
-}
-
-/**
- * Implements BashOperations by spawning commands wrapped inside remote SSH processes.
- */
-function createRemoteBashOps(remoteArgs: string[], remoteCwd: string, localCwd: string): BashOperations {
-	const toRemote = createPathTranslator(remoteCwd, localCwd);
-	return {
-		exec: (command, cwd, { onData, signal, timeout }) =>
-			new Promise((resolve, reject) => {
-				// Navigate to the translated remote working directory before running the command
-				const cmd = `cd ${shellEscape(toRemote(cwd))} && ${command}`;
-				const child = spawn("ssh", [...remoteArgs, cmd], { stdio: ["ignore", "pipe", "pipe"] });
-				let timedOut = false;
-
-				const timer = timeout
-					? setTimeout(() => {
-						timedOut = true;
-						child.kill();
-					}, timeout * 1000)
-					: undefined;
-
-				child.stdout.on("data", onData);
-				child.stderr.on("data", onData);
-				child.on("error", (e) => {
-					if (timer) clearTimeout(timer);
-					reject(e);
-				});
-
-				const onAbort = () => child.kill();
-				signal?.addEventListener("abort", onAbort, { once: true });
-
-				child.on("close", (code) => {
-					if (timer) clearTimeout(timer);
-					signal?.removeEventListener("abort", onAbort);
-					if (signal?.aborted) reject(new Error("aborted"));
-					else if (timedOut) reject(new Error(`timeout:${timeout}`));
-					else resolve({ exitCode: code });
-				});
-			}),
-	};
-}
-
-/**
- * Registers SSH commands, CLI flags, and intercepts tool calls to bind them
- * to the remote environment when --ssh is active.
- */
 export default function (pi: ExtensionAPI) {
-	// Register the command line flag configuration
-	pi.registerFlag("ssh", { description: "SSH remote: user@host or user@host:/path", type: "string" });
+  pi.registerFlag("ssh", {
+    description: "SSH remote target: user@host or user@host:/remote/path",
+    type: "string"
+  });
 
-	const localCwd = process.cwd();
-	const localRead = createReadTool(localCwd);
-	const localWrite = createWriteTool(localCwd);
-	const localEdit = createEditTool(localCwd);
-	const localBash = createBashTool(localCwd);
+  const localCwd = process.cwd();
+  const localRead = createReadTool(localCwd);
+  const localWrite = createWriteTool(localCwd);
+  const localEdit = createEditTool(localCwd);
+  const localBash = createBashTool(localCwd);
 
-	// Holds the parsed connection details and CWD once established
-	let resolvedSsh: { remoteArgs: string[]; remoteCwd: string } | null = null;
-	const getSsh = () => resolvedSsh;
+  let resolvedSsh: { remote: string; remoteCwd: string } | null = null;
+  const getSsh = () => resolvedSsh;
 
-	// ----------------------------------------------------
-	// Tool Overrides
-	// Intercept standard tools and inject remote operations if SSH is active.
-	// ----------------------------------------------------
+  // ----------------------------------------------------
+  // 1. Tool Overrides
+  // ----------------------------------------------------
+  pi.registerTool({
+    ...localRead,
+    async execute(id, params, signal, onUpdate, _ctx) {
+      const ssh = getSsh();
+      if (ssh) {
+        const tool = createReadTool(localCwd, {
+          operations: createRemoteReadOps(ssh.remote, ssh.remoteCwd, localCwd)
+        });
+        return tool.execute(id, params, signal, onUpdate);
+      }
+      return localRead.execute(id, params, signal, onUpdate);
+    }
+  });
 
-	pi.registerTool({
-		...localRead,
-		async execute(id, params, signal, onUpdate, _ctx) {
-			const ssh = getSsh();
-			if (ssh) {
-				const tool = createReadTool(localCwd, {
-					operations: createRemoteReadOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
-				});
-				return tool.execute(id, params, signal, onUpdate);
-			}
-			return localRead.execute(id, params, signal, onUpdate);
-		},
-	});
+  pi.registerTool({
+    ...localWrite,
+    async execute(id, params, signal, onUpdate, _ctx) {
+      const ssh = getSsh();
+      if (ssh) {
+        const tool = createWriteTool(localCwd, {
+          operations: createRemoteWriteOps(ssh.remote, ssh.remoteCwd, localCwd)
+        });
+        return tool.execute(id, params, signal, onUpdate);
+      }
+      return localWrite.execute(id, params, signal, onUpdate);
+    }
+  });
 
-	pi.registerTool({
-		...localWrite,
-		async execute(id, params, signal, onUpdate, _ctx) {
-			const ssh = getSsh();
-			if (ssh) {
-				const tool = createWriteTool(localCwd, {
-					operations: createRemoteWriteOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
-				});
-				return tool.execute(id, params, signal, onUpdate);
-			}
-			return localWrite.execute(id, params, signal, onUpdate);
-		},
-	});
+  pi.registerTool({
+    ...localEdit,
+    async execute(id, params, signal, onUpdate, _ctx) {
+      const ssh = getSsh();
+      if (ssh) {
+        const tool = createEditTool(localCwd, {
+          operations: createRemoteEditOps(ssh.remote, ssh.remoteCwd, localCwd)
+        });
+        return tool.execute(id, params, signal, onUpdate);
+      }
+      return localEdit.execute(id, params, signal, onUpdate);
+    }
+  });
 
-	pi.registerTool({
-		...localEdit,
-		async execute(id, params, signal, onUpdate, _ctx) {
-			const ssh = getSsh();
-			if (ssh) {
-				const tool = createEditTool(localCwd, {
-					operations: createRemoteEditOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
-				});
-				return tool.execute(id, params, signal, onUpdate);
-			}
-			return localEdit.execute(id, params, signal, onUpdate);
-		},
-	});
+  pi.registerTool({
+    ...localBash,
+    async execute(id, params, signal, onUpdate, _ctx) {
+      const ssh = getSsh();
+      if (ssh) {
+        const tool = createBashTool(localCwd, {
+          operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd)
+        });
+        return tool.execute(id, params, signal, onUpdate);
+      }
+      return localBash.execute(id, params, signal, onUpdate);
+    }
+  });
 
-	pi.registerTool({
-		...localBash,
-		async execute(id, params, signal, onUpdate, _ctx) {
-			const ssh = getSsh();
-			if (ssh) {
-				const tool = createBashTool(localCwd, {
-					operations: createRemoteBashOps(ssh.remoteArgs, ssh.remoteCwd, localCwd),
-				});
-				return tool.execute(id, params, signal, onUpdate);
-			}
-			return localBash.execute(id, params, signal, onUpdate);
-		},
-	});
+  // ----------------------------------------------------
+  // 2. Lifecycle Events
+  // ----------------------------------------------------
+  pi.on("session_start", async (_event, ctx) => {
+    const flagVal = (pi.getFlag("ssh") as string | undefined) || process.env.PI_SSH;
+    if (flagVal) {
+      try {
+        if (flagVal.includes(":")) {
+          const [remote, ...pathParts] = flagVal.split(":");
+          resolvedSsh = { remote, remoteCwd: pathParts.join(":") };
+        } else {
+          const remote = flagVal;
+          const pwdBuf = await sshExec(remote, "pwd");
+          const pwd = pwdBuf.toString().trim();
+          resolvedSsh = { remote, remoteCwd: pwd };
+        }
 
-	// ----------------------------------------------------
-	// Event Listeners
-	// Initialize connection, handle terminal redirects, and update LLM context prompts.
-	// ----------------------------------------------------
+        // Export for permissions-gate coordination
+        process.env.PI_SSH_REMOTE_CWD = resolvedSsh.remoteCwd;
 
-	pi.on("session_start", async (_event, ctx) => {
-		const arg = pi.getFlag("ssh") as string | undefined;
-		if (arg) {
-			let remoteStr = "";
-			let remoteCwd = "";
+        ctx.ui.setStatus("ssh", ctx.ui.theme.fg("accent", `SSH: ${resolvedSsh.remote}:${resolvedSsh.remoteCwd}`));
+        ctx.ui.notify(`SSH mode active: ${resolvedSsh.remote}:${resolvedSsh.remoteCwd}`, "info");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        ctx.ui.notify(`Failed to initialize SSH connection: ${msg}`, "error");
+      }
+    }
+  });
 
-			// Parse out the target remote working directory if appended with a colon (e.g. user@host:/path)
-			const idx = arg.indexOf(":");
-			if (idx !== -1) {
-				remoteStr = arg.slice(0, idx);
-				remoteCwd = arg.slice(idx + 1);
-			} else {
-				remoteStr = arg;
-			}
-			const remoteArgs = remoteStr.split(/\s+/).filter(Boolean);
+  // Teardown multiplexer on session shutdown
+  pi.on("session_shutdown", async (_event, _ctx) => {
+    const ssh = getSsh();
+    if (ssh) {
+      try {
+        await pi.exec("ssh", ["-O", "exit", "-o", "ControlPath=~/.ssh/pi-mux-%C", ssh.remote], { timeout: 2000 });
+      } catch {
+        // Ignored during shutdown
+      }
+    }
+  });
 
-			try {
-				if (remoteCwd === "") {
-					// Connection verification: evaluate pwd on remote to get the default home directory
-					const pwd = (await sshExec(remoteArgs, "pwd")).toString().trim();
-					remoteCwd = pwd;
-				} else {
-					// Verify connection and assert that the specified remote directory exists
-					await sshExec(remoteArgs, `test -d ${shellEscape(remoteCwd)}`);
-				}
-				resolvedSsh = { remoteArgs, remoteCwd };
-				process.env.PI_SSH_REMOTE_CWD = remoteCwd;
+  // Handle user ! commands via SSH
+  pi.on("user_bash", (_event) => {
+    const ssh = getSsh();
+    if (!ssh) return;
+    return { operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd) };
+  });
 
-				const displayString = remoteArgs.join(" ");
-				ctx.ui.setStatus("ssh", ctx.ui.theme.fg("accent", `SSH: ${displayString}:${resolvedSsh.remoteCwd}`));
-				ctx.ui.notify(`SSH mode: ${displayString}:${resolvedSsh.remoteCwd}`, "info");
-			} catch (e: any) {
-				resolvedSsh = null;
-				process.env.PI_SSH_REMOTE_CWD = undefined;
-				ctx.ui.notify(`⚠️ SSH connection failed: ${e.message}. Falling back to local execution.`, "error");
-			}
-		}
-	});
+  // Inject Remote SSH Environment guidance into system prompt
+  pi.on("before_agent_start", async (event) => {
+    const ssh = getSsh();
+    if (ssh) {
+      let modified = event.systemPrompt.replace(
+        `Current working directory: ${localCwd}`,
+        `Current working directory: ${ssh.remoteCwd} (Remote SSH: ${ssh.remote})`
+      );
 
-	// Redirect interactive user shell commands (!) to the SSH connection
-	pi.on("user_bash", (_event) => {
-		const ssh = getSsh();
-		if (!ssh) return;
-		return { operations: createRemoteBashOps(ssh.remoteArgs, ssh.remoteCwd, localCwd) };
-	});
+      const sshHint = `\n\n# Remote SSH Environment\nYou are working directly on a remote Linux server via SSH (${ssh.remote}).\n- The remote working directory is \`${ssh.remoteCwd}\`.\n- Standard tools (read, write, edit, bash) execute remotely on this server.\n- Do NOT run nested \`ssh\` commands within \`bash\`.\n- All file modifications and shell commands affect the remote host.`;
 
-	// Intercept and update the system prompt context so the LLM is aware of the remote working environment
-	pi.on("before_agent_start", async (event) => {
-		const ssh = getSsh();
-		if (ssh) {
-			const displayString = ssh.remoteArgs.join(" ");
-
-			// Escape regex special chars in local CWD and construct a robust case-insensitive pattern 
-			// that accommodates both slash types to handle drive/separator casing mismatches on Windows.
-			const escapedLocal = localCwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			const regexStr = "Current working directory:\\s*" + escapedLocal.replace(/\\\\|\\/g, "[\\\\/]");
-			const regex = new RegExp(regexStr, "i");
-
-			let modified = event.systemPrompt.replace(
-				regex,
-				`Current working directory: ${ssh.remoteCwd} (Connected via SSH: ${displayString})`,
-			);
-
-			// Suppress the local APPEND_SYSTEM.md instructions
-			if (event.systemPromptOptions?.appendSystemPrompt) {
-				modified = modified.replace(event.systemPromptOptions.appendSystemPrompt, "").trim();
-			}
-
-			return { systemPrompt: modified };
-		}
-	});
+      return { systemPrompt: modified + sshHint };
+    }
+  });
 }

@@ -22,7 +22,8 @@ Use this skill only when the task has **3 or more distinct steps** that each dep
 Complete each sub-step before moving on:
 
 - [ ] Does `PLAN.md` exist? $\rightarrow$ If yes, read it. If no, create it from the template below.
-- [ ] Is the goal ambiguous? $\rightarrow$ If yes, ask focused questions before writing the plan. (See "When the Task is Ambiguous" below.)
+- [ ] Are there multiple valid architectural approaches or trade-offs? $\rightarrow$ Proactively call `ask_question` (`type: 'select'`) with 2–4 concrete options so the user picks the direction before you write `PLAN.md`.
+- [ ] Is the goal ambiguous? $\rightarrow$ If yes, ask focused questions via `ask_question` before writing the plan. (See "When the Task is Ambiguous" below.)
 - [ ] Review the draft plan for correct dependency ordering and explicit verification commands before executing.
 
 ### Resuming or Re-planning
