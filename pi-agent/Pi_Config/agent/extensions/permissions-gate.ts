@@ -45,7 +45,7 @@ const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   },
   {
     name: "Destructive Git Reset/Clean",
-    regex: /\bgit\s+(?:clean\s+-[a-zA-Z]*f[a-zA-Z]*d|reset\s+--hard)\b/i,
+    regex: /\bgit\s+(?:clean\s+(?:[^\n;&|]*\s+)?(?:-[a-zA-Z]*f[a-zA-Z]*|--force)|reset\s+--(?:hard|merge|keep))/i,
     reason: "Unrecoverable git destructive reset/clean requires confirmation."
   },
   {
