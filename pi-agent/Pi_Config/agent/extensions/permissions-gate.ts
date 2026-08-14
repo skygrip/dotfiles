@@ -44,9 +44,24 @@ const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
     reason: "Fork bomb execution pattern detected."
   },
   {
-    name: "Destructive Git Reset/Clean",
-    regex: /\bgit\s+(?:clean\s+(?:[^\n;&|]*\s+)?(?:-[a-zA-Z]*f[a-zA-Z]*|--force)|reset\s+--(?:hard|merge|keep))/i,
-    reason: "Unrecoverable git destructive reset/clean requires confirmation."
+    name: "Destructive Working Tree Discard",
+    regex: /\bgit\s+(?:clean\s+(?:[^\n;&|]*\s+)?(?:-[a-zA-Z]*f[a-zA-Z]*|--force)|reset\s+--(?:hard|merge|keep)|checkout\s+(?:[^\n;&|]*\s+)?(?:--\s+\.|\.|-[a-zA-Z]*f[a-zA-Z]*|--force)|restore\s+(?:[^\n;&|]*\s+)?(?:\.|\*\.|--worktree|-W|-s\s+HEAD))\b/i,
+    reason: "Command permanently discards uncommitted working tree modifications."
+  },
+  {
+    name: "Force Branch Deletion",
+    regex: /\bgit\s+branch\s+(?:[^\n;&|]*\s+)?(?:-[a-zA-Z]*D[a-zA-Z]*|--delete\s+--force|-d\s+-f)\b/i,
+    reason: "Force-deleting a branch can destroy unmerged commits."
+  },
+  {
+    name: "Force Push",
+    regex: /\bgit\s+push\s+(?:[^\n;&|]*\s+)?(?:-[a-zA-Z]*f[a-zA-Z]*|--force(?!-with-lease)|\+\S+:\S+)\b/i,
+    reason: "Force-pushing can overwrite remote branch history and erase commits."
+  },
+  {
+    name: "Stash Deletion",
+    regex: /\bgit\s+stash\s+(?:clear|drop)\b/i,
+    reason: "Permanently deletes uncommitted stashed changes."
   },
   {
     name: "Elevated Privileges",
