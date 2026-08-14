@@ -1,4 +1,4 @@
-[← Back to Universal Prompt Architect Hub](SKILL.md)
+[← Back to Universal Prompt Architect Hub](SKILL.md) | [Go to Krea 2 Edit & Inpainting Playbook →](krea2-edit.md)
 
 # Krea 2 (K2) Advanced Prompting & Optical Steering Playbook
 
@@ -43,13 +43,11 @@ Ground-truth layer analysis reveals that the 12 tapped hidden layers form **4 fu
 └─────────────────────────┴──────────────┴────────────────────────┴──────────────────────────────────────────┘
 ```
 
-### 🚫 Negative Prompt Policy & Attention Inversion on K2 Turbo
+### 🚫 Negative Prompt Policy & Natural Language Steering
 - **Never use traditional negative prompt fields on Krea 2.**
-- **K2 Turbo (CFG 1.0):** Negative text fields are inert at CFG 1.0. To suppress unwanted elements or adjust framing, use **Attention Inversion Weights**:
-  - `(face close to the lens:-4.0)` $\rightarrow$ pushes camera back to force wide environmental framing.
-  - `(dark aesthetics:-3.0)` $\rightarrow$ inverts dark tones into a bright, airy scene.
-  - `(hat:-2.0)` $\rightarrow$ suppresses specific accessories without negative prompts.
-- **Emphasis Band:** Keep positive weights between `1.1` and `2.5` (e.g. `(cinematic lighting:2.0)`). Weights $>3.0$ cause color burn and pixel degradation.
+- **Natural Language Steering (Qwen3-VL):** Because Krea 2 uses a multimodal VLM text encoder, it parses instructions as full natural language sentences rather than SD1.5-style bag-of-words token weights.
+- **Negative Weights (NegPiP):** Syntax like `(word:-2.0)` is only active if an attention-inversion custom node (like `ComfyUI-krea2-negpip`) is installed. In standard native Krea 2, **use direct natural language phrasing** to suppress concepts (e.g. *"bare face without glasses"*, *"wide environmental framing showing the full body"*).
+- **Positive Emphasis Band:** In standard nodes, keep emphasis weights moderate (between `1.1` and `1.5`, e.g. `(cinematic lighting:1.2)`). Excessive weights cause color burn and pixel degradation.
 
 ---
 
@@ -133,7 +131,80 @@ Camera ──► [ FOREGROUND: Defocused Obstruction ] ──► [ MIDGROUND: Cr
 
 ---
 
-## 6. SwarmUI / ComfyUI KGW Rebalance Presets
+## 6. Native Multimodal Image Prompting (Qwen3-VL Vision Tower)
+
+Unlike older diffusion models (SDXL, Pony, Anima, Flux) where the text encoder only processes strings of text tokens, **Krea 2 natively supports image prompting directly inside the CLIP/Text conditioning pipeline** via its integrated **Qwen3-VL-4B** vision-language encoder (`type: krea2`).
+
+```
+                                      ┌─────────────────────────────────────┐
+  Reference Image ───────────────────►│ Qwen3-VL Vision Tower (ViT)         │
+                                      │ Encodes <|vision_start|> image tokens│
+                                      └──────────────────┬──────────────────┘
+                                                         ▼
+  Text Prompt ───────────────────────► [Joint Multimodal ChatML Embedding] ──► KSampler.positive
+                                       (12 Layer Taps: L2 to L35)
+```
+
+### The Native Multi-Image Template & `Picture N:` Syntax
+In Krea 2's native conditioning template, reference images are ingested as structured vision blocks:
+```text
+<|im_start|>system
+Describe the image by detailing the color, shape, size, texture, quantity, text, spatial relationships of the objects and background:<|im_end|>
+<|im_start|>user
+Picture 1: <|vision_start|><|image_pad|><|vision_end|>
+Picture 2: <|vision_start|><|image_pad|><|vision_end|>
+{prompt}<|im_end|>
+<|im_start|>assistant
+```
+When prompting with multiple images, **explicitly refer to `Picture 1` and `Picture 2` in your prompt** for exact 1:1 cross-modal token binding (e.g. *"The person in Picture 1 wears the armor from Picture 2 inside a rain-soaked forest"*).
+
+---
+
+### The 4 Core Modes of Native Image Prompting
+
+#### Mode A: Style, Lighting & Medium Reference (SREF)
+Transfers color palette, Kelvin lighting ratios, lens optics, and rendering medium from the reference image without cloning the original subject:
+```text
+In the exact visual style, 2700K tungsten chiaroscuro lighting, and 35mm film grain of Picture 1: a vintage automobile mechanic in a canvas jumpsuit leans over an open engine bay, holding a steel wrench.
+```
+
+#### Mode B: Character & Facial Likeness Lock (CREF)
+Preserves facial bone structure, eye shape, and identity from the reference image while restaging the subject into completely new poses, wardrobe, and environments:
+```text
+Subject is the exact person from Picture 1, preserving facial bone structure, dark eyes, and jawline. The subject wears an orange alpine storm suit and climbing harness, leaning into a dynamic sprint across snow.
+```
+
+#### Mode C: Compositional & Spatial Staging Mimicry
+Adopts the exact framing geometry, Dutch tilt angle, and 3-plane depth separation of the reference image while populating new subjects:
+```text
+Matching the low-angle upward camera angle, high-speed shutter freeze, and 3-plane optical depth staging of Picture 1: an eagle takes flight from a mountain ledge.
+```
+
+#### Mode D: Multi-Angle Character Sheet Reference (360° Volumetric Lock)
+Passes a **character turnaround / model sheet** (displaying front, 3/4, profile, back views, and expression close-ups on a neutral background) as `Picture 1`. This primes Qwen3-VL with 360-degree volumetric understanding of the character's bone structure, hairstyle volume, and costume details from any angle:
+* **The Anti-Collage Prompting Rule:** Because the reference image is a multi-panel grid, naive prompts risk generating another multi-panel turnaround. You **must explicitly command a single unified scene** via natural language:
+```text
+Picture 1 is a character turnaround reference sheet. Render a single unified cinematic composition depicting this exact character in a dynamic seated contrapposto pose inside a dimly lit vintage library. The character holds an open leather-bound book with right hand, gazing 15 degrees off-camera in quiet contemplation (AU1+AU2). 2700K warm brass lamp key light with 7500K window shadow fill. 85mm f/1.4 lens with shallow depth of field. Style: 35mm film still with visible skin micro-pores. Do not render a turnaround, model sheet, split panel, or multiple views.
+```
+
+---
+
+### Core Operational Rules for Image Prompting
+
+1. **Resolution Sizing (`grounding_px`):**
+   * **`1024px`** for facial likeness & character sheets (CREF / Mode B & D).
+   * **`512px`** for broad style & color palette transfer (SREF / Mode A).
+2. **Preventing Visual Bleed (Explicit Unbinding):**
+   * If a reference image contains something you want changed (e.g. glasses or clothing color), explicitly state the replacement (e.g. *"render bare face without glasses"*).
+3. **The Anti-Collage Rule (for Character Sheets):**
+   * When passing multi-panel turnaround sheets, explicitly state:  
+     *"Render a single unified composition. Do not render a turnaround, model sheet, split panel, or multiple views."*
+4. **Canvas Limit with Image Prompts:**
+   * Keep generations $\le 2\text{MP}$ ($1024 \times 1024$, $832 \times 1216$) to prevent subject duplication.
+
+---
+
+## 7. SwarmUI / ComfyUI KGW Rebalance Presets
 
 ### The 5 Core Presets (Code-Verified)
 
@@ -164,7 +235,7 @@ Camera ──► [ FOREGROUND: Defocused Obstruction ] ──► [ MIDGROUND: Cr
 
 ---
 
-## 7. Production-Ready Worked Packages
+## 8. Production-Ready Worked Packages
 
 ### Package 1: Master Horologist (High-Emotion Intimate Character Portrait)
 
@@ -228,4 +299,38 @@ Camera ──► [ FOREGROUND: Defocused Obstruction ] ──► [ MIDGROUND: Cr
 1. Weather Shift: Intensify gale to zero-visibility whiteout with 6500K twilight. Harsh blizzard squalls obscure the far crevasse lip.
 2. Angle Shift: Lower camera to ice level inside the crevasse. Point lens 60 degrees upward toward the jumper framed against the storm sky.
 3. Action Shift: Subject swings the ice axe overhead toward the opposite ice wall. Steel pick bites into blue glacial hardpack with flying ice chips.
+```
+
+---
+
+### Package 3: Multimodal Image-Prompted Style & Identity Transfer
+
+**🎛 Model & Engine Recommendation**
+| Parameter | Value | Rationale |
+|---|---|---|
+| **Target Engine** | Krea 2 Large / RAW (Multimodal VLM CLIP) | Direct vision-tower conditioning locks character facial identity while executing new narrative |
+| **CLIP Conditioning** | Reference Image connected to Qwen3-VL CLIP (`grounding_px: 1024`) | Ingests reference visual tokens alongside text prompt |
+| **Aspect Ratio** | 4:5 Vertical Portrait | Matches compositional balance |
+| **Style Reference** | *Blade Runner 2049* (Roger Deakins) — amber sodium vapor, heavy rain streaks, shallow optical depth | Matches visual tone |
+
+**🎚️ SwarmUI / KGW Local Parameters**
+- **Preset:** 👤 Portrait & Micro-Emotion
+- **Multiplier:** `1.0` (with RMS Renormalize: `True`)
+- **per_layer_weights:** `1.8, 1.8, 1.8, 1.8, 2.0, 2.0, 2.5, 4.5, 1.2, 3.5, 1.0, 1.0`
+
+**🚫 Negative Prompt**
+```text
+(Leave blank — natural language flow-matching engines perform best without negative prompting)
+```
+
+**📝 Multimodal Narrative Prompt (Copy-Paste Ready)**
+```text
+85mm f/1.4 portrait lens with shallow depth of field. 2200K amber sodium streetlamp key light with 8000K cyan rim lighting from a neon sign. Subject is the exact person from the reference image, preserving facial bone structure, dark eyes, and jawline. The subject wears a dark charcoal waterproof trench coat with wet specular highlights across the shoulders. Pose: standing in 3/4 profile, head turned 15 degrees toward the lens, right hand holding the collar tight against cold rain. Expression: subtle eyebrow tension in quiet contemplation (AU1+AU2), mouth in a firm neutral resting line, rain droplets clinging to the jawline. Foreground: defocused rain streaks blur the bottom frame. Background: out-of-focus futuristic cityscape dissolves into amber and cyan bokeh discs.
+```
+
+**🔄 Iteration Pathway**
+```text
+1. Lighting Shift: Switch neon lighting from amber/cyan to intense monochrome emerald green.
+2. Environment Shift: Move subject from rainy street into a warm 2700K tea shop doorway with steam rising into the cold air.
+3. Interaction Shift: Subject reaches up to brush wet hair strands away from the forehead.
 ```

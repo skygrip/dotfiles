@@ -16,6 +16,8 @@ Before drafting, determine the optimal engine for the user's concept:
 | Target Aesthetic / Goal | Recommended Engine | Negative Prompt Policy | Supplemental Guide |
 |---|---|---|---|
 | **Hyper-realistic, cinematic film, commercial photography, complex lighting** | **Krea 2 / Flux.1** | **LEAVE BLANK** (Negative prompts collide with flow-matching velocity fields) | See [`krea2.md`](krea2.md) |
+| **Native Multimodal Image Prompting (SREF, CREF & Character Sheet 360° Lock)** | **Krea 2 (Qwen3-VL CLIP)** | **LEAVE BLANK** (Direct vision-tower token conditioning with natural language anti-collage direction) | See [`krea2.md`](krea2.md#6-native-multimodal-image-prompting-qwen3-vl-vision-tower) |
+| **Instruction-Based Image Editing, Restaging, Object Removal & Two-Ref Compose** | **Krea 2 Edit (`comfyui-krea2edit`)** | **LEAVE BLANK** for Turbo; **Grounded Empty** for RAW (CFG 3.0) | See [`krea2-edit.md`](krea2-edit.md) |
 | **Anime, stylized 2D, manga, game key art, character sheets** | **CircleStone Labs ANIMA** | **MANDATORY TARGETED NEGATIVE** (Prevents 3D CGI plastic bleed & anatomy glitches) | See [`anima.md`](anima.md) |
 | **Artistic painterly, fantasy illustration, mixed media** | **Krea 2 / Flux** | **LEAVE BLANK** | See [`krea2.md`](krea2.md) |
 | **LoRA-centric stylized anime illustration & fine-tuning** | **CircleStone Labs ANIMA** | **MANDATORY TARGETED NEGATIVE** | See [`anima.md`](anima.md) |
