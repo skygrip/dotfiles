@@ -290,11 +290,17 @@ export default function (pi: ExtensionAPI) {
 
               private applyFilter(newQuery: string) {
                 this.filterText = newQuery;
-                const q = this.filterText.trim();
+                const q = this.filterText.trim().toLowerCase();
                 if (!q) {
                   this.filtered = this.allItems;
                 } else {
-                  this.filtered = fuzzyFilter(this.allItems, q, (it) => `${it.label} ${it.description ?? ""} ${it.value}`);
+                  const terms = q.split(/\s+/).filter(Boolean);
+                  this.filtered = this.allItems.filter((it) => {
+                    const text = `${it.label} ${it.description ?? ""} ${it.value}`.toLowerCase();
+                    // Match full phrase or all whitespace-separated search terms
+                    if (text.includes(q)) return true;
+                    return terms.every((term) => text.includes(term));
+                  });
                 }
                 this.selectedIdx = 0;
               }
