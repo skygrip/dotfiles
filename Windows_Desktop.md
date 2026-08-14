@@ -290,17 +290,20 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 
 ### Development Tools
 
-| Application                                                                                                             | Winget ID                                                      |
+| Application                                                                                                             | Winget ID / Install Command                                    |
 | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                               | winget install -e --id Google.PlatformTools                    |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                                    | winget install -e --id Amazon.AWSCLI                           |
+| [ck (seek)](https://github.com/BeaconBay/ck)                                                                            | npm install -g @beaconbay/ck-search                            |
 | [CMake](https://cmake.org/)                                                                                             | winget install -e --id Kitware.CMake                           |
 | [DuckDB CLI](https://duckdb.org/)                                                                                       | winget install -e --id DuckDB.cli                              |
+| [fd](https://github.com/sharkdp/fd)                                                                                     | winget install -e --id sharkdp.fd                              |
 | [GitHub CLI](https://cli.github.com/)                                                                                   | winget install -e --id GitHub.cli                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                                           | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                                            | winget install -e --id Google.CloudSDK                         |
 | [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                                 | winget install -e --id Google.IAPDesktop                       |
 | [jq](https://jqlang.github.io/jq/)                                                                                      | winget install -e --id jqlang.jq                               |
+| [lnav (Log Navigator)](https://lnav.org/)                                                                                | winget install -e --id tstack.lnav                             |
 | [Miller (mlr)](https://miller.readthedocs.io/)                                                                          | winget install -e --id Miller.Miller                           |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                                  | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools       |
@@ -308,6 +311,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                                         | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                                 | winget install -e --id PuTTY.PuTTY                             |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                                            | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
+| [ripgrep](https://github.com/BurntSushi/ripgrep)                                                                        | winget install -e --id BurntSushi.ripgrep.MSVC                 |
 | [Rufus](https://github.com/pbatard/rufus)                                                                               | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                                | winget install -e --id lukehaas.RunJS --scope user             |
 | [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
@@ -315,6 +319,13 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
+
+To keep project and log directories clean (avoiding local `.ck/` folders created in each indexed workspace), configure the persistent `CK_INDEX_DIR` environment variable to store indexes centrally:
+
+```powershell
+# Set global index cache directory for ck (seek) in PowerShell:
+[Environment]::SetEnvironmentVariable("CK_INDEX_DIR", "$env:LOCALAPPDATA\ck\indexes", "User")
+```
 
 ### Forensics Tools
 

@@ -1,11 +1,11 @@
 ---
 name: log-analysis
-description: Explore, inspect, schema-discover, search, detect outliers, scan for PII/secrets, run semantic searches (sff.exe), and run ML/AI analysis (Isolation Forest, fastembed, openai/privacy-filter) on log files and datasets (JSON/JSONL, CSV, Parquet) using DuckDB CLI, jq, ripgrep, Miller, sff.exe, and Pi Agent.
+description: Explore, inspect, schema-discover, search, detect outliers, scan for PII/secrets, run hybrid semantic searches (ck), view interactive timelines (lnav), and run ML/AI analysis (Isolation Forest, fastembed, openai/privacy-filter) on log files and datasets (JSON/JSONL, CSV, Parquet) using DuckDB CLI, jq, ripgrep, Miller, lnav, ck, and Pi Agent.
 ---
 
 # Log & Data Analysis Exploration
 
-This skill provides a systematic routine for exploring, schema-discovering, searching, detecting statistical & ML outliers, and scanning for PII/secrets in unknown or unusual datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **DuckDB CLI**, **jq**, **ripgrep (`rg`)**, **Miller (`mlr`)**, **Semantic File Finder (`sff.exe`)**, **scikit-learn**, **OpenAI Privacy Filter**, and **Pi Agent (`pi`)**.
+This skill provides a systematic routine for exploring, schema-discovering, searching, detecting statistical & ML outliers, and scanning for PII/secrets in unknown or unusual datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **DuckDB CLI**, **jq**, **ripgrep (`rg`)**, **Miller (`mlr`)**, **Log File Navigator (`lnav`)**, **`ck` (`ck-search`)**, **scikit-learn**, **OpenAI Privacy Filter**, and **Pi Agent (`pi`)**.
 
 ---
 
@@ -22,14 +22,16 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 
 | Task / Goal | Recommended Tool | One-Liner / Quick Syntax |
 | :--- | :--- | :--- |
-| **Raw Text & Stack Traces** | `ripgrep` | `rg -i -U -C 5 "exception\|failed\|unauthorized" ./logs/` |
+| **Raw Text & Stack Traces** | `ripgrep` | `rg -i -U -C 5 "exception|failed|unauthorized" ./logs/` |
+| **Interactive TUI & Merged Timeline** | `lnav` | `lnav ./logs/` (auto-detects formats, merges timestamps, runs SQL) |
+| **Time-Window Slicing** | `DuckDB SQL` | `duckdb -c "SELECT * FROM 'logs.jsonl' WHERE TRY_CAST(ts AS TIMESTAMP) BETWEEN '2026-08-14 02:00:00' AND '2026-08-14 04:00:00';"` |
 | **Format Conversion (JSONL $\rightarrow$ CSV)** | `Miller` | `mlr --ijsonl --ocsv cat app_logs.jsonl > output.csv` |
 | **Quick JSON Key Inspection** | `jq` | `jq -c '{time: .timestamp, msg: .message}' logs.jsonl \| head -n 10` |
-| **Schema Discovery** | `DuckDB CLI` | `duckdb -c "DESCRIBE SELECT * FROM read_json_auto('logs.jsonl');"` |
-| **M365 Nested JSON Parsing** | `DuckDB SQL` | `duckdb -c "WITH p AS (SELECT parse_json(AuditData) a FROM 'm365.json') SELECT a.UserId, a.ClientIP FROM p;"` |
+| **Schema Discovery & JSON Keys** | `DuckDB CLI` | `duckdb -c "SELECT json_structure(AuditData) FROM 'm365.json' LIMIT 1;"` |
+| **M365 Nested JSON (Arrow Syntax)** | `DuckDB SQL` | `duckdb -c "SELECT CreationTime, AuditData->>'UserId' AS user, AuditData->>'ClientIP' AS ip FROM 'm365.json';"` |
 | **Statistical Outliers (Z-Score)** | `DuckDB SQL` | `duckdb -c "SELECT *, (val - AVG(val) OVER()) / NULLIF(STDDEV_POP(val) OVER(), 0) AS z FROM 'data.csv' WHERE ABS(z) > 3.0;"` |
 | **Multi-Variable ML Anomalies** | `scikit-learn` | `clean_df['anomaly_label'] = IsolationForest(contamination=0.01).fit_predict(feature_df)` |
-| **Semantic Log Search (CLI)** | `sff` | `sff -e log,json,txt -r -m minishlab/potion-code-16M-v2 "unauthorized privilege escalation"` |
+| **Hybrid & Semantic Search (CLI)** | `ck` | `ck --hybrid "unauthorized privilege escalation"` |
 | **Semantic Log Clustering** | `fastembed` | `TextEmbedding('snowflake/snowflake-arctic-embed-m-v1.5').embed(cleaned_lines)` |
 | **PII & Secret Audit Scan** | Python (`privacy-filter`) | Python Script (Phase 4B): `pii_grep("./logs/", batch_size=64, output_csv="pii_audit.csv")` |
 | **AI Threat Summarization** | `DuckDB` + `pi` | `duckdb -c "SELECT ... FROM 'm365.json'" \| pi "Analyze suspicious security events"` |
@@ -41,9 +43,10 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 
 ### 🧭 Tool Selection Matrix (Pick the Right Tool for the Job)
 
-* **Exact String / Known Pattern Match?** $\rightarrow$ Use **`ripgrep` (`rg`)** (instant regex).
-* **Natural Language / Concept Search (*"find database connection failures"*)?** $\rightarrow$ Use **`sff.exe`** (Rust semantic search).
-* **Structured SQL, Nested JSON Structs, M365 Logs, or Statistical Outliers?** $\rightarrow$ Use **`DuckDB CLI`** (parallel SQL).
+* **Interactive Multi-Log Inspection & Merged Timeline?** $\rightarrow$ Use **`lnav`** (auto-detects log formats, interlaces timestamps, live SQL).
+* **Exact String / Known Pattern Match?** $\rightarrow$ Use **`ripgrep` (`rg`)** (instant regex, use `-u` if logs are in `.gitignore`).
+* **Natural Language / Concept Search (*"find database connection failures"*)?** $\rightarrow$ Use **`ck`** (hybrid BM25 + vector search).
+* **Structured SQL, Nested JSON Structs, M365 Logs, or Statistical Outliers?** $\rightarrow$ Use **`DuckDB CLI`** (parallel SQL, arrow notation `->>`).
 * **Format Conversion (`JSONL` $\leftrightarrow$ `CSV`) or Column Re-ordering?** $\rightarrow$ Use **`Miller` (`mlr`)**.
 * **Quick One-Line JSON Field Inspection?** $\rightarrow$ Use **`jq`**.
 * **Multi-Variable Anomaly Detection across Columns?** $\rightarrow$ Use **`IsolationForest`** (scikit-learn).
@@ -99,128 +102,198 @@ jq -c 'select(.level == "ERROR" or .level == "FATAL")' app_logs.jsonl
 jq -r '.status_code' access_logs.jsonl | sort | uniq -c | sort -nr
 ```
 
+### D. Interactive Multi-File Log Navigation (`lnav`)
+
+`lnav` (The Logfile Navigator) is the recommended terminal UI for visually navigating and merging multi-file logs:
+
+```bash
+# 1. Open an entire log folder (automatically merges multiple log files into a single chronological timeline)
+lnav ./logs/
+
+# 2. Open specific compressed or raw logs
+lnav /var/log/syslog /var/log/nginx/access.log.gz
+
+# 3. Interactive features inside lnav:
+# - Press 'e' / 'w' to jump between Errors and Warnings
+# - Press 'u' / 'U' to jump between user sessions
+# - Type ';SELECT log_time, log_level, log_body FROM all_logs WHERE log_level = 'error'' to run embedded SQLite queries
+# - Type ':filter-in timeout' to dynamically filter the live view
+```
+
 ---
 
 ## 2. Phase 2: Encoding, Preprocessing & Schema Discovery
 
-### A. Universal Multi-Encoding Python Reader & Text Sanitizer
+### A. Universal Multi-Encoding Python Streamer & Text Sanitizer
 
-Handles UTF-8, UTF-16 (Windows Event Logs / IIS), and Latin-1 automatically, while masking volatile dynamic tokens (ISO 8601, Apache/Nginx, Syslog timestamps, IPs, UUIDs, Hex addresses, Hashes):
+Memory-safe generator supporting UTF-8, UTF-16 (Windows Event Logs / IIS), and Latin-1 automatically, while masking volatile dynamic tokens (ISO 8601, Apache/Nginx, Syslog timestamps, 10/13-digit Epochs, Bearer tokens, IPs, UUIDs, Hex addresses, Hashes):
 
 ```python
 import re
+import gzip
 from pathlib import Path
+from typing import Generator
 
-def read_log_file(filepath: str) -> list[str]:
-    """Read log file handling UTF-8, UTF-16, and Latin-1 encodings automatically."""
+def stream_log_lines(filepath: str, max_lines: int = None) -> Generator[str, None, None]:
+    """
+    Memory-safe streaming log reader with BOM sniffing and strict-fallback decoding.
+    Handles UTF-8, UTF-8-BOM, UTF-16LE, UTF-16BE, Latin-1, and compressed .gz files.
+    """
     path = Path(filepath)
-    for encoding in ['utf-8', 'utf-16-le', 'utf-16', 'latin-1']:
+    is_gz = path.suffix.lower() == '.gz'
+
+    # 1. Sniff BOM bytes to avoid decoding trial loops
+    encoding = None
+    try:
+        if is_gz:
+            with gzip.open(path, 'rb') as bf:
+                head = bf.read(4)
+        else:
+            with open(path, 'rb') as bf:
+                head = bf.read(4)
+                
+        if head.startswith(b'\xef\xbb\xbf'):
+            encoding = 'utf-8-sig'
+        elif head.startswith(b'\xff\xfe'):
+            encoding = 'utf-16-le'
+        elif head.startswith(b'\xfe\xff'):
+            encoding = 'utf-16-be'
+    except Exception:
+        pass
+
+    # 2. Fallback hierarchy: explicit BOM -> utf-8 -> utf-16 -> latin-1
+    encodings_to_try = [encoding] if encoding else ['utf-8', 'utf-16', 'latin-1']
+    
+    for enc in encodings_to_try:
         try:
-            with open(path, 'r', encoding=encoding) as f:
-                lines = [line.strip() for line in f]
-                if any(lines):
-                    return lines
+            # Verify sample on strict decoding
+            if is_gz:
+                with gzip.open(path, 'rt', encoding=enc, errors='replace') as f:
+                    for count, line in enumerate(f, 1):
+                        if max_lines and count > max_lines:
+                            break
+                        clean = line.replace('\x00', '').strip()
+                        if clean:
+                            yield clean
+            else:
+                with open(path, 'r', encoding=enc, errors='replace') as f:
+                    for count, line in enumerate(f, 1):
+                        if max_lines and count > max_lines:
+                            break
+                        clean = line.replace('\x00', '').strip()
+                        if clean:
+                            yield clean
+            return
         except (UnicodeDecodeError, UnicodeError):
             continue
-    return []
+
+def read_log_file(filepath: str, max_lines: int = 10000) -> list[str]:
+    """Read log file into memory with a safe maximum line limit (default: 10,000 lines)."""
+    return list(stream_log_lines(filepath, max_lines=max_lines))
 
 def clean_log_text(text: str) -> str:
-    """Normalize log text by stripping timestamps, IPs, UUIDs, hex addresses, and hashes."""
-    # 1. Timestamps: ISO 8601, Apache/Nginx (19/Jul/2026:15:48:35 +0000), Syslog (Jul 19 15:48:35), Epoch (10-digit)
-    text = re.sub(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?Z?', '', text)
-    text = re.sub(r'\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2} (\+|\-)\d{4}', '', text)
-    text = re.sub(r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\b', '', text)
-    text = re.sub(r'\b1[6-9]\d{8}\b', '', text)
-
-    # 2. IPs (IPv4 & IPv6)
-    text = re.sub(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', '<IP>', text)
-    text = re.sub(r'\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b', '<IP6>', text)
-
-    # 3. UUIDs / GUIDs
+    """Normalize log text by replacing timestamps, auth tokens, IPs, UUIDs, hex addresses, and hashes with placeholders."""
+    # 1. ISO 8601 & RFC 3339 timestamps (handles Z, +00:00, subseconds)
+    text = re.sub(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?', '<TS>', text)
+    # 2. Apache/Nginx (19/Jul/2026:15:48:35 +0000) & Syslog (Jul 19 15:48:35)
+    text = re.sub(r'\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}', '<TS>', text)
+    text = re.sub(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?\b', '<TS>', text)
+    # 3. Unix Epochs: 10-digit seconds / 13-digit milliseconds
+    text = re.sub(r'\b1[6-9]\d{8}(?:\d{3})?\b', '<EPOCH>', text)
+    # 4. Bearer & JWT tokens
+    text = re.sub(r'Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*', 'Bearer <TOKEN>', text, flags=re.IGNORECASE)
+    text = re.sub(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b', '<JWT>', text)
+    # 5. IPv4 & IPv6 (compressed and uncompressed)
+    text = re.sub(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', '<IP4>', text)
+    text = re.sub(r'(?:[0-9a-fA-F]{1,4}:){1,7}:?|::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}', '<IP6>', text)
+    # 6. UUIDs / GUIDs
     text = re.sub(r'\b[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b', '<UUID>', text)
-
-    # 4. Memory Hex Addresses & Hashes (MD5/SHA256)
+    # 7. Memory Hex Addresses & Hashes (MD5/SHA256)
     text = re.sub(r'\b0x[0-9a-fA-F]+\b', '<HEX_ADDR>', text)
     text = re.sub(r'\b[0-9a-fA-F]{32,64}\b', '<HASH>', text)
-
     return text.strip()
 ```
 
-### B. SQL-Level Date & Timestamp Parsing via DuckDB
+### B. SQL-Level Date, Timestamp Parsing & Time-Window Slicing (DuckDB)
 
-Use `TRY_CAST()` or `TRY_STRPTIME()` in DuckDB to parse unstandardized log dates into native timestamps:
+Use `TRY_CAST()` or `TRY_STRPTIME()` in DuckDB to parse unstandardized log dates, slice exact time windows, and aggregate error histograms:
 
 ```bash
-# Robust timestamp parsing in DuckDB SQL
+# 1. Parse unstandardized timestamps & time-bucket error rates (5-min intervals)
 duckdb -c "
 SELECT 
-    TRY_CAST(timestamp_str AS TIMESTAMP) AS ts_iso,
-    TRY_STRPTIME(syslog_date, '%b %d %H:%M:%S') AS ts_syslog,
-    message
-FROM read_csv_auto('raw_system.log');
+    time_bucket(INTERVAL '5 minutes', TRY_CAST(timestamp AS TIMESTAMP)) AS window_start,
+    COUNT(*) AS total_errors,
+    COUNT(DISTINCT client_ip) AS affected_ips
+FROM read_csv_auto('logs/*.csv')
+WHERE status_code >= 500
+GROUP BY 1
+ORDER BY 1 ASC;
+"
+
+# 2. Time-Window Slicing across Compressed Multi-File Archives (.gz / .zstd)
+duckdb -c "
+SELECT filename, timestamp, level, message
+FROM read_json_auto('logs/**/*.jsonl.gz', union_by_name=true, filename=true, ignore_errors=true)
+WHERE TRY_CAST(timestamp AS TIMESTAMP) BETWEEN '2026-08-14 02:00:00' AND '2026-08-14 04:30:00'
+  AND level IN ('ERROR', 'FATAL')
+ORDER BY timestamp ASC;
 "
 ```
 
-### C. Schema & Data Type Discovery via DuckDB CLI
+### C. Schema & Deep JSON Structure Discovery (`DuckDB CLI`)
 
-Run schema discovery before performing heavy SQL queries or aggregations:
+Run schema discovery to inspect deeply nested structs and dynamic JSON payloads without guesswork:
 
 ```bash
-# Discover column names and infer data types automatically from a JSON file
+# Discover column names and inferred data types from JSON/CSV files
 duckdb -c "DESCRIBE SELECT * FROM read_json_auto('logs.jsonl');"
-
-# Inspect CSV schema, auto-detecting delimiters, headers, and column types
 duckdb -c "DESCRIBE SELECT * FROM read_csv_auto('access_logs.csv');"
 
-# Sample top 5 records to inspect nested structs/JSON arrays
-duckdb -c "SELECT * FROM read_json_auto('events.json') LIMIT 5;"
+# Inspect exact nested schema tree of dynamic JSON payload strings (e.g. M365 AuditData)
+duckdb -c "SELECT json_structure(AuditData) FROM 'm365_unified_audit_log.json' LIMIT 1;"
+
+# List all distinct top-level JSON keys inside a stringified payload column
+duckdb -c "SELECT DISTINCT json_keys(AuditData) FROM 'm365_unified_audit_log.json' LIMIT 5;"
 ```
 
-### D. Querying Nested JSON & M365 Unified Audit Logs (UAL)
+### D. Querying Nested JSON, M365 UAL, & Windows Security Events via Arrow Operators
 
-DuckDB automatically parses nested JSON fields into structs and dot-notation fields:
-
-```bash
-# Search for errors in nested JSON fields
-duckdb -c "
-SELECT 
-    timestamp,
-    level,
-    message,
-    payload.user.id AS user_id,
-    payload.request.endpoint AS endpoint
-FROM read_json_auto('app_logs.jsonl')
-WHERE level IN ('ERROR', 'FATAL')
-  OR message LIKE '%exception%'
-ORDER BY timestamp DESC
-LIMIT 50;
-"
-```
-
-M365 logs store events in a nested JSON structure where `AuditData` is often a stringified JSON payload. Use a CTE to parse `AuditData` once:
+DuckDB supports native JSON extraction with `->>` (extract string) and `->` (extract JSON struct):
 
 ```bash
-# Unpack stringified M365 AuditData payload in a CTE (parses JSON once per row instead of 5x)
+# 1. M365 Unified Audit Log (UAL) Triage
 duckdb -c "
-WITH parsed AS (
-    SELECT 
-        CreationTime,
-        Operation,
-        Workload,
-        parse_json(AuditData) AS audit
-    FROM read_json_auto('m365_unified_audit_log.json')
-)
 SELECT 
     CreationTime,
     Operation,
     Workload,
-    audit.UserId AS user_id,
-    audit.ClientIP AS client_ip,
-    audit.ObjectId AS accessed_object
-FROM parsed
+    AuditData->>'UserId' AS user_id,
+    AuditData->>'ClientIP' AS client_ip,
+    AuditData->>'ObjectId' AS accessed_object,
+    list_filter(
+        CAST(AuditData->'ExtendedProperties' AS JSON[]), 
+        x -> x->>'Name' = 'ClientInfoString'
+    )[1]->>'Value' AS client_info
+FROM read_json_auto('m365_unified_audit_log.json')
 WHERE Operation IN ('FileDownloaded', 'MailItemsAccessed', 'Set-Mailbox', 'UserLoggedIn', 'Add member to role')
-   OR audit.UserId = 'compromised_user@company.com'
+   OR AuditData->>'UserId' = 'compromised_user@company.com'
 ORDER BY CreationTime DESC;
+"
+
+# 2. Windows Security Event Log Triage (Event IDs: 4625 = Failed Logon, 4624 = Logon, 4688 = Process Spawn)
+duckdb -c "
+SELECT 
+    EventData->>'TargetUserName' AS username,
+    EventData->>'IpAddress' AS source_ip,
+    COUNT(*) AS failure_count,
+    MIN(TimeCreated) AS first_attempt,
+    MAX(TimeCreated) AS last_attempt
+FROM read_json_auto('win_security_events.jsonl')
+WHERE EventID = 4625
+GROUP BY 1, 2
+HAVING failure_count > 5
+ORDER BY failure_count DESC;
 "
 ```
 
@@ -303,30 +376,28 @@ print(f"Detected {len(anomalies)} anomalies out of {len(clean_df)} records:")
 print(anomalies.head(10))
 ```
 
-### C. Fast Semantic Log Search via `sff.exe` (Rust CLI — Recommended Default)
+### C. Fast Hybrid & Semantic Log Search via `ck` (CLI — Recommended Default)
 
-**Context**: `sff.exe` (Semantic File Finder) uses Rust-native `model2vec-rs` for ultra-fast, zero-dependency CPU semantic search across log directories (`.log`, `.json`, `.txt`, `.csv`). It replaces heavy Python/PyTorch dependencies for most CLI search use cases and executes in milliseconds.
+**Context**: `ck` (`ck-search`) provides local-first hybrid search fusing **BM25 keyword search** (for exact error codes, UUIDs, IP addresses) and **dense vector embeddings** (for conceptual, natural language queries) using Reciprocal Rank Fusion (RRF).
 
-**Key Flags**:
-* **`-r` (`--recursive`)**: Always specify `-r` to search recursively through subdirectories (recursion is off by default).
-* **`--json`**: Output results in JSON format instead of table output when parsing with `jq`, DuckDB, or scripts.
-* **`-m` (`--model`)**: Specify custom embedding model (e.g. `minishlab/potion-code-16M-v2`) only when searching code/technical log payloads.
-
-**Recommended Embedding Models for Log Analysis (`-m` / `--model`)**:
-* **`minishlab/potion-code-16M-v2`** ⭐ *(Recommended for logs & code)*: Trained on technical text, code identifiers, and structured log payloads.
-* **`minishlab/potion-retrieval-32M`** ⭐ *(Default)*: Ultra-fast 32M static model, excellent for natural language log queries.
-* **`BAAI/bge-small-en-v1.5`**: High-accuracy 384-dim dense retrieval model for complex prose/event descriptions.
-* **`nomic-ai/nomic-embed-text-v1.5`**: Best for long stack traces and multi-line context blocks.
+**Cache & Index Directories**:
+* **Project / Log Directory Index**: By default, `ck` creates an index and cache inside a **`.ck/`** folder at the root of the searched directory (contains index databases, embeddings, and vector files).
+* **Global Index Relocation (`CK_INDEX_DIR`)**: Set the `CK_INDEX_DIR` environment variable (e.g. `export CK_INDEX_DIR=~/.cache/ck/indexes` or `$env:CK_INDEX_DIR="$env:LOCALAPPDATA\ck\indexes"`) to keep log folders clean and store indexes under `$CK_INDEX_DIR/<basename>-<hash>`.
+* **Model Cache Directories**:
+  * **Windows**: `%LOCALAPPDATA%\ck\cache\models\`
+  * **Linux / macOS**: `~/.cache/ck/models/`
+  * **Fallback**: `.ck_models/models/` in the current working directory.
+* **Clearing Cache**: Simply delete the local `.ck/` directory or purge the global cache folder (`rm -rf .ck` or `rm -rf ~/.cache/ck`).
 
 ```bash
-# 1. Search logs recursively for semantic concepts using the potion-code model
-sff -e log,json,txt -r -m minishlab/potion-code-16M-v2 "unauthorized privilege escalation or admin role changes"
+# 1. Semantic search for conceptual meaning (dense neural vector embeddings)
+ck --sem "unauthorized privilege escalation or admin role changes"
 
-# 2. Search recursively for database timeouts and return top 20 results as JSON for DuckDB/jq parsing
-sff -e log,json -r -l 20 --json "database connection pool exhausted or timeout"
+# 2. Hybrid search combining BM25 exact keywords with semantic embeddings
+ck --hybrid "database connection pool exhausted or timeout"
 
-# 3. Search raw application logs recursively using the default 32M retrieval model
-sff -e log -r "unhandled exception in authentication workflow"
+# 3. Hybrid search on a specific log directory returning JSON
+ck --hybrid --json -p ./logs/ "unhandled exception in auth"
 ```
 
 ### D. Semantic Log Clustering & Rare Event Detection (`fastembed` / Hugging Face)
@@ -481,9 +552,8 @@ def pii_grep(
             continue
             
         try:
-            lines = read_log_file(str(file_path))
             batch_lines, batch_nums = [], []
-            for line_num, line_str in enumerate(lines, 1):
+            for line_num, line_str in enumerate(stream_log_lines(str(file_path)), 1):
                 batch_lines.append(line_str)
                 batch_nums.append(line_num)
                 
@@ -576,7 +646,14 @@ COPY (
 
 ```bash
 # CLI Tools
-winget install DuckDB.cli BurntSushi.ripgrep.MSVC Miller.Miller jqlang.jq sff
+winget install DuckDB.cli BurntSushi.ripgrep.MSVC Miller.Miller jqlang.jq tstack.lnav
+
+# Hybrid & Semantic Search CLI (ck)
+npm install -g @beaconbay/ck-search
+
+# Optional: Persist central index directory (keeps workspaces clean from .ck/ folders)
+# Windows (PowerShell): [Environment]::SetEnvironmentVariable("CK_INDEX_DIR", "$env:LOCALAPPDATA\ck\indexes", "User")
+# Linux / macOS (Bash/Zsh): export CK_INDEX_DIR="$HOME/.cache/ck/indexes"
 
 # Python Libraries (for ML tabular & PII scripts)
 uv pip install duckdb pandas scikit-learn fastembed transformers torch rich

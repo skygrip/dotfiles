@@ -21,9 +21,9 @@ Use this skill only when the task has **3 or more distinct steps** that each dep
 
 Complete each sub-step before moving on:
 
-- [ ] Does `PLAN.md` exist? → If yes, read it. If no, create it from the template below.
-- [ ] Is the goal ambiguous? → If yes, ask focused questions before writing the plan. (See "When the Task is Ambiguous" below.)
-- [ ] Review the draft plan for correct dependency ordering before executing.
+- [ ] Does `PLAN.md` exist? $\rightarrow$ If yes, read it. If no, create it from the template below.
+- [ ] Is the goal ambiguous? $\rightarrow$ If yes, ask focused questions before writing the plan. (See "When the Task is Ambiguous" below.)
+- [ ] Review the draft plan for correct dependency ordering and explicit verification commands before executing.
 
 ### Resuming or Re-planning
 If `PLAN.md` already exists, or if you are resuming work from a previous attempt:
@@ -39,131 +39,122 @@ Use this exact structure:
 
 > **Workflow:** Execute with `use plan-execute`. See `plan-execute/SKILL.md`.
 
-> ## Goal
-- [ ] What success looks like.
-- [ ] Other key requirements. Ask questions to expand on requirements if you are unsure.
+## Goal
+- **Original Goal:** [What success looks like at project start]
+- **Deliverables & Acceptance Criteria:**
+  - [ ] Requirement 1
+  - [ ] Requirement 2
 
 ## Current Focus
-- [ ] The single task you are working on right now
+- [ ] The single task you are working on right now [Verify: `<command or test file>`] [Artifacts: `<file paths>`]
 
 ## Up Next
-- [ ] Second task
-- [ ] Third task
-- [ ] Fourth task
+- [ ] Second task [Verify: `<command>`]
+- [ ] Third task [Verify: `<command>`]
+- [ ] Fourth task [Verify: `<command>`]
 
-## Discovered
-_(tasks added during execution — roadblocks, prerequisites, new requirements)_
+## Discovered / Backlog
+- [ ] [BLOCKER] Task discovered during execution that blocks Current Focus
+- [ ] [DEFERRED] Non-blocking discovery or future improvement
 
 ## Done
-- [x] Previously Completed: Initial workspace setup and structure definition
+- [x] Initial workspace setup and structure definition (Verified: `<result>`)
 ```
 
 ### Rules for Writing Tasks
-- A task should produce exactly one verifiable artifact: a file that exists, a test that passes, or a command that succeeds.
-- If a task feels larger than that, break it into subtasks now.
-- Write tasks as actions, not descriptions: "Add JWT validation to auth middleware" not "Auth middleware needs JWT."
-- Order tasks by dependency — things that must exist first go first.
+- **Single Verifiable Artifact:** Every task must yield exactly one verifiable artifact: a file that exists, a test that passes, or a command that succeeds.
+- **Explicit Verification Command:** Every task must include an inline `[Verify: <command>]` tag (e.g., `[Verify: npm test auth.test.ts]`).
+- **Action-Oriented:** Write tasks as imperative actions: "Add JWT validation to auth middleware" not "Auth middleware needs JWT."
+- **Dependency Ordered:** Place prerequisite tasks strictly before dependent tasks.
 
 ### When the Task is Ambiguous
 If the user's request has genuine ambiguity — multiple valid interpretations, unclear scope, or a design decision that affects the whole plan — use `ask_question` before writing PLAN.md. Don't guess.
 
-Examples of when to ask:
-- "Build auth" → ask: `type: 'select'`, choices: ["Session-based auth", "JWT/stateless auth", "OAuth with external provider"]
-- "Refactor the API" → ask: `type: 'select'`, choices: ["Just clean up code style", "Restructure routes and handlers", "Full rewrite with new framework"]
-- Unclear priority → ask: `type: 'confirm'`, question: "Should I prioritize speed of delivery or code quality?"
-
-Do not ask about trivial implementation details. Only ask when the answer changes the plan structure.
-
-### Plan Verification
-Once PLAN.md is created or significantly revised, perform a review pass on the plan itself. If the `critic_review` tool is available, run it on `PLAN.md` to check for missing edge cases, logical gaps, and correct dependency ordering before starting execution.
+Examples:
+- "Build auth" $\rightarrow$ ask: `type: 'select'`, choices: ["Session-based auth", "JWT/stateless auth", "OAuth with external provider"]
+- "Refactor the API" $\rightarrow$ ask: `type: 'select'`, choices: ["Just clean up code style", "Restructure routes and handlers", "Full rewrite with new framework"]
 
 ---
 
 ## Step 2: Execute the Loop
 
+```
+[Orient / Draft PLAN.md]
+          │
+          ▼
+┌──► [Read Current Focus]
+│         │
+│         ▼
+│    [Formulate Approach (sequential_thinking)]
+│         │
+│         ▼
+│    [Execute Edits / Commands]
+│         │
+│         ▼
+│    [Verify & Audit Gate] ──(Fails < 3 attempts)──► [Diagnose, Fix & Re-verify]
+│         │                                                   │
+│         │ (Passes)                                 (Fails >= 3 attempts)
+│         ▼                                                   │
+│    [Update PLAN.md (Mark Done, Log Discoveries)]            ▼
+│         │                                           [Circuit Breaker / Roadblock]
+│         ▼
+└─── [Promote Next Task] (Repeat until Up Next is empty)
+          │
+          ▼
+     [Final Completion Gate & Summary]
+```
+
 For each task in PLAN.md, follow this cycle:
 
-1. **Refresh Rules & Read PLAN.md** → Run `use plan-execute` to refresh this workflow's instructions in your active context (especially important if a compaction occurred). Then, read `PLAN.md` to identify the Current Focus task.
-2. **Formulate a plan** → Outline your specific approach for the current task. If helpful, use the `sequential_thinking` tool to log your thoughts or break down complex logic.
-3. **Execute** → Modify files, run build/test commands, and verify results.
-4. **Verify & Critique** → Run relevant build/test commands to ensure correctness. If the `critic_review` tool is available, run it on all modified files to catch bugs, logic flaws, or style violations **(run `use audit` or read `audit/SKILL.md` for rules-building and audit guidelines)** before marking the task as completed.
-5. **Transition** → Proceed to update PLAN.md (see "Updating the Plan" below) and start the next task.
+1. **Refresh Rules & Read PLAN.md** $\rightarrow$ Read `PLAN.md` to identify the `Current Focus` task and verification requirement.
+2. **Formulate a plan** $\rightarrow$ Outline your specific approach. Use `sequential_thinking` for complex multi-file logic.
+3. **Execute** $\rightarrow$ Modify files and implement the change.
+4. **Verify & Quality Gate** $\rightarrow$ Run the task's verification command (e.g. `npm test`, `pytest`). If `critic_review` is available, run it on modified files **(see `audit/SKILL.md`)**.
+5. **Transition & Update PLAN.md** $\rightarrow$ Mark completed task Done with notes on any deviations, promote next task.
 
 ---
 
-## Step 3: Updating the Plan
+## Handling Roadblocks & Circuit Breakers
 
-After each task concludes, update PLAN.md. This is not optional.
+When a task fails verification or encounters an obstacle:
 
-### Mark Done
-Move the completed task from Current Focus to Done. Add a short note if the approach changed:
+### Verification Circuit Breaker (3-Attempt Limit)
+- **Attempts 1–2:** Inspect error output/logs, formulate an alternate fix with `sequential_thinking`, apply the fix, and re-verify.
+- **Attempt 3+ (Circuit Breaker):** **STOP execution.** Do not loop indefinitely. Revert unstable changes, log a roadblock note in `PLAN.md`, and use `ask_question` to consult the user.
 
-```markdown
-## Done
-- [x] Add JWT validation to auth middleware — used jose library instead of jsonwebtoken (smaller, ESM native)
-```
+### Git-Aware Rollback Protocol
+If an approach fails and must be abandoned:
+1. Inspect working state: `git status` and `git diff`.
+2. Cleanly revert uncommitted changes from the failed attempt:
+   - For modified files: `git checkout -- <file>` or targeted editor revert.
+   - For scratch files: delete them.
+3. Verify clean state before starting an alternate path.
 
-### Add Discovered Tasks
-If you found new work during execution, add it to Discovered:
-
-```markdown
-## Discovered
-- [ ] Add rate limiting to /api/auth — no throttling exists, found during JWT work
-- [ ] Fix user.test.ts flaky timeout — noticed intermittent failure when running test suite
-```
-
-### Scope Guard
-If you discover new work, always add it to Discovered — **never silently expand the current task**. If the discovery is critical and blocks completion, ask the user before pivoting.
-
-### Promote Next Task
-Move the top item from Up Next to Current Focus. If a Discovered task blocks the next planned task, promote the blocker instead and add a note:
-
-```markdown
-## Current Focus
-- [ ] Add rate limiting to /api/auth (blocking: JWT endpoint is exposed without throttle)
-```
-
-### Revise Tasks
-If a task turned out to be unnecessary or was solved by another task, remove it with a note in Done:
-
-```markdown
-## Done
-- [x] ~~Migrate session store to Redis~~ — unnecessary, switched to stateless JWT instead
-```
-
----
-
-## Handling Roadblocks
-
-When you hit a problem mid-task:
-
-1. **Small adjustment:** Adjust your approach and keep going. No plan change needed.
-2. **Approach change:** Pivot to a different approach. Clean up any temporary changes from the failed path if needed.
-3. **Multiple valid approaches:** If you see 2+ viable paths and the choice has real consequences (performance, complexity, compatibility), use `ask_question` with `type: 'select'` to let the user pick. Don't burn time on an approach the user wouldn't have chosen.
-4. **New dependency discovered:** Add it to Discovered in PLAN.md immediately. Then decide:
-   - If you can finish the current task without it → keep going, handle it later.
-   - If it blocks the current task → mark the current task as blocked, promote the dependency to Current Focus.
-5. **Task is bigger than expected:** Break the task into subtasks in PLAN.md, and start with the first subtask.
+### Discoveries & Scope Guard
+- If you discover new work, log it in `## Discovered / Backlog`. **Never silently expand the current task.**
+- Mark items as `[BLOCKER]` (must be resolved before proceeding) or `[DEFERRED]` (nice-to-have, does not block completion).
+- If `[BLOCKER]`, promote it to `Current Focus` and add a blocking note.
 
 ---
 
 ## Recovering from Context Compaction
 
-If your message history appears truncated, or you feel uncertain about what has been completed:
+If your conversation context was compacted or pruned:
 
-1. Run `use plan-execute` to reload this workflow.
-2. Read `PLAN.md` — the `Done` section is the canonical record of what was completed.
-3. Do **not** re-execute tasks that appear in `Done`. Start from `Current Focus`.
-4. If `PLAN.md` does not exist or seems incomplete, ask the user what was completed before resuming.
+1. Read `PLAN.md` — the `Done` section is the immutable historical truth of completed tasks.
+2. **Assess Working Tree State:** Run `git status` to check whether `Current Focus` was partially modified before compaction.
+3. Run the verification command for `Current Focus`:
+   - If tests pass and artifacts exist $\rightarrow$ mark `Current Focus` Done and promote the next task.
+   - If incomplete $\rightarrow$ formulate remaining sub-steps and proceed.
+4. Do **not** re-execute tasks listed in `Done`.
 
 ---
 
 ## Completion
 
-When all tasks in Up Next are empty and Discovered has no remaining items:
+When all tasks in `Up Next` are empty and `Discovered` has no remaining `[BLOCKER]` items:
 
-1. Read through the Done section to verify nothing was skipped.
-2. Run any relevant tests or validation commands.
-3. If the `critic_review` tool is available, run it on each changed file with the project's active constraints **(see `audit/SKILL.md` for details)**. If not available, do a manual self-critique pass checking for logical correctness, security issues, and style violations. Fix any blocking findings before proceeding.
-4. Review PLAN.md one final time — update the Goal line to reflect what was actually delivered (it often differs from the original).
-5. Tell the user you're done and summarize what changed from the original plan.
+1. Read through `Done` to verify all acceptance criteria were satisfied.
+2. Run full test suite / build checks across the workspace.
+3. Run an audit on all modified files **(see `audit/SKILL.md`)**.
+4. Tell the user you are done and provide a concise summary of deliverables and any `[DEFERRED]` backlog items.

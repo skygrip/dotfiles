@@ -19,7 +19,7 @@ Look up primitives, transforms, functions, and modules here — do not guess syn
 
 ## Mental Model Shifts
 
-OpenSCAD is **declarative and functional**, not imperative. If you're trained on Python/JS/C++, you must adjust.
+OpenSCAD is **declarative and functional**, not imperative.
 
 ### Variables Are Compile-Time Constants (SSA)
 All assignments are evaluated at compile time. You cannot mutate a variable. Reassignment shadows it within that scope only, and the **last assigned value in a scope wins** for all references in that scope.
@@ -36,26 +36,15 @@ if (condition) {
 x = condition ? 10 : 5;
 ```
 
-**Loop accumulation does not work:**
+**List comprehensions for collections:**
 ```openscad
-// WRONG
-total = 0;
-for (h = [10, 20, 30]) {
-    total = total + h; // Does NOT accumulate — each iteration shadows, not mutates
-}
-
-// CORRECT — use recursion
-function sum_list(lst, i = 0) =
-    i >= len(lst) ? 0 : lst[i] + sum_list(lst, i + 1);
-
-total = sum_list([10, 20, 30]); // = 60
+// Modern OpenSCAD: list comprehension instead of recursion
+coords = [for (i = [0:5]) [i * 10, sin(i * 30) * 10, 0]];
 ```
 
 ### Modules Generate Geometry, Functions Return Values
 - **`module`**: Produces 2D/3D shapes. Cannot return values. No `return` keyword.
 - **`function`**: Computes and returns numbers, vectors, strings. Cannot produce geometry.
-
-Do not confuse these — they are not interchangeable.
 
 ### `use` vs `include`
 ```openscad
@@ -63,13 +52,9 @@ use <file.scad>      // Imports modules and functions ONLY. Does NOT run top-lev
 include <file.scad>  // Runs EVERYTHING in the file, including top-level geometry.
 ```
 
-Use `include` for BOSL2 (`include <BOSL2/std.scad>`). Use `use` for your own library files where you only want the modules/functions.
-
 ---
 
-## Syntax Traps
-
-These are the mistakes LLMs make most frequently. Internalise these before writing any code.
+## Syntax & Performance Traps
 
 ### Trap 1: The Transformation Semicolon
 A semicolon after a transformation terminates it with empty geometry. The child block then renders at the origin, detached.
@@ -87,10 +72,6 @@ translate([0, 0, 10]) {
 }
 ```
 
-**The rule:**
-- **Semicolon AFTER**: primitives (`cube();`), variable declarations (`x = 5;`), module calls (`my_part();`)
-- **No semicolon AFTER**: transforms (`translate() { }`), booleans (`difference() { }`), module definitions (`module foo() { }`)
-
 ### Trap 2: Transformation Order Is Inside-Out
 Transformations apply from the **innermost** (closest to geometry) **outward**. Read them bottom-up.
 
@@ -99,174 +80,116 @@ Transformations apply from the **innermost** (closest to geometry) **outward**. 
 translate([10, 0, 0])
     rotate([0, 0, 45])
         cube([5, 5, 5]);
-
-// This TRANSLATES first, THEN rotates (different result!):
-rotate([0, 0, 45])
-    translate([10, 0, 0])
-        cube([5, 5, 5]);
 ```
 
-### Trap 3: Forgetting `$fn` (Low-Poly Curves)
-Without setting `$fn`, spheres and cylinders render with very few facets — ugly and dimensionally inaccurate.
+### Trap 3: Resolution & Preview Performance (`$fa`, `$fs`, `$preview`)
+Avoid setting a fixed global `$fn = 64` — it wastes thousands of polygons on tiny screw holes while leaving large curved plates faceted.
+
+Instead, control smoothness globally with `$fa` (minimum angle in degrees) and `$fs` (minimum fragment size in mm), coupled with dynamic `$preview` LOD:
 
 ```openscad
-$fn = 64; // Set near the top of the file
+// Fast draft preview in MCP, ultra-smooth for export:
+$fa = $preview ? 12 : 5;
+$fs = $preview ? 1.5 : 0.4;
 
-// Or per-shape:
-cylinder(h = 10, r = 5, $fn = 32);
-```
-
-Use `$fn = 32` to `64` for most parts. Higher values (100+) slow rendering significantly on complex models. For draft previews, `$fn = 16` is fine.
-
-### Trap 4: `center` Parameter Defaults
-These are inconsistent across primitives — don't assume:
-
-| Primitive    | Default `center` | Meaning when `false`                    |
-|-------------|-------------------|------------------------------------------|
-| `cube()`     | `false`           | Corner at origin, extends into +X/+Y/+Z |
-| `cylinder()` | `false`           | Base on Z=0, extends upward              |
-| `sphere()`   | Always centered   | No `center` parameter                   |
-
-### Trap 5: `rotate_extrude` Y-Axis Crossing
-The 2D profile **must not cross the Y axis** (all X values ≥ 0). OpenSCAD silently produces garbage geometry if it does.
-
-```openscad
-// WRONG — circle centered at origin crosses Y axis
-rotate_extrude($fn = 64)
-    circle(r = 10);
-
-// CORRECT — translate profile into positive X
-rotate_extrude($fn = 64)
-    translate([20, 0, 0])
-        circle(r = 5);
-```
-
-### Trap 6: Named vs Positional Parameters
-Always prefer named parameters. Positional ordering varies by primitive and is easy to get wrong. You cannot mix named-then-positional.
-
-```openscad
-// GOOD — clear and unambiguous
-cylinder(h = 10, r1 = 5, r2 = 3, center = true);
-
-// BAD — what does cylinder(10, 5, 3) mean? (h, r1, r2 positionally)
-cylinder(10, 5, 3);
-
-// INVALID — cannot put positional after named
-cylinder(h = 10, 5);
+// Reserve $fn ONLY for intentional geometric polygons:
+cylinder(h = 6, r = 4, $fn = 6); // Hex nut pocket
 ```
 
 ---
 
-## 3D Printing Rules
+## 2D-First Modeling & Fillets
 
-### The Z-Fighting / Epsilon Rule
-When subtracting shapes, if faces are coplanar, you get visual glitches and non-manifold STLs. Always pad cutting geometry.
+2D booleans and offsets are **10x to 100x faster** than 3D CSG boolean operations. Design profiles in 2D and extrude them.
 
+### Rounded Corners via 2D `offset()`
+Avoid 3D `minkowski()` — it causes exponential render slowdowns and freezing. Use `offset()` in 2D:
+
+```openscad
+// Rounded rectangle in 2D, extruded to 3D
+linear_extrude(height = 10, convexity = 10)
+    offset(r = 3)
+        offset(delta = -3)
+            square([40, 30], center = true);
+
+// Rounded hollow casing with uniform walls:
+linear_extrude(height = 15, convexity = 10)
+    difference() {
+        offset(r = 4) square([50, 30], center = true);
+        offset(r = 2) square([50 - 4, 30 - 4], center = true);
+    }
+```
+
+### Organic Transitions with `hull()`
+Use `hull()` on 2D/3D primitives instead of manual trigonometric joins:
+```openscad
+// Smooth bracket arm
+hull() {
+    cylinder(h = 5, r = 8);
+    translate([30, 0, 0]) cylinder(h = 5, r = 4);
+}
+```
+
+---
+
+## Manifold Geometry & Tolerances
+
+### Epsilon Overlaps for `difference()`
+Never align cutting shapes flush with the surface being cut. Always extend cutting geometry by `2 * epsilon` and translate by `-epsilon`:
 ```openscad
 epsilon = 0.01;
 
 difference() {
-    cube([10, 10, 10], center = true);
-    // Extended by epsilon on both ends to fully pierce
-    cylinder(h = 10 + 2 * epsilon, r = 2, center = true);
+    cube([20, 20, 10]);
+    // Cut extending past top and bottom faces
+    translate([10, 10, -epsilon])
+        cylinder(h = 10 + 2 * epsilon, r = 3);
 }
 ```
 
-**Declare `epsilon = 0.01;` at the top of every file.** Use it in every `difference()` cut.
-
-### Non-Manifold Geometry (Overlap Rule)
-Two shapes sharing only a point or edge (not volume) produce non-manifold, unprintable meshes. Always overlap slightly.
-
-```openscad
-// WRONG — shares a single edge
-union() {
-    cube([10, 10, 10]);
-    translate([10, 10, 0]) cube([10, 10, 10]);
-}
-
-// CORRECT — 0.1mm overlap creates solid joint
-overlap = 0.1;
-union() {
-    cube([10, 10, 10]);
-    translate([10 - overlap, 10 - overlap, 0]) cube([10, 10, 10]);
-}
-```
-
-### Clearance Tolerances
-| Fit Type     | Gap            | Example                              |
-|-------------|----------------|---------------------------------------|
-| Slide fit    | 0.2 to 0.4mm   | Lid on a box                         |
-| Press fit    | 0.1 to 0.15mm  | Snap-fit joints                      |
-| Bolt hole    | +0.2mm         | 3.2mm hole for M3 screw              |
+### 3D Printing Clearance Tolerances
+3D printed holes print smaller due to plastic shrinkage and perimeter tension:
+- **Slide / Loose Fit**: Add `+0.3mm` to `+0.4mm` clearance.
+- **Press Fit**: Add `+0.1mm` to `+0.15mm` clearance.
+- **M3 Screw Hole**: Use `d = 3.4mm` (nominal 3.0mm + 0.4mm).
+- **M4 Screw Hole**: Use `d = 4.4mm`.
 
 ---
 
-## Best Practices
+## Multi-Part MCP Inspection Pattern
 
-### File Structure Template
+Structure multi-part projects so MCP can inspect fit, exploded internal cavities, and flat print plates:
+
 ```openscad
-// === Parameters ===
-/* [Main Dimensions] */
-width = 40;        // [20:100]
-height = 30;       // [10:80]
-wall = 2;          // [1:0.5:5]
+/* [View Mode] */
+mode = "assembled"; // [assembled, exploded, print_base, print_lid]
 
 /* [Hidden] */
-epsilon = 0.01;
-$fn = 64;
+explode_offset = (mode == "exploded") ? 20 : 0;
 
-// === Modules ===
-module main_body() {
-    difference() {
-        cube([width, height, wall * 2], center = true);
-        // cuts go here, always using epsilon
+module base() {
+    color("DodgerBlue") {
+        // Base geometry on Z=0
     }
 }
 
-// === Assembly ===
-main_body();
-```
-
-### Customizer Annotations
-Place parameters at the top with bracket comments for UI generation:
-```openscad
-box_width = 40;       // [20:100] Slider 20–100
-step_val = 5;         // [0:5:50] Slider with step of 5
-material = "PLA";     // [PLA, ABS, PETG] Dropdown
-wall_type = 2;        // [1:Thin, 2:Standard, 4:Reinforced] Labeled dropdown
-```
-
-Use `/* [Tab Name] */` to group parameters and `/* [Hidden] */` to hide internal variables.
-
-### Conditional Geometry
-`if` in geometry context conditionally includes/excludes shapes from the CSG tree — it does not work like imperative if-statements:
-
-```openscad
-// Assumes epsilon = 0.01 declared at file top
-module bracket(with_holes = true) {
-    difference() {
-        cube([20, 10, 5]);
-        if (with_holes) {
-            translate([10, 5, -epsilon])
-                cylinder(h = 5 + 2 * epsilon, r = 2);
-        }
+module lid() {
+    color("Goldenrod", 0.85) {
+        // Lid geometry positioned on top of base
     }
 }
+
+// Assembly switch
+if (mode == "assembled" || mode == "exploded") {
+    base();
+    translate([0, 0, 15 + explode_offset]) lid();
+} else if (mode == "print_base") {
+    base();
+} else if (mode == "print_lid") {
+    // Oriented flat on build bed for printing
+    rotate([180, 0, 0]) lid();
+}
 ```
-
-### Debugging Tools
-```openscad
-echo("Computed height:", box_height * 2.5);                     // Print to console
-assert(wall > 0, "Wall thickness must be greater than zero!");  // Stop if invalid
-
-// Geometry prefix modifiers:
-*cube([10,10,10]);  // Disable — won't render
-!cube([10,10,10]);  // Show Only — hides everything else
-#cube([10,10,10]);  // Highlight — transparent pink (great for seeing cuts)
-%cube([10,10,10]);  // Background — transparent gray reference, excluded from export
-```
-
-The `#` modifier is especially useful: place it on shapes inside `difference()` to visually verify cut positions.
 
 ---
 
@@ -275,100 +198,75 @@ The `#` modifier is especially useful: place it on shapes inside `difference()` 
 Use the [openscad-mcp](https://github.com/quellant/openscad-mcp) server tools to validate and render models. **Never rely solely on code review — always visually verify.**
 
 ### Design Loop
-1. **Write/edit** the `.scad` code following the rules in this document
-2. **Validate syntax** → `validate_scad` (catches compile errors before rendering)
-3. **Render previews** → `render_perspectives` for multi-angle views, or `render_single` for a specific view
+1. **Write/edit** the `.scad` code following the rules in this document.
+2. **Validate syntax** $\rightarrow$ `validate_scad`.
+3. **Render previews** $\rightarrow$ `render_perspectives` for multi-angle views, or `render_single` for a specific view.
 4. **Visually inspect** the rendered images — check for:
-   - Symmetry and alignment
-   - Missing or misplaced cuts (use `#` modifier if unclear)
-   - Floating/disconnected geometry
-   - Unexpected holes or artifacts
-5. **Iterate** if anything looks wrong — fix code, re-render, re-inspect
-6. **Export** → `export_model` to generate STL/3MF once verified
+   - Flatness on $Z = 0$ build plane
+   - Missing or misplaced cuts (use `#` highlight modifier if unclear)
+   - Wall thickness ($> 1.2\text{ mm}$ for FDM printing)
+   - Overhang angles ($< 45^\circ$ without support)
+5. **Export** $\rightarrow$ `export_model` to generate STL/3MF once verified.
 
-### Key MCP Tools
-
-| Tool | Purpose |
-|------|---------|
-| `validate_scad` | Check syntax and compilation without rendering |
-| `render_single` | Render from a specific view (`front`, `top`, `isometric`, etc.) |
-| `render_perspectives` | Render from multiple angles at once |
-| `compare_renders` | Side-by-side comparison of two versions |
-| `export_model` | Generate STL/3MF for printing or sharing |
-| `create_model` / `update_model` | Manage `.scad` files through the MCP |
-| `analyze_model` | Get bounding box and geometry metadata |
-| `get_libraries` | Check which libraries (e.g. BOSL2) are available |
-
-### Using BOSL2
-Check availability with `get_libraries` before writing BOSL2 code. If available:
-```openscad
-include <BOSL2/std.scad>
-```
-Consult the [BOSL2 Wiki](https://github.com/revarbat/BOSL2/wiki) and [Cheat Sheet](https://github.com/revarbat/BOSL2/wiki/CheatSheet) for the full API — it provides rounded primitives, anchor/attachment positioning, path sweeps, and duplication helpers that eliminate most manual coordinate math.
+> [!TIP]
+> **Fast CSG Rendering (`Manifold` Backend):**
+> Modern OpenSCAD features the high-performance **Manifold** backend, rendering CSG booleans **100x to 1000x faster** than the legacy CGAL engine. In CLI commands, pass `--backend=manifold`. In OpenSCAD GUI, enable via **Edit > Preferences > Advanced > 3D Rendering > Backend > Manifold**.
 
 ---
 
-## Complete Example
-
-A parametric mounting bracket demonstrating file structure, customizer params, epsilon usage, boolean operations, and idiomatic style:
+## Complete Parametric Example
 
 ```openscad
-// Parametric Mounting Bracket
+// Parametric Mounting Bracket (Production Quality)
 
 /* [Bracket Dimensions] */
-base_width = 30;       // [20:60]
-base_depth = 20;       // [10:40]
-base_thick = 4;        // [2:0.5:8]
-wall_height = 25;      // [15:50]
-wall_thick = 3;        // [2:0.5:6]
+base_width  = 30;  // [20:60]
+base_depth  = 20;  // [10:40]
+base_thick  = 4;   // [2:0.5:8]
+wall_height = 25;  // [15:50]
+wall_thick  = 3;   // [2:0.5:6]
 
 /* [Mounting Holes] */
-hole_diameter = 3.2;   // [2.5:0.1:6] M3 = 3.2, M4 = 4.2, M5 = 5.2
-hole_inset = 8;        // [5:20]
+hole_d      = 3.4; // [2.5:0.1:6] M3 clearance (+0.4mm print tolerance)
+hole_inset  = 6;   // [4:15]
 
-/* [Style] */
-fillet_r = 2;          // [0:0.5:5]
+/* [Reinforcement] */
+rib_thick   = 3;   // [2:6]
 
 /* [Hidden] */
-epsilon = 0.01;
-$fn = 48;
+epsilon     = 0.01;
+$fa         = $preview ? 12 : 5;
+$fs         = $preview ? 1.5 : 0.4;
 
-module base_plate() {
+module bracket_body() {
+    // Base plate
     cube([base_width, base_depth, base_thick]);
-}
-
-module upright_wall() {
+    
+    // Upright wall with overlap into base
     translate([0, 0, base_thick - epsilon])
-        cube([wall_thick, base_depth, wall_height]);
-}
-
-module fillet_support() {
-    if (fillet_r > 0) {
-        translate([wall_thick, 0, base_thick])
-            rotate([-90, 0, 0])
-                linear_extrude(height = base_depth)
-                    difference() {
-                        square([fillet_r, fillet_r]);
-                        translate([fillet_r, fillet_r])
-                            circle(r = fillet_r);
-                    }
-    }
+        cube([wall_thick, base_depth, wall_height + epsilon]);
+        
+    // Triangular gusset rib using 2D polygon extrusion
+    translate([wall_thick - epsilon, (base_depth - rib_thick) / 2, base_thick - epsilon])
+        rotate([0, -90, 0])
+            linear_extrude(height = rib_thick, convexity = 4)
+                polygon(points = [
+                    [0, 0],
+                    [wall_height - 5, 0],
+                    [0, base_width - wall_thick - 5]
+                ]);
 }
 
 module mounting_holes() {
-    for (y_pos = [hole_inset, base_depth - hole_inset]) {
-        translate([base_width / 2, y_pos, -epsilon])
-            cylinder(h = base_thick + 2 * epsilon, d = hole_diameter);
+    for (y = [hole_inset, base_depth - hole_inset]) {
+        translate([base_width * 0.6, y, -epsilon])
+            cylinder(h = base_thick + 2 * epsilon, d = hole_d);
     }
 }
 
-// === Assembly ===
+// === Final Assembly ===
 difference() {
-    union() {
-        base_plate();
-        upright_wall();
-        fillet_support();
-    }
+    bracket_body();
     mounting_holes();
 }
 ```

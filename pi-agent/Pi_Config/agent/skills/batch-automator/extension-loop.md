@@ -401,26 +401,27 @@ By default, each subagent receives no context about what previous subagents foun
 
 To add rolling notes, make the following additions to the generated TypeScript:
 
-**1. Declare the variable before the loop:**
+**1. Declare the ring buffer array before the loop:**
 ```typescript
-let rollingNotes = "";
+const rollingEntries: string[] = [];
 ```
 
 **2. Replace the `subagentPrompt` declaration inside the loop with this version:**
 ```typescript
-const contextHeader = rollingNotes
-    ? `\n\n### Shared Project Context (Lessons from previous files)\n${rollingNotes}`
+const contextHeader = rollingEntries.length > 0
+    ? `\n\n### Shared Project Context (Recent Lessons)\n${rollingEntries.join("\n")}`
     : "";
 
 const subagentPrompt = GET_PROMPT(file) + contextHeader;
 ```
 
-**3. Accumulate the feedback after each successful result:**
+**3. Accumulate feedback with a sliding window cap (e.g. last 5 entries):**
 ```typescript
-rollingNotes += `\n* File ${file}: ${feedback}`;
+rollingEntries.push(`* File ${file}: ${feedback}`);
+if (rollingEntries.length > 5) {
+    rollingEntries.shift(); // Keep only the latest 5 entries to prevent context exhaustion
+}
 ```
-
-> **Note:** Rolling notes increase prompt size with each iteration. For large file sets (50+), consider capping `rollingNotes` to the last N entries to avoid exceeding context limits.
 
 ## Adjusting Timeouts
 

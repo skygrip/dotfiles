@@ -122,31 +122,32 @@ completed_files_set = set()
 
 
 def get_matched_files(glob_pattern, excludes):
-    """Finds all files matching the glob pattern, filtering out excluded patterns."""
+    """Finds all files matching the glob pattern, filtering out excluded patterns and oversize files."""
     cwd = Path.cwd()
-    all_files = list(cwd.glob(glob_pattern)) if "**" in glob_pattern else list(cwd.rglob(glob_pattern))
+    import glob
+    raw_matches = glob.glob(glob_pattern, root_dir=cwd, recursive=True)
     
-    # Handle single file glob fallback if glob/rglob doesn't match directly
-    if not all_files:
-        all_files = [p for p in cwd.glob(glob_pattern)]
-
     matched = []
-    for file_path in all_files:
-        if not file_path.is_file():
+    for rel_path in raw_matches:
+        p = cwd / rel_path
+        if not p.is_file():
             continue
             
-        # Get path relative to CWD for easier matching
-        rel_path = file_path.relative_to(cwd).as_posix()
+        # Skip files exceeding 500KB to prevent LLM context exhaustion
+        if p.stat().st_size > 500 * 1024:
+            continue
+            
+        posix_path = Path(rel_path).as_posix()
         
         # Check against excludes
         is_excluded = False
         for pattern in excludes:
-            if fnmatch.fnmatch(rel_path, pattern) or any(fnmatch.fnmatch(part, pattern) for part in file_path.parts):
+            if fnmatch.fnmatch(posix_path, pattern) or any(fnmatch.fnmatch(part, pattern) for part in p.parts):
                 is_excluded = True
                 break
                 
         if not is_excluded:
-            matched.append(rel_path)
+            matched.append(posix_path)
             
     return sorted(matched)
 
@@ -163,7 +164,7 @@ def load_state():
     return None
 
 
-def save_state(glob_pattern, prompt, output, completed):
+def save_state(glob_pattern, prompt, output, success_files, failed_files):
     """Saves the current execution state to .pi/batch_state.json."""
     state_path = Path(".pi/batch_state.json")
     state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -173,10 +174,10 @@ def save_state(glob_pattern, prompt, output, completed):
                 "glob": glob_pattern,
                 "prompt": prompt,
                 "output": str(output),
-                "completed": list(completed)
+                "success": list(success_files),
+                "failed": list(failed_files)
             }, f, indent=2)
-    except Exception as e:
-        # Avoid crashing the script if we can't write state
+    except Exception:
         pass
 
 
@@ -188,6 +189,17 @@ def clear_state():
             state_path.unlink()
         except Exception:
             pass
+
+
+def check_git_status():
+    """Checks for uncommitted working tree changes before running batch mutations."""
+    try:
+        res = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, timeout=3)
+        if res.returncode == 0 and res.stdout.strip():
+            print("⚠️  WARNING: Working directory has uncommitted Git changes.")
+            print("   Consider committing or stashing before running batch mutations.\n")
+    except Exception:
+        pass
 
 
 def print_progress(current, total, start_time, current_file=""):
@@ -215,50 +227,63 @@ def print_progress(current, total, start_time, current_file=""):
     if len(file_display) > 35:
         file_display = file_display[:32] + "..."
         
-    # Clear the rest of the line with spaces
     sys.stdout.write(f"\rProgress: [{bar}] {percent:.1f}% ({current}/{total}) | ETA: {eta_str} {file_display:<35}")
     sys.stdout.flush()
 
 
-def run_pi_on_file(file_path, prompt, extra_args):
-    """Invokes the pi CLI on a single file using its @file capability."""
-    # Ensure --no-session is passed by default to prevent session pollution
+def run_pi_on_file(file_path, prompt, extra_args, max_retries=3):
+    """Invokes the pi CLI on a single file with retry/backoff for rate limits."""
     cmd = ["pi", "-p", "--no-session", f"@{file_path}", prompt] + extra_args
     
-    start_time = time.time()
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            shell=True if os.name == 'nt' else False, # Windows CLI fallback
-            encoding='utf-8',
-            errors='replace'
-        )
-        duration = time.time() - start_time
-        
-        if result.returncode == 0:
+    for attempt in range(max_retries):
+        start_time = time.time()
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                shell=True if os.name == 'nt' else False,
+                encoding='utf-8',
+                errors='replace'
+            )
+            duration = time.time() - start_time
+            out = result.stdout.strip() or result.stderr.strip()
+            
+            # Detect 429 rate limit and apply exponential backoff
+            if result.returncode != 0 and ("429" in out or "rate limit" in out.lower()):
+                backoff = (2 ** attempt) * 2
+                time.sleep(backoff)
+                continue
+                
+            if result.returncode == 0:
+                return {
+                    "file": file_path,
+                    "status": "SUCCESS",
+                    "output": result.stdout.strip(),
+                    "duration": duration
+                }
+            else:
+                return {
+                    "file": file_path,
+                    "status": "FAILED",
+                    "output": out or "Unknown CLI error",
+                    "duration": duration
+                }
+        except Exception as e:
+            duration = time.time() - start_time
             return {
                 "file": file_path,
-                "status": "SUCCESS",
-                "output": result.stdout.strip(),
+                "status": "ERROR",
+                "output": f"Exception raised: {str(e)}",
                 "duration": duration
             }
-        else:
-            return {
-                "file": file_path,
-                "status": "FAILED",
-                "output": result.stderr.strip() or result.stdout.strip() or "Unknown CLI error",
-                "duration": duration
-            }
-    except Exception as e:
-        duration = time.time() - start_time
-        return {
-            "file": file_path,
-            "status": "ERROR",
-            "output": f"Exception raised: {str(e)}",
-            "duration": duration
-        }
+            
+    return {
+        "file": file_path,
+        "status": "FAILED",
+        "output": "Exceeded maximum rate-limit retry attempts (HTTP 429)",
+        "duration": 0
+    }
 
 
 def main():
@@ -309,21 +334,27 @@ def main():
         print("\nDry run complete. No tasks were executed.")
         sys.exit(0)
 
+    # Check working directory Git status
+    check_git_status()
+
     # Handle resume function
     matched_files = list(all_matched_files)
     is_resumed = False
+    success_files_set = set()
+    failed_files_set = set()
     
     if args.resume:
         state = load_state()
         if state:
             if state.get("glob") == args.glob and state.get("prompt") == args.prompt:
-                completed_files_set = set(state.get("completed", []))
-                # Only process files that aren't already completed
-                matched_files = [f for f in all_matched_files if f not in completed_files_set]
+                success_files_set = set(state.get("success", []))
+                failed_files_set = set(state.get("failed", []))
+                # Only skip files that successfully completed
+                matched_files = [f for f in all_matched_files if f not in success_files_set]
                 args.output = state.get("output", args.output)
-                completed_count = len(completed_files_set)
+                completed_count = len(success_files_set)
                 is_resumed = True
-                print(f"🔄 Resuming run! Skipped {completed_count} already-processed files. {len(matched_files)} remaining.")
+                print(f"🔄 Resuming run! Skipped {completed_count} successful files. {len(matched_files)} to process (including {len(failed_files_set)} previously failed).")
             else:
                 print("⚠️ Warning: Saved state glob/prompt does not match current arguments. Starting fresh.")
         else:
@@ -375,8 +406,13 @@ def main():
                     
                     with print_lock:
                         completed_count += 1
-                        completed_files_set.add(res["file"])
-                        save_state(args.glob, args.prompt, args.output, completed_files_set)
+                        if res["status"] == "SUCCESS":
+                            success_files_set.add(res["file"])
+                            failed_files_set.discard(res["file"])
+                        else:
+                            failed_files_set.add(res["file"])
+                            
+                        save_state(args.glob, args.prompt, args.output, success_files_set, failed_files_set)
                         
                         # Print progress bar inline
                         print_progress(completed_count, len(all_matched_files), start_time, res["file"])
@@ -399,8 +435,13 @@ def main():
                 
                 with print_lock:
                     completed_count += 1
-                    completed_files_set.add(file)
-                    save_state(args.glob, args.prompt, args.output, completed_files_set)
+                    if res["status"] == "SUCCESS":
+                        success_files_set.add(file)
+                        failed_files_set.discard(file)
+                    else:
+                        failed_files_set.add(file)
+                        
+                    save_state(args.glob, args.prompt, args.output, success_files_set, failed_files_set)
                     print_progress(completed_count, len(all_matched_files), start_time, file)
                     
                     with open(args.output, "a", encoding="utf-8") as f:
