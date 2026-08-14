@@ -218,67 +218,66 @@ export default function (pi: ExtensionAPI) {
       }
 
       // ----------------------------------------------------
-      // 2. Point-of-Use Auditor Model Selection (TUI with 10s Countdown)
+      // 2. Point-of-Use Auditor Model Selection (TUI)
       // ----------------------------------------------------
       let selectedModel: Model | undefined = ctx.model;
 
       if (ctx.hasUI && ctx.ui) {
         try {
           const sessionModelDesc = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "Active Model";
-          const allModels = ctx.modelRegistry
-            ? (typeof ctx.modelRegistry.getAvailable === "function"
-                ? ctx.modelRegistry.getAvailable()
-                : typeof ctx.modelRegistry.getAll === "function"
-                  ? ctx.modelRegistry.getAll()
-                  : [])
-            : [];
+          
+          let allModels: readonly Model[] = [];
+          if (ctx.modelRegistry) {
+            if (typeof ctx.modelRegistry.getModels === "function") {
+              allModels = ctx.modelRegistry.getModels();
+            } else if (typeof ctx.modelRegistry.getAvailable === "function") {
+              allModels = ctx.modelRegistry.getAvailable();
+            } else if (typeof ctx.modelRegistry.getAll === "function") {
+              allModels = ctx.modelRegistry.getAll();
+            }
+          }
 
           const choices: string[] = [
-            `1. Session Model (${sessionModelDesc}) [Default]`
+            `1. Active Session Model (${sessionModelDesc}) [Default]`
           ];
 
-          const seen = new Set<string>();
-          if (ctx.model) seen.add(`${ctx.model.provider}/${ctx.model.id}`);
+          const modelMap = new Map<string, Model>();
 
           for (const m of allModels) {
             const key = `${m.provider}/${m.id}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              choices.push(`${choices.length + 1}. ${m.provider}/${m.id}`);
+            if (!modelMap.has(key)) {
+              modelMap.set(key, m);
+              if (ctx.model && `${ctx.model.provider}/${ctx.model.id}` === key) {
+                continue;
+              }
+              const displayName = m.name && m.name !== m.id ? `${m.provider}/${m.id} (${m.name})` : `${m.provider}/${m.id}`;
+              choices.push(`${choices.length + 1}. ${displayName}`);
             }
-            if (choices.length >= 8) break; // Keep menu concise
           }
 
           choices.push("Skip this review");
 
-          // 10-second native timed countdown
+          // Interactive select without auto-dismiss cutoff
           const choice = await ctx.ui.select(
-            "Select Auditor Model for Critic Review:",
-            choices,
-            { timeout: 10000 }
+            "Select Auditor Model for Critic Review (Type to filter, Esc for Default):",
+            choices
           );
 
-          if (choice === undefined) {
-            // Timed out or Escape: default to session model
+          if (choice === undefined || choice.startsWith("1.")) {
+            // Esc or default choice: use active session model
             selectedModel = ctx.model;
           } else if (choice === "Skip this review") {
             return {
               content: [{ type: "text", text: "[CRITIC SKIPPED by User]" }],
               details: { skipped: true } as CriticReviewDetails
             };
-          } else if (choice.startsWith("1.")) {
-            selectedModel = ctx.model;
           } else {
-            // Find selected model in registry
-            const match = choice.replace(/^\d+\.\s*/, "").trim();
-            const [prov, ...idParts] = match.split("/");
-            const modId = idParts.join("/");
-            const found = allModels.find(m => m.provider === prov && m.id === modId);
-            selectedModel = found ?? ctx.model;
+            const cleanChoice = choice.replace(/^\d+\.\s*/, "").trim();
+            const rawKey = cleanChoice.split(" ")[0]; // matches "provider/id"
+            selectedModel = modelMap.get(rawKey) ?? allModels.find(m => `${m.provider}/${m.id}` === rawKey) ?? ctx.model;
           }
         } catch (err) {
           ctx.ui?.notify?.(`Critic model selection error: ${err instanceof Error ? err.message : String(err)}`, "warning");
-          // On any UI failure, fall back to session model
           selectedModel = ctx.model;
         }
       }
