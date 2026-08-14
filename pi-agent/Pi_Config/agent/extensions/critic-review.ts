@@ -229,7 +229,12 @@ export default function (pi: ExtensionAPI) {
         resolvedLang = params.language || getLanguageFromPath(params.filePath);
 
         try {
-          const rawContent = await fs.readFile(params.filePath, "utf8");
+          // Resolve relative path against active workspace cwd
+          const resolvedPath = path.isAbsolute(params.filePath)
+            ? params.filePath
+            : path.resolve(ctx.cwd || process.cwd(), params.filePath);
+
+          const rawContent = await fs.readFile(resolvedPath, "utf8");
           const lines = rawContent.split("\n");
 
           const start = Math.max(1, params.startLine ?? 1);
@@ -583,6 +588,13 @@ export default function (pi: ExtensionAPI) {
               throw (event as any).error ?? new Error("Stream error occurred during critic review");
             }
           }
+
+          if (signal?.aborted) {
+            return {
+              content: [{ type: "text", text: "[Critic Review Aborted by User]" }],
+              details: { error: "Aborted", auditorModel: auditorModelName, skipped: true } as CriticReviewDetails
+            };
+          }
         } else {
           // 2. Fallback to complete if streamSimple is unavailable
           const response = await complete(
@@ -597,6 +609,13 @@ export default function (pi: ExtensionAPI) {
               signal
             }
           );
+
+          if (signal?.aborted) {
+            return {
+              content: [{ type: "text", text: "[Critic Review Aborted by User]" }],
+              details: { error: "Aborted", auditorModel: auditorModelName, skipped: true } as CriticReviewDetails
+            };
+          }
 
           usage = response.usage;
           for (const block of response.content) {
@@ -632,9 +651,9 @@ export default function (pi: ExtensionAPI) {
             auditorModel: auditorModelName,
             sourceTarget: targetDesc,
             skipped: false,
-            inputTokens: usage?.inputTokens,
-            outputTokens: usage?.outputTokens,
-            cost: calculatedCost
+            inputTokens: usage?.input ?? (usage as any)?.inputTokens,
+            outputTokens: usage?.output ?? (usage as any)?.outputTokens,
+            cost: calculatedCost || (usage?.cost?.total ?? 0)
           } as CriticReviewDetails
         };
       } catch (err) {
