@@ -121,6 +121,31 @@ export default function (pi: ExtensionAPI) {
 
     parameters: CriticReviewSchema,
 
+    /**
+     * Pre-validation argument normalizer to handle 12B model property aliases.
+     */
+    prepareArguments(args: any) {
+      if (!args || typeof args !== "object") return args;
+      const copy = { ...args };
+
+      // Normalize filePath aliases
+      if (copy.filePath === undefined) {
+        if (typeof copy.path === "string") copy.filePath = copy.path;
+        else if (typeof copy.file === "string") copy.filePath = copy.file;
+        else if (typeof copy.target === "string") copy.filePath = copy.target;
+      }
+
+      // Normalize draft aliases
+      if (copy.draft === undefined) {
+        if (typeof copy.code === "string") copy.draft = copy.code;
+        else if (typeof copy.content === "string") copy.draft = copy.content;
+        else if (typeof copy.snippet === "string") copy.draft = copy.snippet;
+        else if (typeof copy.text === "string") copy.draft = copy.text;
+      }
+
+      return copy;
+    },
+
     async execute(_toolCallId, params: CriticReviewParams, signal, onUpdate, ctx) {
       if (signal?.aborted) {
         return { content: [{ type: "text", text: "[Critic Review Aborted]" }], details: { error: "Aborted" } };
