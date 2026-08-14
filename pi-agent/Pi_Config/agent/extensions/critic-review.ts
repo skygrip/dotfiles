@@ -613,12 +613,19 @@ export default function (pi: ExtensionAPI) {
         return new Text(theme.fg("muted", `⊘ CRITIC SKIPPED by user`), 0, 0);
       }
 
-      return new Text(
-        theme.fg("success", `✓ AUDITED: `) +
-        theme.fg("dim", `(${details.auditorModel ?? "Auditor"}) on ${details.sourceTarget ?? "Target"}`),
-        0,
-        0
-      );
+      let outputText = theme.fg("success", `✓ AUDITED: `) +
+        theme.fg("dim", `(${details.auditorModel ?? "Auditor"}) on ${details.sourceTarget ?? "Target"}`);
+
+      if (details.cost !== undefined && details.cost > 0) {
+        outputText += theme.fg("dim", ` [$${details.cost.toFixed(5)}]`);
+      }
+
+      const reviewBlock = result.content?.[0];
+      if (reviewBlock?.type === "text" && reviewBlock.text) {
+        outputText += "\n\n" + theme.fg("toolOutput", reviewBlock.text);
+      }
+
+      return new Text(outputText, 0, 0);
     }
   });
 }
