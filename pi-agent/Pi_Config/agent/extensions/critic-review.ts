@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { complete, calculateCost, type Message, type Model } from "@earendil-works/pi-ai";
 import { Type, type Static } from "typebox";
-import { fuzzyFilter, matchesKey, Key, truncateToWidth, visibleWidth, Text } from "@earendil-works/pi-tui";
+import { matchesKey, Key, truncateToWidth, visibleWidth, Text } from "@earendil-works/pi-tui";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
