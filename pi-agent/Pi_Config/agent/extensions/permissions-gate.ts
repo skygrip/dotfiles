@@ -7,6 +7,7 @@ import * as os from "node:os";
  * State and configuration for permissions-gate.
  */
 let gateEnabled = true;
+const CONFIRM_TIMEOUT_MS = 30000; // 30-second countdown timer auto-defaulting to No (blocked)
 
 /**
  * Dangerous bash command regex patterns with human-readable violation explanations.
@@ -281,7 +282,8 @@ export default function (pi: ExtensionAPI) {
 
           const approved = await ctx.ui.confirm(
             "⚠️ Dangerous Command Alert",
-            `The agent wants to execute:\n\n${command}\n\nReason: ${pattern.reason}\n\nAllow execution?`
+            `The agent wants to execute:\n\n${command}\n\nReason: ${pattern.reason}\n\nAllow execution?`,
+            { timeout: CONFIRM_TIMEOUT_MS }
           );
 
           if (!approved) {
@@ -304,7 +306,8 @@ export default function (pi: ExtensionAPI) {
 
         const approved = await ctx.ui.confirm(
           "🔒 Credential Access Alert",
-          `The agent wants to access sensitive secrets via shell:\n\n${command}\n\nAllow execution?`
+          `The agent wants to access sensitive secrets via shell:\n\n${command}\n\nAllow execution?`,
+          { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
@@ -328,7 +331,8 @@ export default function (pi: ExtensionAPI) {
 
           const approved = await ctx.ui.confirm(
             "🔒 Sensitive System Path Access",
-            `The agent wants to access a sensitive system path via shell:\n\nCommand: ${command}\nDetected Path: ${token}\n\nAllow execution?`
+            `The agent wants to access a sensitive system path via shell:\n\nCommand: ${command}\nDetected Path: ${token}\n\nAllow execution?`,
+            { timeout: CONFIRM_TIMEOUT_MS }
           );
 
           if (!approved) {
@@ -351,7 +355,8 @@ export default function (pi: ExtensionAPI) {
 
           const approved = await ctx.ui.confirm(
             "⚠️ Out-of-Workspace Shell Access",
-            `The agent wants to execute a command targeting an external path:\n\nCommand: ${command}\nDetected Path: ${token}\nWorkspace: ${workspace}\n\nAllow execution?`
+            `The agent wants to execute a command targeting an external path:\n\nCommand: ${command}\nDetected Path: ${token}\nWorkspace: ${workspace}\n\nAllow execution?`,
+            { timeout: CONFIRM_TIMEOUT_MS }
           );
 
           if (!approved) {
@@ -382,7 +387,8 @@ export default function (pi: ExtensionAPI) {
 
         const approved = await ctx.ui.confirm(
           "🔒 Sensitive File Access",
-          `The agent wants to read sensitive file:\n\n${targetPath}\n\nAllow read access?`
+          `The agent wants to read sensitive file:\n\n${targetPath}\n\nAllow read access?`,
+          { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
@@ -399,13 +405,14 @@ export default function (pi: ExtensionAPI) {
         if (!ctx.hasUI || !ctx.ui) {
           return {
             block: true,
-            reason: `[WORKSPACE CONFINEMENT]: Reading file "${targetPath}" outside active workspace "${workspace}" is blocked in headless mode.`
+            reason: `[WORKSPACE CONFINEMENT]: Reading file "${targetPath}" outside active workspace "${workspace}". Blocked in headless mode.`
           };
         }
 
         const approved = await ctx.ui.confirm(
           "⚠️ Out-of-Workspace Read Access",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to read a file outside the project workspace.\n\nAllow read access?`
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to read a file outside the project workspace.\n\nAllow read access?`,
+          { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
@@ -434,7 +441,8 @@ export default function (pi: ExtensionAPI) {
 
         const approved = await ctx.ui.confirm(
           "⚠️ Sensitive File Modification",
-          `The agent wants to write/edit sensitive file:\n\n${targetPath}\n\nAllow modification?`
+          `The agent wants to write/edit sensitive file:\n\n${targetPath}\n\nAllow modification?`,
+          { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
@@ -457,7 +465,8 @@ export default function (pi: ExtensionAPI) {
 
         const approved = await ctx.ui.confirm(
           "⚠️ Out-of-Workspace Modification",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to modify a file outside the project workspace.\n\nAllow modification?`
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to modify a file outside the project workspace.\n\nAllow modification?`,
+          { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
