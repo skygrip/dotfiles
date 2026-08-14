@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { complete, calculateCost, type Message, type Model } from "@earendil-works/pi-ai";
 import { Type, type Static } from "typebox";
-import { Text } from "@earendil-works/pi-tui";
+import { SelectList, type SelectItem, type SelectListTheme, Text } from "@earendil-works/pi-tui";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
@@ -218,7 +218,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // ----------------------------------------------------
-      // 2. Point-of-Use Auditor Model Selection (TUI)
+      // 2. Point-of-Use Auditor Model Selection (TUI with Scrolling SelectList)
       // ----------------------------------------------------
       let selectedModel: Model | undefined = ctx.model;
 
@@ -237,11 +237,15 @@ export default function (pi: ExtensionAPI) {
             }
           }
 
-          const choices: string[] = [
-            `1. Active Session Model (${sessionModelDesc}) [Default]`
-          ];
-
           const modelMap = new Map<string, Model>();
+
+          const items: SelectItem[] = [
+            {
+              value: "__session__",
+              label: `Active Session Model (${sessionModelDesc})`,
+              description: "Default"
+            }
+          ];
 
           for (const m of allModels) {
             const key = `${m.provider}/${m.id}`;
@@ -250,31 +254,76 @@ export default function (pi: ExtensionAPI) {
               if (ctx.model && `${ctx.model.provider}/${ctx.model.id}` === key) {
                 continue;
               }
-              const displayName = m.name && m.name !== m.id ? `${m.provider}/${m.id} (${m.name})` : `${m.provider}/${m.id}`;
-              choices.push(`${choices.length + 1}. ${displayName}`);
+              items.push({
+                value: key,
+                label: `${m.provider}/${m.id}`,
+                description: m.name && m.name !== m.id ? m.name : undefined
+              });
             }
           }
 
-          choices.push("Skip this review");
+          items.push({
+            value: "__skip__",
+            label: "Skip this review",
+            description: "Proceed without running critic review"
+          });
 
-          // Interactive select without auto-dismiss cutoff
-          const choice = await ctx.ui.select(
-            "Select Auditor Model for Critic Review (Type to filter, Esc for Default):",
-            choices
-          );
+          let selectedValue: string | null = null;
 
-          if (choice === undefined || choice.startsWith("1.")) {
-            // Esc or default choice: use active session model
-            selectedModel = ctx.model;
-          } else if (choice === "Skip this review") {
+          if (typeof ctx.ui.custom === "function") {
+            selectedValue = await ctx.ui.custom<string | null>((tui, theme, _keybindings, done) => {
+              const selectTheme: SelectListTheme = {
+                selectedPrefix: (text) => theme.fg("accent", text),
+                selectedText: (text) => theme.fg("accent", text),
+                description: (text) => theme.fg("muted", text),
+                scrollInfo: (text) => theme.fg("dim", text),
+                noMatch: (text) => theme.fg("warning", text)
+              };
+
+              // Visible height of 12 items with smooth scrolling & scrollInfo
+              const selectList = new SelectList(items, 12, selectTheme);
+              selectList.onSelect = (item) => done(item.value);
+              selectList.onCancel = () => done("__session__");
+
+              const header = theme.bold(theme.fg("accent", "Select Auditor Model for Critic Review")) +
+                theme.fg("muted", " (↑/↓ to scroll, Esc for default)");
+
+              return {
+                render(width: number) {
+                  return [
+                    header,
+                    "",
+                    ...selectList.render(width)
+                  ];
+                },
+                handleInput(data: string) {
+                  selectList.handleInput(data);
+                  tui.requestRender();
+                },
+                invalidate() {
+                  selectList.invalidate();
+                }
+              };
+            }, { overlay: true });
+          } else {
+            // Fallback to ctx.ui.select if custom is not available
+            const choices = items.map(it => it.description ? `${it.label} (${it.description})` : it.label);
+            const choice = await ctx.ui.select("Select Auditor Model for Critic Review:", choices);
+            if (choice) {
+              const idx = choices.indexOf(choice);
+              selectedValue = items[idx]?.value ?? "__session__";
+            }
+          }
+
+          if (selectedValue === "__skip__") {
             return {
               content: [{ type: "text", text: "[CRITIC SKIPPED by User]" }],
               details: { skipped: true } as CriticReviewDetails
             };
+          } else if (selectedValue && selectedValue !== "__session__") {
+            selectedModel = modelMap.get(selectedValue) ?? allModels.find(m => `${m.provider}/${m.id}` === selectedValue) ?? ctx.model;
           } else {
-            const cleanChoice = choice.replace(/^\d+\.\s*/, "").trim();
-            const rawKey = cleanChoice.split(" ")[0]; // matches "provider/id"
-            selectedModel = modelMap.get(rawKey) ?? allModels.find(m => `${m.provider}/${m.id}` === rawKey) ?? ctx.model;
+            selectedModel = ctx.model;
           }
         } catch (err) {
           ctx.ui?.notify?.(`Critic model selection error: ${err instanceof Error ? err.message : String(err)}`, "warning");
