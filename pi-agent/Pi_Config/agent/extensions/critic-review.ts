@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { complete, calculateCost, type Message, type Model } from "@earendil-works/pi-ai";
 import { Type, type Static } from "typebox";
-import { SelectList, type SelectItem, type SelectListTheme, Text } from "@earendil-works/pi-tui";
+import { fuzzyFilter, matchesKey, Key, truncateToWidth, visibleWidth, Text } from "@earendil-works/pi-tui";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
@@ -271,37 +271,132 @@ export default function (pi: ExtensionAPI) {
           let selectedValue: string | null = null;
 
           if (typeof ctx.ui.custom === "function") {
+            class SearchableModelSelector {
+              private allItems: SelectItem[];
+              private filtered: SelectItem[];
+              private selectedIdx = 0;
+              private filterText = "";
+              private maxVisibleRows = 12;
+              private uiTheme: any;
+              public onSelectCallback?: (value: string) => void;
+              public onCancelCallback?: () => void;
+
+              constructor(itemsList: SelectItem[], maxRows: number, themeObj: any) {
+                this.allItems = itemsList;
+                this.filtered = itemsList;
+                this.maxVisibleRows = maxRows;
+                this.uiTheme = themeObj;
+              }
+
+              private applyFilter(newQuery: string) {
+                this.filterText = newQuery;
+                const q = this.filterText.trim();
+                if (!q) {
+                  this.filtered = this.allItems;
+                } else {
+                  this.filtered = fuzzyFilter(this.allItems, q, (it) => `${it.label} ${it.description ?? ""} ${it.value}`);
+                }
+                this.selectedIdx = 0;
+              }
+
+              handleInput(data: string): void {
+                if (matchesKey(data, Key.up)) {
+                  if (this.filtered.length > 0) {
+                    this.selectedIdx = (this.selectedIdx - 1 + this.filtered.length) % this.filtered.length;
+                  }
+                } else if (matchesKey(data, Key.down)) {
+                  if (this.filtered.length > 0) {
+                    this.selectedIdx = (this.selectedIdx + 1) % this.filtered.length;
+                  }
+                } else if (matchesKey(data, Key.pageUp)) {
+                  this.selectedIdx = Math.max(0, this.selectedIdx - this.maxVisibleRows);
+                } else if (matchesKey(data, Key.pageDown)) {
+                  this.selectedIdx = Math.min(this.filtered.length - 1, this.selectedIdx + this.maxVisibleRows);
+                } else if (matchesKey(data, Key.home)) {
+                  this.selectedIdx = 0;
+                } else if (matchesKey(data, Key.end)) {
+                  this.selectedIdx = Math.max(0, this.filtered.length - 1);
+                } else if (matchesKey(data, Key.enter)) {
+                  const item = this.filtered[this.selectedIdx];
+                  this.onSelectCallback?.(item ? item.value : "__session__");
+                } else if (matchesKey(data, Key.escape)) {
+                  this.onCancelCallback?.();
+                } else if (matchesKey(data, Key.backspace)) {
+                  if (this.filterText.length > 0) {
+                    this.applyFilter(this.filterText.slice(0, -1));
+                  }
+                } else if (data.length === 1 && data.charCodeAt(0) >= 32 && data.charCodeAt(0) <= 126) {
+                  // Printable character typed into fuzzy search
+                  this.applyFilter(this.filterText + data);
+                }
+              }
+
+              render(width: number): string[] {
+                const lines: string[] = [];
+
+                // 1. Header & Search Input Display
+                const title = this.uiTheme.bold(this.uiTheme.fg("accent", "Select Auditor Model for Critic Review"));
+                const searchBar = this.filterText
+                  ? `${this.uiTheme.fg("accent", "🔍 Search: ")}${this.uiTheme.bold(this.filterText)}${this.uiTheme.fg("dim", " █")}`
+                  : `${this.uiTheme.fg("muted", "🔍 Type to fuzzy-search...")} ${this.uiTheme.fg("dim", "(↑↓ scroll, Esc default, Enter pick)")}`;
+                
+                lines.push(title);
+                lines.push(searchBar);
+                lines.push("");
+
+                if (this.filtered.length === 0) {
+                  lines.push(this.uiTheme.fg("warning", `  No models matching "${this.filterText}" (press Backspace to clear)`));
+                  return lines;
+                }
+
+                // 2. Viewport window calculation
+                const start = Math.max(0, Math.min(this.selectedIdx - Math.floor(this.maxVisibleRows / 2), this.filtered.length - this.maxVisibleRows));
+                const end = Math.min(start + this.maxVisibleRows, this.filtered.length);
+
+                for (let i = start; i < end; i++) {
+                  const item = this.filtered[i];
+                  const isSelected = i === this.selectedIdx;
+                  const prefix = isSelected ? this.uiTheme.fg("accent", "→ ") : "  ";
+                  
+                  const label = item.label;
+                  const desc = item.description ? ` (${item.description})` : "";
+                  const fullLine = `${label}${desc}`;
+
+                  if (isSelected) {
+                    lines.push(this.uiTheme.bg("selectedBg", this.uiTheme.fg("accent", truncateToWidth(`${prefix}${fullLine}`, width - 2))));
+                  } else {
+                    const truncLabel = truncateToWidth(label, Math.floor(width * 0.5));
+                    const remainingWidth = width - visibleWidth(truncLabel) - 6;
+                    const truncDesc = item.description && remainingWidth > 10 ? this.uiTheme.fg("muted", ` ${truncateToWidth(item.description, remainingWidth)}`) : "";
+                    lines.push(truncateToWidth(`${prefix}${truncLabel}${truncDesc}`, width));
+                  }
+                }
+
+                // 3. Position Counter
+                const counter = `  [${this.selectedIdx + 1}/${this.filtered.length}]`;
+                lines.push(this.uiTheme.fg("dim", counter));
+
+                return lines;
+              }
+
+              invalidate() {}
+            }
+
             selectedValue = await ctx.ui.custom<string | null>((tui, theme, _keybindings, done) => {
-              const selectTheme: SelectListTheme = {
-                selectedPrefix: (text) => theme.fg("accent", text),
-                selectedText: (text) => theme.fg("accent", text),
-                description: (text) => theme.fg("muted", text),
-                scrollInfo: (text) => theme.fg("dim", text),
-                noMatch: (text) => theme.fg("warning", text)
-              };
-
-              // Visible height of 12 items with smooth scrolling & scrollInfo
-              const selectList = new SelectList(items, 12, selectTheme);
-              selectList.onSelect = (item) => done(item.value);
-              selectList.onCancel = () => done("__session__");
-
-              const header = theme.bold(theme.fg("accent", "Select Auditor Model for Critic Review")) +
-                theme.fg("muted", " (↑/↓ to scroll, Esc for default)");
+              const selector = new SearchableModelSelector(items, 12, theme);
+              selector.onSelectCallback = (val) => done(val);
+              selector.onCancelCallback = () => done("__session__");
 
               return {
                 render(width: number) {
-                  return [
-                    header,
-                    "",
-                    ...selectList.render(width)
-                  ];
+                  return selector.render(width);
                 },
                 handleInput(data: string) {
-                  selectList.handleInput(data);
+                  selector.handleInput(data);
                   tui.requestRender();
                 },
                 invalidate() {
-                  selectList.invalidate();
+                  selector.invalidate();
                 }
               };
             }, { overlay: true });
