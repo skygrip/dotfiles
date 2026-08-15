@@ -1,8 +1,8 @@
-[← Back to Universal Prompt Architect Hub](SKILL.md) | [Go to Krea 2 Edit & Inpainting Playbook →](krea2-edit.md)
+[← Back to Universal Prompt Builder Hub](SKILL.md) | [Go to Krea 2 Edit & Inpainting Playbook →](krea2-edit.md)
 
 # Krea 2 (K2) Advanced Prompting & Optical Steering Playbook
 
-Krea 2 Large is a **Single-Stream MMDiT (Diffusion Transformer) with Rectified Flow-Matching (RF-DiT)** conditioned on a **Qwen3-VL** multimodal text encoder. It utilizes cross-layer feature aggregation (`txtfusion`) to blend 12 discrete hidden layers `[L2, L5, L8, L11, L14, L17, L20, L23, L26, L29, L32, L35]` coarse-to-fine.
+Krea 2 is a **Single-Stream MMDiT (Diffusion Transformer) with Rectified Flow-Matching (RF-DiT)** conditioned on a **Qwen3-VL** multimodal text encoder. It utilizes cross-layer feature aggregation (`txtfusion`) to blend 12 discrete hidden layers `[L2, L5, L8, L11, L14, L17, L20, L23, L26, L29, L32, L35]` coarse-to-fine.
 
 ---
 
@@ -32,15 +32,15 @@ Ground-truth layer analysis reveals that the 12 tapped hidden layers form **4 fu
 ## 2. Model Variants & Parameter Matrix
 
 ```
-┌─────────────────────────┬──────────────┬────────────────────────┬──────────────────────────────────────────┐
-│ Variant                 │ Step Range   │ CFG Scale              │ Primary Characteristics                  │
-├─────────────────────────┼──────────────┼────────────────────────┼──────────────────────────────────────────┤
-│ 1. Krea 2 Large / RAW   │ 25–40 steps  │ **CFG 3.0–5.0**        │ Maximum fidelity, rich micro-textures,   │
-│                         │              │                        │ full dynamic range and lighting nuance.  │
-├─────────────────────────┼──────────────┼────────────────────────┼──────────────────────────────────────────┤
-│ 2. Krea 2 Turbo         │ **8–12 steps**│ **CFG 1.0**           │ Distilled ultra-fast flow-matching.      │
-│                         │              │                        │ Negative prompts are inert.              │
-└─────────────────────────┴──────────────┴────────────────────────┴──────────────────────────────────────────┘
+┌─────────────────────────┬──────────────┬───────────────────┬──────────────────────────────────────────┐
+│ Variant                 │ Step Range   │ CFG Scale         │ Primary Characteristics                  │
+├─────────────────────────┼──────────────┼───────────────────┼──────────────────────────────────────────┤
+│ 1. Krea 2 RAW           │ 25–40 steps  │ CFG 3.0–5.0       │ Maximum fidelity, rich micro-textures,   │
+│                         │              │                   │ full dynamic range and lighting nuance.  │
+├─────────────────────────┼──────────────┼───────────────────┼──────────────────────────────────────────┤
+│ 2. Krea 2 Turbo         │ 8–12 steps   │ CFG 1.0           │ Distilled ultra-fast flow-matching.      │
+│                         │              │                   │ Negative prompts are inert.              │
+└─────────────────────────┴──────────────┴───────────────────┴──────────────────────────────────────────┘
 ```
 
 ### 🚫 Negative Prompt Policy & Natural Language Steering
@@ -68,8 +68,12 @@ To maximize Qwen3-VL token-attention efficiency, structure all natural language 
 4. **Environment & Surface Textures:** Physical boundaries (*"dimly lit vintage train carriage interior with mahogany paneling"*).
 5. **FACS Micro-Expressions:** Muscle and ocular mechanics (*"head tilted 10° down, lower eyelids tightened in suspicion (AU7)"*).
 6. **Secondary Physics:** Hair and cloth aerodynamics (*"loose strands of copper hair resting across her temple"*).
-7. **Biomechanical Pose & Tactile Grip:** Asymmetry and weight (*"seated contrapposto, resting chin upon curled knuckles"*).
+7. **Biomechanical Pose & Tactile Grip:** Asymmetry and weight (*"seated contrapposto, resting chin upon curled knuckles"*). Knuckles belong to hands/fingers; soles, heels, and arches belong to feet.
 8. **Color Grading & Film Stock:** Grain and palette (*"35mm film still with unretouched skin micro-pores"*).
+
+> 🚫 **Noun & Pronoun Variety Rule:** Never repeat the subject's name/noun or garment material 3 times in the same prompt (e.g. ❌ *"The ranger wades... The ranger wears... The ranger leans..."* $\rightarrow$ ✅ *"The ranger wades... wearing canvas gear, leaning into contrapposto..."*; ❌ *"velvet coat... velvet fabric... velvet lapel"* $\rightarrow$ ✅ *"velvet coat... the heavy fabric... structured lapels"*).
+>
+> 💡 **Signage vs. Kelvin Disambiguation:** When prompting neon signs or storefronts, describe the light temperature separately from the sign (e.g. write *"warm amber neon signage casting 3000K illumination across the scene"* rather than *"a 3000K neon sign"*) to prevent diffusion text encoders from rendering numeric numbers like `"3000K"` as literal text on the sign.
 
 ---
 
@@ -84,16 +88,16 @@ Abstract emotional words resolve into generic stock photos. Qwen3-VL responds wi
 │ Emotion / Subtext │ Physical Muscle Mechanics  │ Ocular & Surface Optics     │
 ├───────────────────┼────────────────────────────┼─────────────────────────────┤
 │ Grief / Restraint │ AU1+AU4: Inner brows       │ Gaze breaks 15° off-camera; │
-│                   │ pulled up and pinched;     │ lacrimal meniscus pools     │
-│                   │ lips pressed thin (AU24).  │ along lower lid margin.     │
+│                   │ pulled up and pinched;     │ thin film of moisture pools │
+│                   │ lips pressed thin (AU24).  │ along lower eyelid.         │
 ├───────────────────┼────────────────────────────┼─────────────────────────────┤
-│ Suppressed Rage / │ AU4: Corrugator brow drop; │ Direct forward stare;       │
-│ Resolve           │ AU31: Masseter jaw clench; │ dilated pupils; nostrils    │
+│ Suppressed Rage / │ AU4: Brows pulled down;    │ Direct forward stare;       │
+│ Resolve           │ AU31: Jaw clenched tight;  │ dilated pupils; nostrils    │
 │                   │ AU7: Lower eyelid tension. │ flared (AU38).              │
 ├───────────────────┼────────────────────────────┼─────────────────────────────┤
 │ Fragile Wonder /  │ AU1+AU2: Subtle brow arch; │ Expanded ocular aperture;   │
 │ Vulnerability     │ AU25: Parted dry lips;     │ twin pin-point catchlights; │
-│                   │ AU12: Trace zygomatic pull.│ slight head tilt (5°).      │
+│                   │ AU12: Smile lifts cheeks.  │ slight head tilt (5°).      │
 ├───────────────────┼────────────────────────────┼─────────────────────────────┤
 │ Weary Exhaustion  │ AU43: Ptosis/drooping lids;│ Desaturated under-eye skin; │
 │                   │ AU15: Mouth corner pull-   │ dry lip texture; unfocused  │
@@ -103,9 +107,8 @@ Abstract emotional words resolve into generic stock photos. Qwen3-VL responds wi
 
 ### Key Micro-Facial Prompting Rules
 1. **Ocular Mechanics & Catchlights:** Always define the light source reflection within the cornea (*"a single 3200K tungsten pin-light reflects in the upper crescent of her dark iris"*).
-2. **The Lacrimal Meniscus:** Describe optical liquid boundaries: *"A thin film of moisture coats the lower eyelid margin without spilling into tears."*
-3. **Asymmetry is Life:** *"The left eyebrow lifts slightly higher than the right"*, *"unilateral smirk pulls the right corner of her mouth"*.
-4. **Skin Micro-Textures:** *"Matte unglazed skin texture with visible micro-pores, fine vellus peach-fuzz along the jawline, no smoothing, no retouching"*.
+2. **Asymmetry is Life:** *"The left eyebrow lifts slightly higher than the right"*, *"unilateral smirk pulls the right corner of her mouth"*.
+3. **Skin Micro-Textures:** *"Matte unglazed skin texture with visible micro-pores, fine vellus peach-fuzz along the jawline, no smoothing, no retouching"*.
 
 ---
 
@@ -120,6 +123,7 @@ Abstract emotional words resolve into generic stock photos. Qwen3-VL responds wi
 ### Tactile Object Interaction Physics
 * **Grip Specifics:** *"Her index finger rests along the receiver frame while her thumb clamps down on the walnut stock with whitened skin over the knuckles."*
 * **Surface Resistance:** *"Her hip compresses the velvet cushion of the vintage armchair, wrinkling the fabric outward in radial stress lines."*
+* **High-Velocity Kinetic Impacts (Anti-Floating Object Rule):** To prevent fast-moving sports balls, struck tools, or weapons from floating detached, describe **surface deformation and joint flexion**: *"Her open palm smashes flush against the top curve of the leather volleyball, visibly flattening the ball under strike impact while her wrist flexes downward."*
 
 ### 3-Plane Optical Staging Framework
 ```
@@ -133,7 +137,7 @@ Camera ──► [ FOREGROUND: Defocused Obstruction ] ──► [ MIDGROUND: Cr
 
 ## 6. Native Multimodal Image Prompting (Qwen3-VL Vision Tower)
 
-Unlike older diffusion models (SDXL, Pony, Anima, Flux) where the text encoder only processes strings of text tokens, **Krea 2 natively supports image prompting directly inside the CLIP/Text conditioning pipeline** via its integrated **Qwen3-VL-4B** vision-language encoder (`type: krea2`).
+Unlike legacy diffusion architectures where the text encoder only processes strings of text tokens, **Krea 2 natively supports image prompting directly inside the CLIP/Text conditioning pipeline** via its integrated **Qwen3-VL-4B** vision-language encoder (`type: krea2`).
 
 ```
                                       ┌─────────────────────────────────────┐
@@ -204,7 +208,7 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 ---
 
-## 7. SwarmUI / ComfyUI KGW Rebalance Presets
+## 7. KGW Rebalance Presets (ComfyUI / Diffusion Nodes)
 
 ### The 5 Core Presets (Code-Verified)
 
@@ -235,102 +239,134 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 ---
 
-## 8. Production-Ready Worked Packages
+## 8. Production-Ready Examples
 
-### Package 1: Master Horologist (High-Emotion Intimate Character Portrait)
+### Example 1: Master Watchmaker (Tactile Craft & Micro-Assembly)
 
-**🎛 Model & Engine Recommendation**
-| Parameter | Value | Rationale |
-|---|---|---|
-| **Target Engine** | Krea 2 Large / RAW (SwarmUI) | Full dynamic range, micro-pore fidelity, and subtle chiaroscuro light falloff |
-| **Aspect Ratio** | 4:5 Vertical Portrait | Emphasizes vertical facial hierarchy, workbench plane, and ocular intimacy |
-| **Style Reference** | Low-key chiaroscuro artisan portraiture (Rembrandt lighting geometry, unretouched 35mm optical stock) | Anchors deep shadow roll-off, authentic skin micro-relief, and physical material textures |
-
-**🎚️ SwarmUI / KGW Local Parameters**
-- **Preset:** 👤 Portrait & Micro-Emotion
-- **Multiplier:** `1.0` (with RMS Renormalize: `True`) or `1.80` (legacy)
-- **per_layer_weights:** `1.8, 1.8, 1.8, 1.8, 2.0, 2.0, 2.5, 4.5, 1.2, 3.5, 1.0, 1.0`
+**📝 Primary Positive Prompt (Copy-Paste Ready)**
+```text
+85mm f/1.8 macro lens with shallow depth of field. A 2700K tungsten lamp casts warm raking light over a wooden workbench. An elderly watchmaker wears a canvas apron and a monocle loupe. Tiny brass escapement gears and ruby bearings rest across the oak table. His inner brow pinches tight (AU1+AU4) as his lower eyelids narrow (AU7). Loose gray hair brushes his temple. He leans forward in seated contrapposto. His fingertips squeeze precision tweezers and seat a gear against spring resistance. Foreground: blurred steel screwdrivers. Background: soft circular bokeh discs. 35mm film still with natural skin texture.
+```
 
 **🚫 Negative Prompt**
 ```text
 (Leave blank — natural language flow-matching engines perform best without negative prompting)
 ```
 
-**📝 Primary Narrative Prompt (Copy-Paste Ready)**
-```text
-85mm f/1.4 portrait prime lens at eye-level framing with shallow depth of field. A 2700K warm tungsten task lamp casts raking chiaroscuro across the scene against 7500K cool shadow falloff. Subject: an aging master horologist in a worn dark leather apron over a coarse linen shirt. Environment: an oiled oak workbench with scattered brass gears, micro-screwdrivers, and velvet pads. Expression: his inner brows pinch upward in intense scrutiny (AU1+AU4) while his lower eyelids tighten (AU7). A thin lacrimal meniscus coats his lower lid margin, and a sharp 2700K catchlight gleams in his dark iris. Secondary motion: stray silver hair wisps settle across his furrowed brow. Pose: he leans forward in seated contrapposto and anchors his left elbow to the table. His right thumb and forefinger squeeze precision brass tweezers onto a hairspring and blanch the skin across his distal knuckles under mechanical pinch force. Foreground: defocused brass calipers frame the lower edge. Background: the workshop shelving dissolves into soft circular bokeh discs. Style: 35mm film still with visible skin micro-pores, deep crow's feet, and matte epidermal texture.
-```
-
-**🔄 Iteration Pathway**
-```text
-1. Lighting Shift: Switch key light to 5600K cool morning daylight through a north-facing window. Soft blue shadows fill the workshop table.
-2. Lens Shift: Switch to 50mm f/1.4 lens at a 30-degree overhead table perspective. Expand frame to reveal antique wooden clock cabinets lining the wall.
-3. Interaction Shift: Subject lifts the brass eye loupe away from his eye. His left thumb presses an oiled polishing cloth across the balance bridge.
-```
-
----
-
-### Package 2: Alpine Crevasse Leap (High-Torque Kinetic Action)
-
 **🎛 Model & Engine Recommendation**
 | Parameter | Value | Rationale |
 |---|---|---|
-| **Target Engine** | Krea 2 Large / RAW (SwarmUI) | Preserves high-frequency snow particles, gear tension physics, and anatomical force vectors |
-| **Aspect Ratio** | 16:9 Cinematic Widescreen | Captures dynamic lateral leap trajectory across the glacial chasm |
-| **Style Reference** | High-altitude mountain expedition photojournalism (harsh alpine blizzard optics, extreme diagonal geometry, tactical survival gear) | Establishes raw environmental hostility, high-speed shutter freezing, and tangible equipment load |
+| **Target Engine** | Krea 2 RAW | Delivers maximum physical fidelity for micro-mechanical textures, skin pores, and warm tungsten chiaroscuro light falloff |
+| **Aspect Ratio** | 4:5 Vertical Portrait | Frames the artisan's micro-facial concentration, hands, and tabletop assembly in unified focus |
+| **Style Reference** | Native Engine Baseline / LoRA-Ready | Style-neutral tactile craft photography with unretouched 35mm film optics |
 
-**🎚️ SwarmUI / KGW Local Parameters**
-- **Preset:** ⚡ Dual-Anchor Hybrid (Action + Emotion)
-- **Multiplier:** `1.0` (with RMS Renormalize: `True`) or `1.75` (legacy)
-- **per_layer_weights:** `2.4, 2.4, 2.2, 2.0, 1.6, 1.8, 2.2, 3.8, 1.4, 3.8, 1.2, 1.0`
-
-**🚫 Negative Prompt**
-```text
-(Leave blank — natural language flow-matching engines perform best without negative prompting)
-```
-
-**📝 Primary Narrative Prompt (Copy-Paste Ready)**
-```text
-24mm f/2.8 ultra-wide lens at a dynamic low-angle 20-degree Dutch tilt with a 1/2000s shutter speed. Diffuse 7000K cold blizzard light rakes across airborne snow and projects deep cyan shadows into the glacial abyss below. Subject: a high-altitude mountain rescue specialist in an orange ripstop alpine storm suit and climbing harness. Environment: a sheer glacial crevasse with fractured blue serac walls and jagged ice cornices. Expression: his jaw clenches tight (AU31) beneath a frost-rimed balaclava, nostrils flare in exertion (AU38), and narrowed eyes lock forward as ice crystals frost his eyelashes. Secondary motion: harness safety lanyards, loose gear loops, and parka tails whip violently backward in 60-knot gale winds. Pose: (Airborne Crevasse Leap:1.3), left knee drives forward at a 75-degree acute angle while trailing right leg extends fully backward off the crampon toe, torso twists 35 degrees relative to hips, taut 11mm kernmantle rope bites deeply into his shoulder seam and bunches the fabric into tight stress creases, right insulated glove clamps the textured shaft of an ice axe with firm palm pressure. Foreground: defocused airborne ice shards streak across the lens glass. Background: the opposite ice wall dissolves into raging whiteout. Style: 35mm photojournalism still with crisp edge fidelity, raw surface textures, and zero digital smoothing.
-```
-
-**🔄 Iteration Pathway**
-```text
-1. Weather Shift: Intensify gale to zero-visibility whiteout with 6500K twilight. Harsh blizzard squalls obscure the far crevasse lip.
-2. Angle Shift: Lower camera to ice level inside the crevasse. Point lens 60 degrees upward toward the jumper framed against the storm sky.
-3. Action Shift: Subject swings the ice axe overhead toward the opposite ice wall. Steel pick bites into blue glacial hardpack with flying ice chips.
-```
-
----
-
-### Package 3: Multimodal Image-Prompted Style & Identity Transfer
-
-**🎛 Model & Engine Recommendation**
-| Parameter | Value | Rationale |
-|---|---|---|
-| **Target Engine** | Krea 2 Large / RAW (Multimodal VLM CLIP) | Direct vision-tower conditioning locks character facial identity while executing new narrative |
-| **CLIP Conditioning** | Reference Image connected to Qwen3-VL CLIP (`grounding_px: 1024`) | Ingests reference visual tokens alongside text prompt |
-| **Aspect Ratio** | 4:5 Vertical Portrait | Matches compositional balance |
-| **Style Reference** | *Blade Runner 2049* (Roger Deakins) — amber sodium vapor, heavy rain streaks, shallow optical depth | Matches visual tone |
-
-**🎚️ SwarmUI / KGW Local Parameters**
+**🎚️ Engine-Specific Parameters (KGW Rebalance)**
 - **Preset:** 👤 Portrait & Micro-Emotion
 - **Multiplier:** `1.0` (with RMS Renormalize: `True`)
 - **per_layer_weights:** `1.8, 1.8, 1.8, 1.8, 2.0, 2.0, 2.5, 4.5, 1.2, 3.5, 1.0, 1.0`
 
+**🔄 Iteration Pathway**
+```text
+1. Lighting Shift: Switch to 5500K daylight. Cool morning light filters through a workshop window and casts soft diffuse shadows across the workbench.
+2. Perspective Shift: Lower the camera to tabletop macro level. Align the lens flush with the tweezers as the escapement tooth locks into the ruby pallet jewel.
+3. Interaction Shift: The watchmaker rotates the loupe away from his eye. He exhales softly and inspects the spinning balance wheel.
+```
+
+---
+
+### Example 2: High-Torque Kinetic Action (Equestrian Showjumper)
+
+**📝 Primary Positive Prompt (Copy-Paste Ready)**
+```text
+70-200mm f/2.8 telephoto lens with a 1/2000s shutter. Direct 5500K midday sunlight rakes the turf and casts sharp contact shadows. An equestrian rider in a navy jacket guides a bay warmblood over a timber water hurdle. She furrows her brow (AU4) and clenches her jaw (AU31) with a direct forward gaze. Water droplets and turf clumps freeze in mid-air. She folds into a bent-knee contrapposto; gloved hands grip taut leather reins as the horse tucks its forelegs over the rail. Foreground: out-of-focus water spray. Background: arena grandstands dissolve into creamy circular bokeh. Unretouched 35mm sports film still.
+```
+
 **🚫 Negative Prompt**
 ```text
 (Leave blank — natural language flow-matching engines perform best without negative prompting)
 ```
 
-**📝 Multimodal Narrative Prompt (Copy-Paste Ready)**
-```text
-85mm f/1.4 portrait lens with shallow depth of field. 2200K amber sodium streetlamp key light with 8000K cyan rim lighting from a neon sign. Subject is the exact person from the reference image, preserving facial bone structure, dark eyes, and jawline. The subject wears a dark charcoal waterproof trench coat with wet specular highlights across the shoulders. Pose: standing in 3/4 profile, head turned 15 degrees toward the lens, right hand holding the collar tight against cold rain. Expression: subtle eyebrow tension in quiet contemplation (AU1+AU2), mouth in a firm neutral resting line, rain droplets clinging to the jawline. Foreground: defocused rain streaks blur the bottom frame. Background: out-of-focus futuristic cityscape dissolves into amber and cyan bokeh discs.
-```
+**🎛 Model & Engine Recommendation**
+| Parameter | Value | Rationale |
+|---|---|---|
+| **Target Engine** | Krea 2 RAW | Ultra-fast 1/2000s shutter freeze fidelity, sharp water droplet spray optics, and unretouched leather/skin micro-textures |
+| **Aspect Ratio** | 16:9 Cinematic Widescreen | Accommodates full horizontal jumping arc, equestrian hurdle clearance, and 3-plane arena depth |
+| **Style Reference** | Native Engine Baseline / LoRA-Ready | Unretouched 35mm sports photography with clean physical lighting and zero baked-in style bias |
+
+**🎚️ Engine-Specific Parameters (KGW Rebalance)**
+- **Preset:** ⚡ Dual-Anchor Hybrid (Action + Emotion)
+- **Multiplier:** `1.0` (with RMS Renormalize: `True`)
+- **per_layer_weights:** `2.4, 2.4, 2.2, 2.0, 1.6, 1.8, 2.2, 3.8, 1.4, 3.8, 1.2, 1.0`
 
 **🔄 Iteration Pathway**
 ```text
-1. Lighting Shift: Switch neon lighting from amber/cyan to intense monochrome emerald green.
-2. Environment Shift: Move subject from rainy street into a warm 2700K tea shop doorway with steam rising into the cold air.
-3. Interaction Shift: Subject reaches up to brush wet hair strands away from the forehead.
+1. Lighting Shift: Shift lighting to 3200K low-angle golden hour sunlight. Warm directional light casts long amber shadows across the water obstacle.
+2. Perspective Shift: Drop the camera to a low ground-level angle beneath the timber rail. Frame the horse's tucked hooves directly against the sky.
+3. Interaction Shift: The rider turns her head 15 degrees toward the next course turn. Her left hand eases rein tension while her heels press the horse's flank.
+```
+
+---
+
+### Example 3: Atmospheric Environmental Adventure (Alpine Summit Botanist)
+
+**📝 Primary Positive Prompt (Copy-Paste Ready)**
+```text
+35mm f/2.8 lens with cinematic depth. Warm 5200K dawn light rays cut through cool mountain mist. A botanist in a weathered canvas jacket kneels on a high mountain summit ridge. Deep contact shadows anchor her boots to damp rock. Her inner eyebrows arch in gentle wonder (AU1+AU2) as a soft smile curves her cheeks (AU12). Morning breeze ruffles her dark hair. Her left fingertips steady a brass magnifying lens over rare flora while her right hand presses an open field journal. Foreground: dew-covered alpine petals. Background: jagged granite peaks dissolve into soft haze. 35mm film still.
+```
+
+**🚫 Negative Prompt**
+```text
+(Leave blank — natural language flow-matching engines perform best without negative prompting)
+```
+
+**🎛 Model & Engine Recommendation**
+| Parameter | Value | Rationale |
+|---|---|---|
+| **Target Engine** | Krea 2 RAW | Maximum dynamic range, volumetric dawn light shafts, and crisp mountain rock micro-textures |
+| **Aspect Ratio** | 16:9 Cinematic Widescreen | Captures expansive alpine horizon, low-angle depth staging, and summit ridge geometry |
+| **Style Reference** | Native Engine Baseline / LoRA-Ready | Style-neutral environmental adventure still with unretouched 35mm film optics |
+
+**🎚️ Engine-Specific Parameters (KGW Rebalance)**
+- **Preset:** 🎬 Cinematic Lighting & Atmosphere
+- **Multiplier:** `1.0` (with RMS Renormalize: `True`)
+- **per_layer_weights:** `1.0, 1.0, 1.0, 1.0, 2.5, 3.5, 4.0, 4.0, 3.5, 4.5, 5.0, 4.0`
+
+**🔄 Iteration Pathway**
+```text
+1. Lighting Shift: Shift the sun angle to 6000K overcast morning. Diffuse light flattens harsh rock highlights and deepens mist opacity across the valley.
+2. Perspective Shift: Drop the camera to ground level. Frame the alpine blossoms in sharp foreground focus while the botanist kneels softly in the midground.
+3. Interaction Shift: Subject sketches a botanical specimen into the journal with a graphite pencil. Her gaze focuses downward onto the page.
+```
+
+---
+
+### Example 4: Architectural Modern Portrait (Structural Blueprint Review)
+
+**📝 Primary Positive Prompt (Copy-Paste Ready)**
+```text
+85mm f/1.4 portrait lens with shallow depth of field. Diffuse 5000K overcast daylight filters through paned glass as a 2800K warm brass desk lamp illuminates the workspace. An architect in a charcoal turtleneck reviews structural blueprints across an oak drafting table. Her inner brows pinch in analytical focus (AU1+AU4) and lower eyelids tighten (AU7). Foreground: out-of-focus rain streaks on the window frame the edge. Her left palm presses flat against the heavy paper while curled right fingers grip a matte black technical pen. Background: geometric pavilion beams dissolve into soft circular bokeh discs. 35mm film still with natural skin texture.
+```
+
+**🚫 Negative Prompt**
+```text
+(Leave blank — natural language flow-matching engines perform best without negative prompting)
+```
+
+**🎛 Model & Engine Recommendation**
+| Parameter | Value | Rationale |
+|---|---|---|
+| **Target Engine** | Krea 2 RAW | Maximizes micro-texture fidelity, resolves dual 5000K/2800K Kelvin lighting contrast, and renders unretouched skin pores |
+| **Aspect Ratio** | 4:5 Vertical Portrait | Centers facial analytical focus, paper tactile grip mechanics, and geometric pavilion verticality |
+| **Style Reference** | Native Engine Baseline / LoRA-Ready | Style-neutral architectural portraiture with unretouched 35mm film optics |
+
+**🎚️ Engine-Specific Parameters (KGW Rebalance)**
+- **Preset:** 👤 Portrait & Micro-Emotion
+- **Multiplier:** `1.0` (with RMS Renormalize: `True`)
+- **per_layer_weights:** `1.8, 1.8, 1.8, 1.8, 2.0, 2.0, 2.5, 4.5, 1.2, 3.5, 1.0, 1.0`
+
+**🔄 Iteration Pathway**
+```text
+1. Lighting Shift: Switch to 3000K late afternoon golden hour. Warm sunlight rakes across the drafting table and casts long diagonal shadows over the blueprints.
+2. Perspective Shift: Lower the camera to tabletop level. Frame the technical pen and curled fingers in sharp close-up while the architect's focused eyes soften in the background.
+3. Interaction Shift: The architect lifts the brass ruler with her left hand and aligns the metal edge against a blueprint grid line.
 ```
