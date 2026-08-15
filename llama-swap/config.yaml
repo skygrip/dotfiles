@@ -2,7 +2,7 @@
 # ==============================================================================
 # GLOBAL ENGINE CONFIGURATION
 # ==============================================================================
-host: "127.0.0.1"
+host: "0.0.0.0"
 port: 8080
 globalTTL: 60
 includeAliasesInList: true
@@ -13,20 +13,20 @@ healthCheckTimeout: 600
 # ==============================================================================
 macros:
   llama-server: "llama-server.exe --port ${PORT}"
-  default_ctx: 4096
+  default_ctx: 65536
   default_ctk: q8_0
   default_ctv: q8_0
   default_fa: on
-  default_args: "--ctx-size ${default_ctx} -ctk ${default_ctk} -ctv ${default_ctv} -fa ${default_fa}"
-
+  default_args: "--ctx-size ${default_ctx} -ctk ${default_ctk} -ctv ${default_ctv} -fa ${default_fa} -ngl 999"
+  dry_args: "--dry-multiplier 0.6 --dry-sequence-breaker '\n' --dry-allowed-length 3 --dry-penalty-last-n 4096"
 # ==============================================================================
 # INFERENCE ROUTINGS & BACKENDS
 # ==============================================================================
 models:
 
-# --- GEMMA 4 12B IT (MTP) ---
+# --- GEMMA 4 12B ---
   gemma4-12b:
-    name: "Unsloth Gemma 4 12B IT (MTP)"
+    name: "Unsloth Gemma 4 12B"
     description: "unsloth/gemma-4-12b-it-qat-GGUF:UD-Q4_K_XL"
     capabilities:
       in:
@@ -45,59 +45,17 @@ models:
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --no-mmproj-offload
+      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
           chat_template_kwargs:
             enable_thinking: false
 
-# --- GEMMA 4 12B CODER FABLE/COMPOSER ---
-  gemma4-12b-coder:
-    name: "yuxinlu1/gemma-4-12B-coder-fable5-composer2.5-v1-GGUF"
-    description: "yuxinlu1/gemma-4-12B-coder-fable5-composer2.5-v1-GGUF:Q4_K_M"
-    capabilities:
-      in:
-        - text
-        - audio
-        - image
-      out: ["text"]
-      tools: true
-      context: 65536
-    macros:
-      default_ctx: 65536
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf yuxinlu1/gemma-4-12B-coder-fable5-composer2.5-v1-GGUF:Q4_K_M
-      --no-mmproj-offload
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          chat_template_kwargs:
-            enable_thinking: false
-
-# --- MISTRAL SMALL 3.2 (24B) ---
-  mistral3.2-24b:
-    name: "Mistral Small 3.2 (24B)"
-    description: "unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M"
-    capabilities:
-      in: ["text", "image"]
-      out: ["text"]
-      tools: true
-      context: 32768
-    macros:
-      default_ctx: 32768
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M
-      -ngl 999
-      --no-mmproj-offload
-
-# --- QWEN 3.6 27B DENSE (MTP) ---
-  qwen3.6-27b:
-    name: "Unsloth Qwen 3.6 27B Dense"
-    description: "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL"
+# --- GEMMA 4 26B MOE ---
+  gemma4-26ba4b:
+    name: "Unsloth Gemma 4 26B A4B"
+    description: "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"
     capabilities:
       in: ["text", "image"]
       out: ["text"]
@@ -108,19 +66,70 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
-      -hf unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL
+      -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --no-mmproj-offload
+      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
           chat_template_kwargs:
             enable_thinking: false
 
-# --- QWEN 3.6 35B MOE (MTP) ---
-  qwen3.6-35b:
-    name: "Unsloth Qwen 3.6 35B MTP"
+# --- GEMMA 4 31B  ---
+  gemma4-31b:
+    name: "Unsloth Gemma 4 31B"
+    description: "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: 65536
+    macros:
+      default_ctx: 65536
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --no-mmproj-offload
+      --jinja
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          chat_template_kwargs:
+            enable_thinking: false
+
+# --- QWEN 3.8 27B ---
+  qwen3.8-27b:
+    name: "Unsloth Qwen 3.8 27B"
+    description: "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: 65536
+    macros:
+      default_ctx: 65536
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      -hf unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --no-mmproj-offload
+      --jinja
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          chat_template_kwargs:
+            enable_thinking: false
+
+# --- QWEN 3.6 35B ---
+  qwen3.6-35ba3b:
+    name: "Unsloth Qwen 3.6 35B A3B"
     description: "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q3_K_XL"
     capabilities:
       in: ["text", "image"]
@@ -136,30 +145,7 @@ models:
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --no-mmproj-offload
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          chat_template_kwargs:
-            enable_thinking: false
-
-# --- GEMMA 4 26B MOE (MTP) ---
-  gemma4-26ba4b:
-    name: "Unsloth Gemma 4 26B"
-    description: "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"
-    capabilities:
-      in: ["text", "audio", "image"]
-      out: ["text"]
-      tools: true
-      context: 65536
-    macros:
-      default_ctx: 65536
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --no-mmproj-offload
+      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -167,10 +153,9 @@ models:
             enable_thinking: false
 
 # --- UNCENSORED MODELS FOR RESEARCH ---
-
   gemma4-12b-uncensored:
-    name: "HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive:Q4_K_M"
-    description: "HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive:Q4_K_M"
+    name: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
+    description: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     capabilities:
       in:
         - text
@@ -184,8 +169,11 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
-      -hf HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive:Q4_K_M
+      -hf HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
       --no-mmproj-offload
+      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -210,6 +198,7 @@ models:
       ${default_args}
       -hf HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M
       --no-mmproj-offload
+      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
