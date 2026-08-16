@@ -160,15 +160,43 @@ function isCredentialFile(targetPath: string): boolean {
 
 /**
  * Checks if a target path is located inside the global Pi or Agent skills directory.
+ * Handles ~ expansion, Windows/POSIX slashes, Git Bash drive prefixes, and environment variables.
  */
 function isGlobalSkillPath(targetPath: string): boolean {
   if (!targetPath) return false;
-  const norm = normalizePath(targetPath).toLowerCase();
+
   const home = os.homedir().replace(/\\/g, "/").toLowerCase();
+  let norm = targetPath.trim().replace(/\\/g, "/").toLowerCase();
+
+  // Strip wrapping quotes
+  norm = norm.replace(/^['"]+|['"]+$/g, "");
+
+  // Expand environment variables & tildes
+  norm = norm
+    .replace(/^~(?:\/|$)/, `${home}/`)
+    .replace(/^\$home(?:\/|$)/, `${home}/`)
+    .replace(/^%userprofile%(?:\/|$)/, `${home}/`)
+    .replace(/^\$env:userprofile(?:\/|$)/, `${home}/`);
+
+  // Normalize MSYS2 / Git Bash /c/Users -> C:/Users
+  if (process.platform === "win32" && /^\/([a-z])\//i.test(norm)) {
+    norm = norm.replace(/^\/([a-z])\//i, (_, drive) => `${drive.toUpperCase()}:/`);
+  }
+
+  try {
+    norm = path.resolve(norm).replace(/\\/g, "/").toLowerCase();
+  } catch {
+    // Keep unnormalized if path.resolve fails
+  }
+
+  const piSkills = `${home}/.pi/agent/skills`;
+  const agentsSkills = `${home}/.agents/skills`;
 
   return (
-    norm.startsWith(`${home}/.pi/agent/skills/`) ||
-    norm.startsWith(`${home}/.agents/skills/`)
+    norm === piSkills ||
+    norm.startsWith(`${piSkills}/`) ||
+    norm === agentsSkills ||
+    norm.startsWith(`${agentsSkills}/`)
   );
 }
 
@@ -358,7 +386,7 @@ export default function (pi: ExtensionAPI) {
           break;
         }
 
-        if (isOutsideWorkspace(token)) {
+        if (isOutsideWorkspace(token) && !isGlobalSkillPath(token)) {
           const workspace = getWorkspaceRoot();
           if (!ctx.hasUI || !ctx.ui) {
             return {
