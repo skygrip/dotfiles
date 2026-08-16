@@ -159,6 +159,20 @@ function isCredentialFile(targetPath: string): boolean {
 }
 
 /**
+ * Checks if a target path is located inside the global Pi or Agent skills directory.
+ */
+function isGlobalSkillPath(targetPath: string): boolean {
+  if (!targetPath) return false;
+  const norm = normalizePath(targetPath).toLowerCase();
+  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
+
+  return (
+    norm.startsWith(`${home}/.pi/agent/skills/`) ||
+    norm.startsWith(`${home}/.agents/skills/`)
+  );
+}
+
+/**
  * Resolves the active workspace root (local or remote SSH).
  */
 function getWorkspaceRoot(): string {
@@ -400,7 +414,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // 2. Out of Workspace Read Confinement
-      if (isOutsideWorkspace(targetPath)) {
+      if (isOutsideWorkspace(targetPath) && !isGlobalSkillPath(targetPath)) {
         const workspace = getWorkspaceRoot();
         if (!ctx.hasUI || !ctx.ui) {
           return {
