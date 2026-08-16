@@ -220,6 +220,7 @@ models:
 # RESEARCH MODELS
 # ==============================================================================
 
+# --- GEMMA 4 12B ---
   gemma4-12b-uncensored:
     name: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     description: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
@@ -245,6 +246,41 @@ models:
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 2
+      --no-mmproj-offload
+      --jinja
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          temperature: 0.2
+          top_p: 0.90
+          min_p: 0.01
+          chat_template_kwargs:
+            enable_thinking: false
+
+# --- GEMMA 4 26B MOE ---
+  gemma4-26ba4b-uncensored:
+    name: "HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M"
+    description: "HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: 65536
+    macros:
+      ctx: 65536
+      temp: 1.0
+      topp: 0.95
+      minp: 0.01
+      topk: 64
+      repeat_penalty: 1.0
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      -ncmoe 14
+      -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
+      --spec-type draft-mtp
+      --spec-draft-p-min 0.75
+      --spec-draft-n-max 3
       --no-mmproj-offload
       --jinja
     filters:
