@@ -17,14 +17,9 @@ macros:
   ctk: q8_0
   ctv: q8_0
   fa: on
-  temp: 0.7
-  topp: 0.95
-  minp: 0.05
-  topk: 40
-  repeat_penalty: 1.0
   batch_size: "-b 2048 -ub 1024"
   thread_args: "-t 8 -tb 16"
-  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${batch_size} ${thread_args} --temp ${temp} --top-p ${topp} --min-p ${minp} --top-k ${topk} --repeat-penalty ${repeat_penalty}"
+  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${batch_size} ${thread_args}"
   
 # ==============================================================================
 # INFERENCE ROUTINGS & BACKENDS
@@ -45,11 +40,6 @@ models:
       context: 65536
     macros:
       ctx: 65536
-      temp: 1.0
-      topp: 0.95
-      minp: 0.01
-      topk: 64
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -83,11 +73,6 @@ models:
       context: 65536
     macros:
       ctx: 65536
-      temp: 1.0
-      topp: 0.95
-      minp: 0.01
-      topk: 64
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -118,11 +103,6 @@ models:
       context: 65536
     macros:
       ctx: 65536
-      temp: 0.7
-      topp: 0.95
-      minp: 0.01
-      topk: 40
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -158,11 +138,6 @@ models:
       context: 8192
     macros:
       ctx: 8192
-      temp: 1.0
-      topp: 0.95
-      minp: 0.01
-      topk: 64
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -192,11 +167,6 @@ models:
       context: 8192
     macros:
       ctx: 8192
-      temp: 0.6
-      topp: 0.95
-      minp: 0.01
-      topk: 20
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -234,11 +204,6 @@ models:
       context: 65536
     macros:
       ctx: 65536
-      temp: 1.0
-      topp: 0.95
-      minp: 0.01
-      topk: 64
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
@@ -268,11 +233,6 @@ models:
       context: 65536
     macros:
       ctx: 65536
-      temp: 1.0
-      topp: 0.95
-      minp: 0.01
-      topk: 64
-      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
