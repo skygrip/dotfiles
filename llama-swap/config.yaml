@@ -13,12 +13,19 @@ healthCheckTimeout: 600
 # ==============================================================================
 macros:
   llama-server: "llama-server.exe --port ${PORT}"
-  default_ctx: 65536
-  default_ctk: q8_0
-  default_ctv: q8_0
-  default_fa: on
-  default_args: "--ctx-size ${default_ctx} -ctk ${default_ctk} -ctv ${default_ctv} -fa ${default_fa} -ngl 999"
-  dry_args: "--dry-multiplier 0.6 --dry-sequence-breaker '\n' --dry-allowed-length 3 --dry-penalty-last-n 4096"
+  ctx: 8192
+  ctk: q8_0
+  ctv: q8_0
+  fa: on
+  temp: 0.7
+  topp: 0.95
+  minp: 0.05
+  topk: 40
+  repeat_penalty: 1.0
+  batch_size: "-b 2048 -ub 1024"
+  thread_args: "-t 8 -tb 16"
+  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${batch_size} ${thread_args} --temp ${temp} --top-p ${topp} --min-p ${minp} --top-k ${topk} --repeat-penalty ${repeat_penalty}"
+  
 # ==============================================================================
 # INFERENCE ROUTINGS & BACKENDS
 # ==============================================================================
@@ -37,20 +44,33 @@ models:
       tools: true
       context: 65536
     macros:
-      default_ctx: 65536
+      ctx: 65536
+      temp: 1.0
+      topp: 0.95
+      minp: 0.01
+      topk: 64
+      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
       -hf unsloth/gemma-4-12b-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
+      --spec-draft-p-min 0.75
       --spec-draft-n-max 2
       --no-mmproj-offload
       --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
+          temperature: 0.2
+          top_p: 0.90
+          min_p: 0.01
           chat_template_kwargs:
             enable_thinking: false
+
+# ==============================================================================
+# MOE Models
+# ==============================================================================          
 
 # --- GEMMA 4 26B MOE ---
   gemma4-26ba4b:
@@ -62,97 +82,144 @@ models:
       tools: true
       context: 65536
     macros:
-      default_ctx: 65536
+      ctx: 65536
+      temp: 1.0
+      topp: 0.95
+      minp: 0.01
+      topk: 64
+      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
+      -ncmoe 14
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
-      --spec-draft-n-max 2
+      --spec-draft-p-min 0.75
+      --spec-draft-n-max 3
       --no-mmproj-offload
       --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
-          chat_template_kwargs:
-            enable_thinking: false
-
-# --- GEMMA 4 31B  ---
-  gemma4-31b:
-    name: "Unsloth Gemma 4 31B"
-    description: "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"
-    capabilities:
-      in: ["text", "image"]
-      out: ["text"]
-      tools: true
-      context: 65536
-    macros:
-      default_ctx: 65536
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          chat_template_kwargs:
-            enable_thinking: false
-
-# --- QWEN 3.8 27B ---
-  qwen3.8-27b:
-    name: "Unsloth Qwen 3.8 27B"
-    description: "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
-    capabilities:
-      in: ["text", "image"]
-      out: ["text"]
-      tools: true
-      context: 65536
-    macros:
-      default_ctx: 65536
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
+          temperature: 0.2
+          top_p: 0.90
+          min_p: 0.01
           chat_template_kwargs:
             enable_thinking: false
 
 # --- QWEN 3.6 35B ---
   qwen3.6-35ba3b:
     name: "Unsloth Qwen 3.6 35B A3B"
-    description: "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q3_K_XL"
+    description: "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M"
     capabilities:
       in: ["text", "image"]
       out: ["text"]
       tools: true
       context: 65536
     macros:
-      default_ctx: 65536
+      ctx: 65536
+      temp: 0.7
+      topp: 0.95
+      minp: 0.01
+      topk: 40
+      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
-      -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q3_K_XL
+      -ncmoe 18
+      -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M
       --spec-type draft-mtp
+      --spec-draft-p-min 0.75
+      --spec-draft-n-max 3
+      --no-mmproj-offload
+      --jinja
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          temperature: 0.7
+          top_p: 0.80
+          top_k: 40
+          min_p: 0.01
+          chat_template_kwargs:
+            enable_thinking: false
+
+# ==============================================================================
+# 27B DENSE Models
+# ==============================================================================          
+
+# --- GEMMA 4 31B  ---
+  gemma4-31b:
+    name: "Unsloth Gemma 4 31B"
+    description: "unsloth/gemma-4-31B-it-qat-GGUF:UD-IQ3_XXS"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: 8192
+    macros:
+      ctx: 8192
+      temp: 1.0
+      topp: 0.95
+      minp: 0.01
+      topk: 64
+      repeat_penalty: 1.0
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-IQ3_XXS
+      --spec-type draft-mtp
+      --spec-draft-p-min 0.75
       --spec-draft-n-max 2
       --no-mmproj-offload
       --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
+          temperature: 0.2
+          top_p: 0.90
+          min_p: 0.01
           chat_template_kwargs:
             enable_thinking: false
 
-# --- UNCENSORED MODELS FOR RESEARCH ---
+# --- QWEN 3.8 27B ---
+  qwen3.8-27b:
+    name: "Unsloth Qwen 3.8 27B"
+    description: "unsloth/Qwen3.8-27B-GGUF:UD-IQ3_XXS"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: 8192
+    macros:
+      ctx: 8192
+      temp: 0.6
+      topp: 0.95
+      minp: 0.01
+      topk: 20
+      repeat_penalty: 1.0
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      -hf unsloth/Qwen3.8-27B-GGUF:UD-IQ3_XXS
+      --spec-type draft-mtp
+      --spec-draft-p-min 0.75
+      --spec-draft-n-max 2
+      --no-mmproj-offload
+      --jinja
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          temperature: 0.7
+          top_p: 0.80
+          top_k: 40
+          min_p: 0.01
+          chat_template_kwargs:
+            enable_thinking: false
+
+# ==============================================================================
+# RESEARCH MODELS
+# ==============================================================================
+
   gemma4-12b-uncensored:
     name: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     description: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
@@ -165,42 +232,26 @@ models:
       tools: true
       context: 65536
     macros:
-      default_ctx: 65536
+      ctx: 65536
+      temp: 1.0
+      topp: 0.95
+      minp: 0.01
+      topk: 64
+      repeat_penalty: 1.0
     cmd: |
       ${llama-server}
       ${default_args}
       -hf HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M
       --spec-type draft-mtp
+      --spec-draft-p-min 0.75
       --spec-draft-n-max 2
       --no-mmproj-offload
       --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
-          chat_template_kwargs:
-            enable_thinking: false
-
-  qwen3.5-9b-uncensored:
-    name: "HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M"
-    description: "HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M"
-    capabilities:
-      in:
-        - text
-        - audio
-        - image
-      out: ["text"]
-      tools: true
-      context: 65536
-    macros:
-      default_ctx: 65536
-    cmd: |
-      ${llama-server}
-      ${default_args}
-      -hf HauhauCS/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive:Q4_K_M
-      --no-mmproj-offload
-      --jinja
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
+          temperature: 0.2
+          top_p: 0.90
+          min_p: 0.01
           chat_template_kwargs:
             enable_thinking: false
