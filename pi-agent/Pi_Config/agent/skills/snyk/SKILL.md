@@ -1,11 +1,11 @@
 ---
 name: snyk
-description: Scan projects for security vulnerabilities, license compliance, SAST code flaws, container issues, and IaC misconfigurations using Snyk CLI.
+description: Scan projects for security vulnerabilities, licenses, and SAST code flaws. Use 'snyk test' for dependency CVEs, 'snyk code test' for SAST, 'snyk container test <image>', or 'snyk iac test'.
 ---
 
 # Snyk CLI Skill
 
-This skill guides the agent on how to use Snyk CLI (`snyk` or `snyk-win`) to detect, monitor, and remediate vulnerabilities in code, open-source dependencies, containers, and Infrastructure-as-Code (IaC) configurations.
+This skill guides the agent on how to use Snyk CLI (`snyk`) to detect, monitor, and remediate vulnerabilities in code, open-source dependencies, containers, and Infrastructure-as-Code (IaC) configurations.
 
 > [!IMPORTANT]
 > **Headless Authentication & Configuration:**
@@ -13,13 +13,6 @@ This skill guides the agent on how to use Snyk CLI (`snyk` or `snyk-win`) to det
 > - Alternatively, authenticate non-interactively via `snyk auth <TOKEN>` or `snyk config set api=<TOKEN>`. **Never** run `snyk auth` without arguments, as it launches an interactive browser and hangs.
 > - For EU/AU/Custom tenants, set `SNYK_API="https://api.eu.snyk.io"`.
 > - Disable telemetry in automated environments: `export SNYK_DISABLE_ANALYTICS=1`.
-
-> [!TIP]
-> **Cross-Platform Binary Resolution:**
-> On Windows, the binary is often installed via Winget as `snyk-win.exe` or via npm as `snyk.cmd`. Detect dynamically:
-> ```bash
-> SNYK_BIN=$(command -v snyk-win || command -v snyk)
-> ```
 
 ---
 
@@ -37,21 +30,27 @@ snyk test [PATH] [OPTIONS]
 * **Common Options:**
   - `--severity-threshold=<low|medium|high|critical>`: Only report issues at or above the specified level.
   - `--all-projects`: Auto-detect and scan all projects recursively in subdirectories.
+  - `--all-sub-projects`: Scan all sub-projects in Gradle and Maven workspaces.
+  - `--prune-repeated-subdependencies`: Prune duplicate sub-dependency trees to prevent Node/CLI Out-Of-Memory (OOM) errors in large monorepos.
   - `--org=<ORG_ID|ORG_SLUG>`: Specify the Snyk Organization to use for the scan.
   - `--file=<FILE>`: Specify a custom manifest file (e.g., `--file=requirements.txt`, `--file=pyproject.toml`).
   - `--licenses`: Check dependencies for license compliance against org policies.
   - `--dev` / `--prod`: Include or exclude development dependencies.
   - `--strict-out-of-sync=false`: Tolerate minor drift between manifests and lockfiles.
   - `--json-file-output=<path>`: Save raw JSON scan results directly to a file without flooding stdout.
+  - `--sarif-file-output=<path>`: Save SARIF report for GitHub Security / IDE triage.
 
-**Targeted Manifest Examples:**
+**Targeted Manifest & Monorepo Examples:**
 ```bash
 # Python: scan requirements or pyproject.toml
 snyk test --file=requirements.txt --package-manager=pip
 snyk test --file=pyproject.toml
 
-# Node / Monorepo: scan all packages recursively
-snyk test --all-projects --severity-threshold=high
+# Node / Monorepo: scan all packages with memory pruning
+snyk test --all-projects --prune-repeated-subdependencies --severity-threshold=high
+
+# Large Gradle / Maven multi-module monorepo:
+snyk test --all-sub-projects --sarif-file-output=snyk.sarif
 ```
 
 ---

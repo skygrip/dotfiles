@@ -1,6 +1,6 @@
 ---
 name: openscad
-description: OpenSCAD workflow, best practices, and anti-patterns. Load before writing OpenSCAD code.
+description: 3D parametric CSG modeling in OpenSCAD. Enforces immutable SSA variable rules, difference/union CSG hygiene, BOSL2 library usage, and OpenSCAD MCP preview generation.
 ---
 
 # OpenSCAD Agent Guide
@@ -189,6 +189,50 @@ if (mode == "assembled" || mode == "exploded") {
     // Oriented flat on build bed for printing
     rotate([180, 0, 0]) lid();
 }
+```
+
+## BOSL2 Attachment Model & Semantic Alignment
+
+When using the **BOSL2** library (`include <BOSL2/std.scad>`), avoid manual nested `translate()` and `rotate()` trigonometry. Instead, use BOSL2's semantic attachment system:
+
+```openscad
+include <BOSL2/std.scad>
+
+// Attach a cylinder directly to the TOP face of a cuboid:
+cuboid([40, 30, 15], rounding=3, anchor=BOTTOM) {
+    // Child geometry attaches relative to parent surface
+    attach(TOP, align=CENTER)
+        cyl(d=12, h=10, anchor=BOTTOM);
+        
+    // Attach screw boss to the RIGHT side
+    position(RIGHT)
+        cyl(d=8, h=6, anchor=LEFT);
+}
+```
+
+### BOSL2 Anchors Reference
+- **Cardinal Anchors**: `TOP`, `BOTTOM`, `LEFT`, `RIGHT`, `FRONT`, `BACK`, `CENTER`.
+- **Compound Anchors**: `TOP+RIGHT`, `BOTTOM+FRONT+LEFT`.
+- **`attach()` vs `position()`**:
+  - `attach(face)`: Re-orients the child so its default bottom attaches perpendicular to the parent's face.
+  - `position(face)`: Moves the child to the parent's anchor point without rotating it.
+
+---
+
+## Headless CLI Image & STL Rendering (Zero-MCP Fallback)
+
+If the OpenSCAD MCP server is unavailable, render previews directly from the command line:
+
+```bash
+# 1. Fast PNG preview render with Manifold backend & custom camera
+openscad -o preview.png --camera=0,0,0,55,0,25,120 --imgsize=1024,768 --colorscheme="Tomorrow Night" --backend=manifold model.scad
+
+# 2. Orthographic top-down / front view
+openscad -o top_view.png --projection=o --camera=0,0,0,0,0,0,100 model.scad
+
+# 3. Export production STL or 3MF
+openscad -o output.stl --backend=manifold model.scad
+openscad -o output.3mf --backend=manifold model.scad
 ```
 
 ---

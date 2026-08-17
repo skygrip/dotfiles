@@ -1,19 +1,26 @@
 ---
 name: log-analysis
-description: Explore, inspect, schema-discover, search, detect outliers, scan for PII/secrets, run hybrid semantic searches (ck), view interactive timelines (lnav), and run ML/AI analysis (Isolation Forest, fastembed, openai/privacy-filter) on log files and datasets (JSON/JSONL, CSV, Parquet) using DuckDB CLI, jq, ripgrep, Miller, lnav, ck, and Pi Agent.
+description: Triage, search, and detect anomalies in large log files (JSONL, CSV, Parquet). Use 'rg -i -C 5 "error"' for stack traces, DuckDB for time-window SQL ('duckdb -c "SELECT ..."'), and 'mlr' for streaming records.
 ---
 
 # Log & Data Analysis Exploration
 
-This skill provides a systematic routine for exploring, schema-discovering, searching, detecting statistical & ML outliers, and scanning for PII/secrets in unknown or unusual datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **DuckDB CLI**, **jq**, **ripgrep (`rg`)**, **Miller (`mlr`)**, **Log File Navigator (`lnav`)**, **`ck` (`ck-search`)**, **scikit-learn**, **OpenAI Privacy Filter**, and **Pi Agent (`pi`)**.
+This skill provides a systematic routine for exploring, schema-discovering, searching, and detecting anomalies in datasets (such as application logs, M365 audit logs, event streams, large CSVs, or nested JSON/JSONL dumps) using **ripgrep (`rg`)**, **DuckDB CLI**, **Miller (`mlr`)**, **jq**, and **`ck` (`ck-search`)**.
+
+> [!WARNING]
+> **Headless / Non-Interactive Execution:**
+> `lnav` is an interactive curses TUI application that will hang autonomous agent subshells if launched without arguments. The agent must use **`rg`**, **`duckdb -c`**, or **`mlr`** for automated batch queries. Recommend `lnav ./logs/` directly to the human user for visual timeline navigation.
+
+> [!TIP]
+> - For scanning repositories, logs, or configs for leaked credentials, API keys, or access tokens, use the **`secret-scanning`** skill (`trufflehog`).
+> - For auditing logs or datasets for personal data exposures (names, emails, SSNs, credit cards), use the **`pii-detection`** skill (`openai/privacy-filter`).
 
 ---
 
 ## 🎯 Target Use Cases & Solved Problems
 
-* **🛡️ Security & M365 Audit Log Analysis**: Unpack stringified `AuditData` payloads and flag suspicious logins, file downloads, or privilege escalations.
-* **⚡ Multi-Gigabyte File Reconnaissance**: Instantly scan 500MB+ raw logs for error codes, IP addresses, or stack traces without memory lag.
-* **🔒 Pre-Sharing PII & Secret Redaction**: Detect and redact API keys, JWTs, emails, credit cards, and credentials before exporting or sharing logs.
+* **⚡ Multi-Gigabyte File Reconnaissance**: Instantly scan 500MB+ raw logs for error codes, IP addresses, or stack traces without memory lag using `rg`.
+* **🛡️ Security & M365 Audit Log Analysis**: Unpack stringified `AuditData` payloads and flag suspicious logins, file downloads, or privilege escalations with DuckDB SQL.
 * **🤖 Semantic Anomaly & Rare Event Detection**: Group unstructured error logs into semantic clusters to discover rare, unseen system bugs.
 
 ---
@@ -23,18 +30,17 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 | Task / Goal | Recommended Tool | One-Liner / Quick Syntax |
 | :--- | :--- | :--- |
 | **Raw Text & Stack Traces** | `ripgrep` | `rg -i -U -C 5 "exception|failed|unauthorized" ./logs/` |
-| **Interactive TUI & Merged Timeline** | `lnav` | `lnav ./logs/` (auto-detects formats, merges timestamps, runs SQL) |
 | **Time-Window Slicing** | `DuckDB SQL` | `duckdb -c "SELECT * FROM 'logs.jsonl' WHERE TRY_CAST(ts AS TIMESTAMP) BETWEEN '2026-08-14 02:00:00' AND '2026-08-14 04:00:00';"` |
 | **Format Conversion (JSONL $\rightarrow$ CSV)** | `Miller` | `mlr --ijsonl --ocsv cat app_logs.jsonl > output.csv` |
 | **Quick JSON Key Inspection** | `jq` | `jq -c '{time: .timestamp, msg: .message}' logs.jsonl \| head -n 10` |
 | **Schema Discovery & JSON Keys** | `DuckDB CLI` | `duckdb -c "SELECT json_structure(AuditData) FROM 'm365.json' LIMIT 1;"` |
+| **Interactive TUI (Human User)** | `lnav` | Run `lnav ./logs/` (Interactive TUI with merged timestamps) |
 | **M365 Nested JSON (Arrow Syntax)** | `DuckDB SQL` | `duckdb -c "SELECT CreationTime, AuditData->>'UserId' AS user, AuditData->>'ClientIP' AS ip FROM 'm365.json';"` |
 | **Statistical Outliers (Z-Score)** | `DuckDB SQL` | `duckdb -c "SELECT *, (val - AVG(val) OVER()) / NULLIF(STDDEV_POP(val) OVER(), 0) AS z FROM 'data.csv' WHERE ABS(z) > 3.0;"` |
 | **Multi-Variable ML Anomalies** | `scikit-learn` | `clean_df['anomaly_label'] = IsolationForest(contamination=0.01).fit_predict(feature_df)` |
 | **Hybrid & Semantic Search (CLI)** | `ck` | `ck --hybrid "unauthorized privilege escalation"` |
 | **Semantic Log Clustering** | `fastembed` | `TextEmbedding('snowflake/snowflake-arctic-embed-m-v1.5').embed(cleaned_lines)` |
-| **PII & Secret Audit Scan** | Python (`privacy-filter`) | Python Script (Phase 4B): `pii_grep("./logs/", batch_size=64, output_csv="pii_audit.csv")` |
-| **AI Threat Summarization** | `DuckDB` + `pi` | `duckdb -c "SELECT ... FROM 'm365.json'" \| pi "Analyze suspicious security events"` |
+| **AI Threat Summarization** | `DuckDB` + `pi` | `duckdb -c "SELECT ... FROM 'm365.json'" \| pi -p "Analyze suspicious security events"` |
 | **Export Query to Parquet** | `DuckDB` | `duckdb -c "COPY (SELECT * FROM 'data.csv') TO 'out.parquet' (FORMAT PARQUET);"` |
 
 ---
@@ -50,7 +56,8 @@ This skill provides a systematic routine for exploring, schema-discovering, sear
 * **Format Conversion (`JSONL` $\leftrightarrow$ `CSV`) or Column Re-ordering?** $\rightarrow$ Use **`Miller` (`mlr`)**.
 * **Quick One-Line JSON Field Inspection?** $\rightarrow$ Use **`jq`**.
 * **Multi-Variable Anomaly Detection across Columns?** $\rightarrow$ Use **`IsolationForest`** (scikit-learn).
-* **PII & Secret Audit Scanning?** $\rightarrow$ Use **`openai/privacy-filter`** (`pii_grep`).
+* **Credential & Secret Key Scanning?** $\rightarrow$ Use the **`secret-scanning`** skill (`trufflehog`).
+* **Personal Identity & PII Exposure Audit?** $\rightarrow$ Use the **`pii-detection`** skill (`openai/privacy-filter`).
 
 ---
 
@@ -124,94 +131,25 @@ lnav /var/log/syslog /var/log/nginx/access.log.gz
 
 ## 2. Phase 2: Encoding, Preprocessing & Schema Discovery
 
-### A. Universal Multi-Encoding Python Streamer & Text Sanitizer
+### A. Handling Encodings & Compressed Logs via CLI
 
-Memory-safe generator supporting UTF-8, UTF-16 (Windows Event Logs / IIS), and Latin-1 automatically, while masking volatile dynamic tokens (ISO 8601, Apache/Nginx, Syslog timestamps, 10/13-digit Epochs, Bearer tokens, IPs, UUIDs, Hex addresses, Hashes):
+Modern CLI tools handle compressed archives and mixed encodings without writing Python scripts:
 
-```python
-import re
-import gzip
-from pathlib import Path
-from typing import Generator
+```bash
+# 1. Ripgrep compressed logs (.gz) and UTF-16 logs directly (-z flag)
+rg -z -i "exception|fatal" ./logs/archive.log.gz
 
-def stream_log_lines(filepath: str, max_lines: int = None) -> Generator[str, None, None]:
-    """
-    Memory-safe streaming log reader with BOM sniffing and strict-fallback decoding.
-    Handles UTF-8, UTF-8-BOM, UTF-16LE, UTF-16BE, Latin-1, and compressed .gz files.
-    """
-    path = Path(filepath)
-    is_gz = path.suffix.lower() == '.gz'
+# 2. Convert UTF-16 (Windows Event Logs / IIS) to clean UTF-8 on the fly
+# PowerShell:
+Get-Content -Encoding Unicode u_ex240817.log | Set-Content -Encoding UTF8 utf8_access.log
+# Linux / Bash:
+iconv -f UTF-16LE -t UTF-8 raw_win.log -o utf8_win.log
 
-    # 1. Sniff BOM bytes to avoid decoding trial loops
-    encoding = None
-    try:
-        if is_gz:
-            with gzip.open(path, 'rb') as bf:
-                head = bf.read(4)
-        else:
-            with open(path, 'rb') as bf:
-                head = bf.read(4)
-                
-        if head.startswith(b'\xef\xbb\xbf'):
-            encoding = 'utf-8-sig'
-        elif head.startswith(b'\xff\xfe'):
-            encoding = 'utf-16-le'
-        elif head.startswith(b'\xfe\xff'):
-            encoding = 'utf-16-be'
-    except Exception:
-        pass
-
-    # 2. Fallback hierarchy: explicit BOM -> utf-8 -> utf-16 -> latin-1
-    encodings_to_try = [encoding] if encoding else ['utf-8', 'utf-16', 'latin-1']
-    
-    for enc in encodings_to_try:
-        try:
-            # Verify sample on strict decoding
-            if is_gz:
-                with gzip.open(path, 'rt', encoding=enc, errors='replace') as f:
-                    for count, line in enumerate(f, 1):
-                        if max_lines and count > max_lines:
-                            break
-                        clean = line.replace('\x00', '').strip()
-                        if clean:
-                            yield clean
-            else:
-                with open(path, 'r', encoding=enc, errors='replace') as f:
-                    for count, line in enumerate(f, 1):
-                        if max_lines and count > max_lines:
-                            break
-                        clean = line.replace('\x00', '').strip()
-                        if clean:
-                            yield clean
-            return
-        except (UnicodeDecodeError, UnicodeError):
-            continue
-
-def read_log_file(filepath: str, max_lines: int = 10000) -> list[str]:
-    """Read log file into memory with a safe maximum line limit (default: 10,000 lines)."""
-    return list(stream_log_lines(filepath, max_lines=max_lines))
-
-def clean_log_text(text: str) -> str:
-    """Normalize log text by replacing timestamps, auth tokens, IPs, UUIDs, hex addresses, and hashes with placeholders."""
-    # 1. ISO 8601 & RFC 3339 timestamps (handles Z, +00:00, subseconds)
-    text = re.sub(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?', '<TS>', text)
-    # 2. Apache/Nginx (19/Jul/2026:15:48:35 +0000) & Syslog (Jul 19 15:48:35)
-    text = re.sub(r'\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}', '<TS>', text)
-    text = re.sub(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?\b', '<TS>', text)
-    # 3. Unix Epochs: 10-digit seconds / 13-digit milliseconds
-    text = re.sub(r'\b1[6-9]\d{8}(?:\d{3})?\b', '<EPOCH>', text)
-    # 4. Bearer & JWT tokens
-    text = re.sub(r'Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*', 'Bearer <TOKEN>', text, flags=re.IGNORECASE)
-    text = re.sub(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b', '<JWT>', text)
-    # 5. IPv4 & IPv6 (compressed and uncompressed)
-    text = re.sub(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', '<IP4>', text)
-    text = re.sub(r'(?:[0-9a-fA-F]{1,4}:){1,7}:?|::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}', '<IP6>', text)
-    # 6. UUIDs / GUIDs
-    text = re.sub(r'\b[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b', '<UUID>', text)
-    # 7. Memory Hex Addresses & Hashes (MD5/SHA256)
-    text = re.sub(r'\b0x[0-9a-fA-F]+\b', '<HEX_ADDR>', text)
-    text = re.sub(r'\b[0-9a-fA-F]{32,64}\b', '<HASH>', text)
-    return text.strip()
+# 3. DuckDB direct querying of compressed archives (.gz / .zstd)
+duckdb -c "
+SELECT * FROM read_json_auto('logs/**/*.jsonl.gz', union_by_name=true, ignore_errors=true)
+LIMIT 10;
+"
 ```
 
 ### B. SQL-Level Date, Timestamp Parsing & Time-Window Slicing (DuckDB)
@@ -243,17 +181,22 @@ ORDER BY timestamp ASC;
 
 ### C. Schema & Deep JSON Structure Discovery (`DuckDB CLI`)
 
-Run schema discovery to inspect deeply nested structs and dynamic JSON payloads without guesswork:
+Run schema discovery to inspect deeply nested structs, dynamic JSON payloads, and Parquet metadata without guesswork:
 
 ```bash
-# Discover column names and inferred data types from JSON/CSV files
+# 1. Zero-Read Parquet Metadata & Schema (Instant introspection without reading data rows)
+duckdb -c "SELECT * FROM parquet_schema('telemetry.parquet');"
+duckdb -c "SELECT file_name, row_group_id, num_rows, total_byte_size FROM parquet_metadata('telemetry.parquet');"
+duckdb -c "SELECT path_in_schema, stats_min, stats_max, stats_null_count FROM parquet_metadata('telemetry.parquet');"
+
+# 2. Discover column names and inferred data types from JSON/CSV files
 duckdb -c "DESCRIBE SELECT * FROM read_json_auto('logs.jsonl');"
 duckdb -c "DESCRIBE SELECT * FROM read_csv_auto('access_logs.csv');"
 
-# Inspect exact nested schema tree of dynamic JSON payload strings (e.g. M365 AuditData)
+# 3. Inspect exact nested schema tree of dynamic JSON payload strings (e.g. M365 AuditData)
 duckdb -c "SELECT json_structure(AuditData) FROM 'm365_unified_audit_log.json' LIMIT 1;"
 
-# List all distinct top-level JSON keys inside a stringified payload column
+# 4. List all distinct top-level JSON keys inside a stringified payload column
 duckdb -c "SELECT DISTINCT json_keys(AuditData) FROM 'm365_unified_audit_log.json' LIMIT 5;"
 ```
 
@@ -400,214 +343,49 @@ ck --hybrid "database connection pool exhausted or timeout"
 ck --hybrid --json -p ./logs/ "unhandled exception in auth"
 ```
 
-### D. Semantic Log Clustering & Rare Event Detection (`fastembed` / Hugging Face)
+### D. Semantic Log Clustering & Rare Event Detection (`fastembed`)
 
-**Context**: Used for programmatic Python pipelines when computing vector distance matrices (e.g. flagging top 2% rare, unseen log categories).
-
-**Recommended Embedding Models**:
-* **`snowflake/snowflake-arctic-embed-m-v1.5`** ⭐ *(Recommended for logs & enterprise code/JSON)*: Ultra-high precision on technical text (512-token context limit).
-* **`nomic-ai/nomic-embed-text-v1.5`** ⭐ *(Best for long stack traces)*: Supports **8,192 token context window**.
+For computing vector distance matrices on unstructured error text to flag the top 2% rare, unseen system bugs:
 
 ```python
 import numpy as np
 from fastembed import TextEmbedding
 
-# 1. Load logs handling UTF-8/UTF-16 encodings & clean text using standard helper (Phase 2)
-raw_lines = read_log_file('server_app.log')
-cleaned_lines = [clean_log_text(line) for line in raw_lines]
+# 1. Load log lines and generate embeddings (Snowflake Arctic Embed or Nomic v1.5)
+lines = [line.strip() for line in open('server_app.log', 'r', encoding='utf-8', errors='replace') if line.strip()][:5000]
+model = TextEmbedding(model_name="snowflake/snowflake-arctic-embed-m-v1.5")
+embeddings = list(model.embed(lines))
 
-if not cleaned_lines:
-    print("No valid log lines found.")
-    exit(0)
-
-# 2. Generate embeddings using Snowflake Arctic Embed (512 token limit; use nomic-embed-text-v1.5 for long stack traces)
-# FastEmbed embed() yields vectors lazily; for huge datasets (>100k lines), iterate over batch chunks.
-embedding_model = TextEmbedding(model_name="snowflake/snowflake-arctic-embed-m-v1.5")
-embeddings = list(embedding_model.embed(cleaned_lines))
-
-# 3. Compute distance from mean embedding vector to identify rare log anomalies
+# 2. Compute distance from mean embedding vector to flag rare anomalies (> 98th percentile)
 mean_vec = np.mean(embeddings, axis=0)
 distances = [np.linalg.norm(vec - mean_vec) for vec in embeddings]
-threshold = np.percentile(distances, 98) # Top 2% rarest logs
+threshold = np.percentile(distances, 98)
 
 print("=== RARE LOG ANOMALIES DETECTED ===")
-for orig, dist in zip(raw_lines, distances):
+for line, dist in zip(lines, distances):
     if dist > threshold:
-        print(f"[Anomaly Score: {dist:.2f}] {orig}")
+        print(f"[{dist:.2f}] {line}")
 ```
 
 ---
 
-## 4. Phase 4: Privacy, Exporting & AI Summarization
+## 4. Phase 4: Exporting & AI Summarization Pipeline
 
-Before storing or sharing log exports, scan for exposed API keys, credentials, and PII.
-
-### A. Fast Secret Scanning via `ripgrep` (`rg`)
-
-Scans raw logs for AWS access keys, JWTs, RSA private keys, and Bearer tokens:
-
-```bash
-# Scan for AWS Access Keys (AKIA...)
-rg "AKIA[0-9A-Z]{16}" ./logs/
-
-# Scan for RSA/PEM Private Keys (including EC, DSA, ENCRYPTED)
-rg -i "BEGIN (RSA|EC|DSA|OPENSSH|PRIVATE|ENCRYPTED PRIVATE) KEY" ./logs/
-
-# Scan for Bearer tokens or JWTs (min length 20 to reduce false positives)
-rg -i "Bearer [A-Za-z0-9\-\._~\+\/]{20,}" ./logs/
-```
-
-### B. AI PII & Secret Scanner (`openai/privacy-filter` Auditor / PII Grep Script)
-
-**Context**: `openai/privacy-filter` is OpenAI's Apache 2.0 open-weight token classification model (128,000 token context window). 
-
-> **Note**: `pii_grep` is a self-contained Python audit script defined below. You can run it directly or save it as `pii_grep.py` to scan log folders.
-
-**Supported Span Categories**:
-1. `SECRET` (API keys, credentials, tokens, passwords)
-2. `PRIVATE_PERSON` (Names, usernames)
-3. `PRIVATE_EMAIL` (Email addresses)
-4. `PRIVATE_PHONE` (Phone numbers)
-5. `PRIVATE_ADDRESS` (Physical addresses, locations)
-6. `ACCOUNT_NUMBER` (Credit cards, bank accounts, SSNs)
-7. `PRIVATE_URL` (Internal/private URLs)
-8. `PRIVATE_DATE` (Birthdates, sensitive timestamps)
-
-```python
-# Install: uv pip install --python 3.13 --system --break-system-packages transformers torch rich
-import csv
-import json
-from pathlib import Path
-from transformers import pipeline
-from rich.console import Console
-
-console = Console()
-
-# 1. Initialize OpenAI Privacy Filter model
-privacy_filter = pipeline(task="token-classification", model="openai/privacy-filter")
-
-PII_DESCRIPTIONS = {
-    "SECRET": "API Key / Credential / Password",
-    "PRIVATE_PERSON": "Personal Name / Username",
-    "PRIVATE_EMAIL": "Email Address",
-    "PRIVATE_PHONE": "Phone Number",
-    "PRIVATE_ADDRESS": "Physical Address / Location",
-    "ACCOUNT_NUMBER": "Credit Card / Bank Account / SSN",
-    "PRIVATE_URL": "Internal / Sensitive Web URL",
-    "PRIVATE_DATE": "Date of Birth / Sensitive Date"
-}
-
-def pii_grep(
-    target_path_str: str, 
-    min_confidence: float = 0.85, 
-    batch_size: int = 64,
-    output_csv: str = None, 
-    output_jsonl: str = None,
-    quiet: bool = False
-):
-    """Scan files/directories for PII & secrets with batched pipeline inference for high GPU/CPU throughput."""
-    target_path = Path(target_path_str)
-    files = list(target_path.rglob("*.*")) if target_path.is_dir() else [target_path]
-    
-    if not quiet:
-        console.print(f"[bold yellow]=== SCANNING FOR PII & SECRETS IN: {target_path_str} ===[/bold yellow]\n")
-    
-    findings = []
-
-    def process_batch(batch_lines, batch_nums, current_file):
-        try:
-            batch_results = privacy_filter(batch_lines, aggregation_strategy="simple")
-            for line_num, line_str, entities in zip(batch_nums, batch_lines, batch_results):
-                valid_entities = [e for e in entities if e['score'] >= min_confidence]
-                for entity in valid_entities:
-                    label = entity['entity_group'].upper()
-                    score = entity['score']
-                    word = entity['word'].strip()
-                    desc = PII_DESCRIPTIONS.get(label, "Sensitive PII Data")
-                    
-                    record = {
-                        "file": str(current_file),
-                        "line_num": line_num,
-                        "category": label,
-                        "description": desc,
-                        "confidence": round(score, 4),
-                        "matched_value": word,
-                        "line_content": line_str
-                    }
-                    findings.append(record)
-                    
-                    if not quiet:
-                        console.print(
-                            f"[bold cyan]{current_file}:{line_num}[/bold cyan] "
-                            f"[[bold red]{label}[/bold red] ({desc}) - {score:.2%}] "
-                            f"[yellow]Found: '{word}'[/yellow]\n"
-                            f"  [dim]Line: {line_str}[/dim]\n"
-                        )
-        except Exception as e:
-            if not quiet:
-                console.print(f"[dim yellow]Skipping batch in {current_file}: {e}[/dim yellow]")
-
-    for file_path in files:
-        if file_path.is_dir() or file_path.suffix in ['.parquet', '.zip', '.gz', '.png', '.jpg']:
-            continue
-            
-        try:
-            batch_lines, batch_nums = [], []
-            for line_num, line_str in enumerate(stream_log_lines(str(file_path)), 1):
-                batch_lines.append(line_str)
-                batch_nums.append(line_num)
-                
-                if len(batch_lines) >= batch_size:
-                    process_batch(batch_lines, batch_nums, file_path)
-                    batch_lines, batch_nums = [], []
-            
-            if batch_lines:
-                process_batch(batch_lines, batch_nums, file_path)
-        except Exception as e:
-            if not quiet:
-                console.print(f"[dim yellow]Skipping {file_path}: {e}[/dim yellow]")
-            continue
-
-    # Export to CSV (ideal for Excel / spreadsheet auditing)
-    if output_csv:
-        csv_path = Path(output_csv)
-        with open(csv_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["file", "line_num", "category", "description", "confidence", "matched_value", "line_content"])
-            writer.writeheader()
-            writer.writerows(findings)
-        console.print(f"[bold green]Saved {len(findings)} findings to CSV: {csv_path}[/bold green]")
-
-    # Export to JSONL (ideal for DuckDB / jq analysis)
-    if output_jsonl:
-        jsonl_path = Path(output_jsonl)
-        with open(jsonl_path, "w", encoding="utf-8") as f:
-            for item in findings:
-                f.write(json.dumps(item) + "\n")
-        console.print(f"[bold green]Saved {len(findings)} findings to JSONL: {jsonl_path}[/bold green]")
-
-    if not quiet:
-        console.print(f"[bold green]Scan complete. Total findings: {len(findings)}[/bold green]")
-
-# Run PII Grep scan on a file or directory and export to CSV
-if __name__ == "__main__":
-    pii_grep("./logs/", output_csv="pii_audit_results.csv", output_jsonl="pii_audit_results.jsonl")
-```
-
-### C. AI Log Threat Summarization Pipeline (Pi Agent `pi`)
+### A. AI Log Threat Summarization Pipeline (Pi Agent `pi`)
 
 Pipe DuckDB query outputs directly into Pi Agent (`pi`) for automated AI threat & anomaly analysis:
 
 ```bash
-# Filter anomalous events via DuckDB and pipe directly to Pi Agent for analysis
+# Filter anomalous events via DuckDB and pipe directly to Pi Agent for non-interactive analysis (-p)
 duckdb -c "
 SELECT CreationTime, Operation, parse_json(AuditData).UserId, parse_json(AuditData).ClientIP
 FROM read_json_auto('m365_log.json')
 WHERE Operation IN ('Set-Mailbox', 'Add member to role', 'MailItemsAccessed')
 LIMIT 50;
-" | pi "Analyze these M365 security log entries for suspicious account compromise or persistence activity."
+" | pi -p "Analyze these M365 security log entries for suspicious account compromise or persistence activity."
 ```
 
-### D. Exporting Query Results
+### B. Exporting Query Results
 
 ```bash
 # Export filtered log search results to CSV
@@ -630,14 +408,14 @@ COPY (
 
 ## Workflow Checklist for Pi Agent
 
-1. **Detect File Type**: Check extension (`.json`, `.jsonl`, `.csv`, `.parquet`).
-2. **Pre-Filter String Search**: Use `rg` for instant pattern/IP searching on raw un-parsed log dumps.
-3. **Format Conversion & Preprocessing**: Use `mlr` if converting JSONL $\leftrightarrow$ CSV; use `read_log_file()` / `clean_log_text()` to handle encodings (UTF-8/UTF-16) and mask timestamps/IPs/UUIDs.
+1. **Detect File Type**: Check extension (`.json`, `.jsonl`, `.csv`, `.parquet`, `.gz`).
+2. **Pre-Filter String Search**: Use `rg` (or `rg -z` for compressed) for instant pattern/IP searching on raw un-parsed log dumps.
+3. **Format Conversion & Slicing**: Use `mlr` if converting JSONL $\leftrightarrow$ CSV or reordering fields.
 4. **Quick CLI Probe**: Use `jq` for instant one-line inspection of small JSON files.
-5. **Run Schema Inspection**: Execute `duckdb -c "DESCRIBE SELECT * FROM read_..."` to map field names.
-6. **Outlier & Anomaly Detection**: Execute Z-Score / IQR SQL queries in DuckDB or run `IsolationForest` / `fastembed` ML for multi-variable/text anomalies.
-7. **AI Summarization Pipeline**: Pipe filtered anomalies into `pi` for automated analysis.
-8. **Scan for Secrets & PII**: Run `rg` secret patterns or `openai/privacy-filter` prior to sharing/exporting log exports.
+5. **Run Schema Inspection**: Execute `duckdb -c "DESCRIBE SELECT * FROM read_..."` or `parquet_schema(...)`.
+6. **Outlier & Anomaly Detection**: Execute Z-Score / IQR SQL queries in DuckDB, search conceptually with `ck`, or run `IsolationForest` ML for multi-variable anomalies.
+7. **AI Threat Summarization**: Pipe filtered anomalies into `pi -p` for automated threat analysis.
+8. **Pre-Sharing Security Audit**: Run `secret-scanning` (`trufflehog`) or `pii-detection` prior to sharing exports.
 9. **Present Clean Summary**: Format query outputs cleanly for the user.
 
 ---
@@ -655,6 +433,6 @@ npm install -g @beaconbay/ck-search
 # Windows (PowerShell): [Environment]::SetEnvironmentVariable("CK_INDEX_DIR", "$env:LOCALAPPDATA\ck\indexes", "User")
 # Linux / macOS (Bash/Zsh): export CK_INDEX_DIR="$HOME/.cache/ck/indexes"
 
-# Python Libraries (for ML tabular & PII scripts)
-uv pip install duckdb pandas scikit-learn fastembed transformers torch rich
+# Python Libraries (for ML tabular anomaly detection)
+uv pip install duckdb pandas scikit-learn fastembed
 ```

@@ -1,76 +1,190 @@
 ---
 name: batch-automator
-description: Generates robust shell or Python scripts to automate batch operations across file glob patterns, providing instructions for the user.
+description: Advise the user and generate copy-pasteable sequential 'pi -p' shell commands for the user to execute bulk refactoring, docstrings, or audits across 100+ files in their own terminal.
 ---
 
-# Skill: Batch Automator
+# Batch Automator Skill (Unix-Style Headless Automation)
 
-Use this skill whenever the user requests a batch operation, repetitive edit, audit, or sequential task across a file glob pattern.
+This skill guides the agent on **advising the user and generating ready-to-run shell commands** so the human engineer can execute large-scale batch refactoring, audits, or migrations across hundreds of files using **headless `pi -p` execution**.
 
----
-
-## 🎯 Target Use Cases & Solved Problems
-
-* **🔗 Repository & Document Audits**: Scan 100+ Markdown files for broken links, typos, or security vulnerabilities without chat session history bloat (`--tools read`).
-* **📝 Automated Documentation & Docstrings**: Batch-generate JSDoc/docstrings across all source files in a codebase (`--tools "read,write"`).
-* **🌍 i18n & Documentation Translation**: Translate entire documentation directories into target languages while keeping code blocks intact.
-* **🔄 Library & Breaking API Migrations**: Refactor deprecated method calls or config schemas across 50+ component files in a single pass.
+> [!IMPORTANT]
+> **Agent Execution Policy (Anti-Self-Execution):**
+> **Do NOT run these batch loops yourself.** 
+> Your role is to inspect the user's workspace, verify the file pattern, and generate the exact, pre-configured PowerShell or Bash command for the **user to run in their own terminal**.
 
 ---
 
-## 🎯 Core Philosophy & Agent Role
+## 🎯 Industry Best Practice: The "Unix Philosophy for LLMs"
 
-The primary purpose of this skill is to **provide clear instructions and ready-to-use scripts directly to the user** so they can run the automation safely, transparently, and efficiently in their own terminal. 
+Industry tools (Simon Willison's `llm`, Anthropic's `claude -p`, Aider, Pi) have converged on headless shell loops over complex multi-agent frameworks for repository-wide batch migrations:
 
-Do NOT attempt to process files one-by-one inside our active conversation history. Instead, default to the **Shell/Python Loop approach** as the primary execution model, and guide the user on how to run it.
-
----
-
-## 🛑 Anti-Self-Execution Guardrail
-
-* **NEVER** run the commands in this skill file yourself; only instruct the user to run them.
+1. **Prevents "Context Melting"**: Processing 100 files in a single conversation history degrades LLM attention, causes hallucinations, and burns hundreds of thousands of tokens. A loop gives each file a fresh, focused ~2,000-token micro-context.
+2. **Sequential by Default (Zero Concurrency)**: Running 1 file at a time prevents API rate-limiting, eliminates lock contention, keeps terminal output readable, and allows graceful `Ctrl+C` interruption.
+3. **Safety & Verification via Git**: The loop runs on a dedicated git branch, making verification trivial using `git diff --stat` and automated test suites.
 
 ---
 
-## 🚦 Strategy Selection (Shell/Python is Default)
+## 🛡️ Headless Fail-Safe Flags
 
-1. **The Default: Shell/Python Loop (Option B - Highly Recommended)**
-   - **Why:** Zero-setup friction, massive speed advantage (especially on Windows), and supports parallel execution out of the box.
-   - **How it works:** You write a robust Python script (`batch_runner.py`) or supply a Git Bash command, and instruct the user on how to run it.
-   - **Read more/Get Templates:** See [shell-loop.md](./shell-loop.md) for full instructions and pre-written scripts.
+To prevent headless hangs, infinite loops, and startup latency, all generated commands must include these flags:
 
-2. **The Small-Batch Fallback: Direct Subagent Delegation (Option C)**
-   - **Why:** Best for small batch counts (2 to 6 files or distinct tasks). Zero setup, zero scripts, zero extensions to clean up.
-   - **How it works:** Spawns concurrent background subagents (`invoke_subagent`) that run in parallel threads and report findings directly back to the active conversation.
-   - **Read more/Get Templates:** See [subagent-loop.md](./subagent-loop.md).
-
-3. **The Advanced Fallback: In-Process Extension Loop (Option A)**
-   - **Why:** Only use this if the task is highly complex, requires "Rolling Notes" (where file N+1 depends on findings from file N), or requires the subagent to interactively run compile/test commands to self-correct in-place.
-   - **How it works:** Compiles a temporary TypeScript extension and loads it into the Pi environment via `/reload`.
-   - **Read more/Get Templates:** See [extension-loop.md](./extension-loop.md).
+| Flag / Environment Variable | Purpose |
+| :--- | :--- |
+| `PI_SKIP_VERSION_CHECK=1` | Disables online version checks on every iteration (speeds up loop startup). |
+| `NODE_OPTIONS="--dns-result-order=ipv4first"` | Prevents IPv6 DNS lookup stalls on network requests. |
+| `--approve` (`-a`) | Auto-approves project-local files and extensions without prompting. |
+| `--no-session` | Prevents writing hundreds of junk `.jsonl` session files to disk. |
+| `--exclude-tools ask_question` | Prevents the model from attempting interactive stdin prompts that hang subshells. |
+| **Wall-Clock Timeout** (`90s`) | Prevents the entire loop from freezing if a single API call stalls. |
 
 ---
 
-## 📋 Agent Instruction Workflow (Default Path)
+## 📋 Agent Workflow: How to Advise the User
 
-When a batch request is received, follow these exact steps to instruct and empower the user:
+When a user requests a bulk task across a codebase:
 
-### Propose the Script & Pattern
+1. **Inspect Workspace Pattern**: Use your tools to check directory structure and confirm the file glob (e.g. `src/**/*.ts`, `docs/**/*.md`).
+2. **Draft the Focused `pi -p` Prompt**: Craft a clear, single-purpose instruction for the micro-task (e.g. `"Add TypeScript 5 const type parameters to exported generics"`).
+3. **Advise Git Branch Isolation**: Remind the user to run on a clean branch (`git checkout -b chore/batch-refactor`).
+4. **Generate the Copy-Paste Command**: Provide a ready-to-run PowerShell (Windows) or Bash (Linux/macOS) snippet pre-populated with their exact paths, prompt, timeouts, and safety flags.
+5. **Provide Verification Step**: Show them how to verify results with `git diff --stat` or test suites once the run finishes.
 
-Present the matched files (or glob pattern) and explain that you will create a standalone script in their workspace to execute the task.
+---
 
-### Write the Script to the Workspace
+## 💻 Command Recipes to Generate for the User
 
-Write the robust python batch runner to `.pi/batch_runner.py` or a relative `scripts/batch_runner.py` using your write tool, pre-configuring it with the user's specific task prompt and glob patterns.
-*(See [shell-loop.md](./shell-loop.md) for the pre-written, standard-library Python runner template).*
+### 1. Sequential File Transformation / Refactoring (Recommended Default)
 
-### Provide Execution Instructions
+#### Windows (PowerShell)
+```powershell
+# 1. Create a dedicated branch
+git checkout -b chore/batch-refactor
 
-Provide a highly polished, step-by-step terminal execution instruction block to the user:
-- How to perform a **dry run** to verify file matching.
-- How to run **sequentially** (safely) or **in parallel** (fast, e.g. `-j 4`).
-- Where the final markdown logs will be saved (`batch_run_report.md`).
+# 2. Set startup network safeguards
+$env:PI_SKIP_VERSION_CHECK = "1"
+$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
 
-### Keep the Workspace Clean
+# 3. Run sequential micro-context refactoring loop
+Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object {
+    $file = $_.FullName
+    Write-Host "➡️ Processing: $($_.Name)"
+    
+    # Run with approve, no-session, and exclude interactive ask_question
+    pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+}
 
-Remind the user that once the batch run is complete and verified, they can safely delete the temporary `batch_runner.py` file.
+# 4. Verify changes
+git diff --stat
+```
+
+#### Linux / macOS (Bash)
+```bash
+# 1. Create a dedicated branch
+git checkout -b chore/batch-refactor
+
+# 2. Set startup network safeguards
+export PI_SKIP_VERSION_CHECK=1
+export NODE_OPTIONS="--dns-result-order=ipv4first"
+
+# 3. Run sequential loop with 90-second per-file wall-clock timeout
+find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
+    echo "➡️ Processing: $file"
+    timeout 90s pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+done
+
+# 4. Verify changes
+git diff --stat
+```
+
+---
+
+### 2. Hardened Auto-Resume Loop with Timeout (`.batch_done.txt`)
+
+For large batches (50+ files), include this resume pattern so the user can pause (`Ctrl+C`) and resume anytime without re-running completed files:
+
+#### Windows (PowerShell)
+```powershell
+$doneFile = ".batch_done.txt"
+if (!(Test-Path $doneFile)) { New-Item $doneFile -ItemType File | Out-Null }
+
+$env:PI_SKIP_VERSION_CHECK = "1"
+$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
+
+Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { 
+    $done = Get-Content $doneFile
+    $done -notcontains $_.FullName -and $_.FullName -notmatch "node_modules|\.git"
+} | ForEach-Object {
+    $file = $_.FullName
+    Write-Host "Processing ($([System.IO.Path]::GetFileName($file)))..."
+    
+    # Execute with approve, no-session, and tools allowlist
+    pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    
+    if ($LASTEXITCODE -eq 0) {
+        Add-Content -Path $doneFile -Value $file
+    } else {
+        Write-Warning "⚠️ Issue encountered on $file (Exit Code: $LASTEXITCODE)"
+    }
+}
+```
+
+#### Linux / macOS (Bash)
+```bash
+touch .batch_done.txt
+export PI_SKIP_VERSION_CHECK=1
+export NODE_OPTIONS="--dns-result-order=ipv4first"
+
+find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
+    if grep -Fxq "$file" .batch_done.txt; then
+        echo "⏭️ Skipping (already completed): $file"
+        continue
+    fi
+    echo "➡️ Processing: $file"
+    
+    if timeout 90s pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"; then
+        echo "$file" >> .batch_done.txt
+    else
+        echo "⚠️ Timed out or failed on $file"
+    fi
+done
+```
+
+---
+
+### 3. Read-Only Codebase Audit & Report Aggregation
+
+When the user wants to audit security, syntax, or documentation without modifying files (`--tools read`):
+
+#### Windows (PowerShell)
+```powershell
+$report = "audit_report.md"
+"# Codebase Audit Report`n`n| File | Status | Issue |`n| :--- | :--- | :--- |" | Set-Content $report
+
+$env:PI_SKIP_VERSION_CHECK = "1"
+$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
+
+Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object {
+    $file = $_.FullName
+    Write-Host "Scanning: $($_.Name)"
+    $res = pi -p --approve --no-session --tools read --exclude-tools ask_question "@$file" "Audit this file for unhandled promise rejections or raw SQL strings. Output format: STATUS | DESCRIPTION (e.g. CLEAN | None or FLAGGED | Line 42: raw SQL query)."
+    "| `$($_.Name)` | $res |" | Add-Content $report
+}
+```
+
+---
+
+### 4. Opt-In Parallelism (Only When User Explicitly Requests High Speed)
+
+If the user explicitly asks for parallel execution:
+
+#### Windows (PowerShell)
+```powershell
+$env:PI_SKIP_VERSION_CHECK = "1"
+$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
+
+Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object -ThrottleLimit 4 -Parallel {
+    $file = $_.FullName
+    Write-Host "⚡ Processing: $($_.Name)"
+    pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+}
+```

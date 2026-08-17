@@ -293,6 +293,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | Application                                                                                                             | Winget ID / Install Command                                    |
 | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                               | winget install -e --id Google.PlatformTools                    |
+| [ast-grep (sg)](https://ast-grep.github.io/)                                                                           | winget install -e --id ast-grep.ast-grep                       |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                                    | winget install -e --id Amazon.AWSCLI                           |
 | [ck (seek)](https://github.com/BeaconBay/ck)                                                                            | npm install -g @beaconbay/ck-search                            |
 | [CMake](https://cmake.org/)                                                                                             | winget install -e --id Kitware.CMake                           |
@@ -315,10 +316,13 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Rufus](https://github.com/pbatard/rufus)                                                                               | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                                | winget install -e --id lukehaas.RunJS --scope user             |
 | [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
-| [Snyk CLI](https://snyk.io/)                                                                                            | winget install -e --id Snyk.Snyk                               |
+| [Semgrep](https://semgrep.dev/)                                                                                         | uv tool install semgrep                                        |
+| [Snyk CLI](https://snyk.io/)                                                                                            | npm install -g snyk                                            |
+| [TruffleHog](https://github.com/trufflesecurity/trufflehog)                                                              | winget install -e --id trufflesecurity.trufflehog              |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
+| [yq](https://github.com/mikefarah/yq)                                                                                  | winget install -e --id MikeFarah.yq                            |
 
 To keep project and log directories clean (avoiding local `.ck/` folders created in each indexed workspace), configure the persistent `CK_INDEX_DIR` environment variable to store indexes centrally:
 
@@ -751,6 +755,7 @@ uv tool install ruff
 uv tool install ipython
 uv tool install pip-audit
 uv tool install bandit
+uv tool install semgrep
 uv tool install jupytext
 uv tool install hf
 uv tool install oletools
@@ -760,11 +765,15 @@ uv tool install docling
 
 # --- OPTIONAL: Enable GPU Acceleration for Docling ---
 
-# Option A: NVIDIA GPU (CUDA 12.8) - Required for local VLM pipelines (--pipeline vlm)
+# Option A: NVIDIA GPU (CUDA) - Required for fast local OCR & VLM pipelines
 uv pip install torch torchvision --reinstall --index-url https://download.pytorch.org/whl/cu128 --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip install onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 
 # Option B: AMD/Intel GPU (DirectML) - Acceleration for standard OCR/layout models
 uv pip install onnxruntime-directml --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+
+# Verify GPU detection:
+& "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()} | Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"None\"}')"
 ```
 
 ## OpenSCAD and BOSL2 Setup

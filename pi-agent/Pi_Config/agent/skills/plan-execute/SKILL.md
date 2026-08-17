@@ -1,6 +1,6 @@
 ---
 name: plan-execute
-description: Plan-execute workflow for complex tasks. Creates a living PLAN.md to track progress. Use for multi-step tasks.
+description: Multi-step task execution loop (3+ dependent steps). Creates and maintains a living 'PLAN.md' with phase checkboxes and interactive user confirmation gates.
 ---
 
 # Plan & Execute
@@ -110,20 +110,44 @@ For each task in PLAN.md, follow this cycle:
 1. **Refresh Rules & Read PLAN.md** $\rightarrow$ Read `PLAN.md` to identify the `Current Focus` task and verification requirement.
 2. **Formulate a plan** $\rightarrow$ Outline your specific approach. Use `sequential_thinking` for complex multi-file logic.
 3. **Execute** $\rightarrow$ Modify files and implement the change.
-4. **Verify & Quality Gate** $\rightarrow$ Run the task's verification command (e.g. `npm test`, `pytest`). If `critic_review` is available, run it on modified files **(see `audit/SKILL.md`)**.
+4. **Verify & Quality Gate** $\rightarrow$ Run the task's verification command (e.g. `npm test`, `pytest`). If `critic_review` is available, run it on modified files to verify code quality and flag regressions before marking Done.
 5. **Transition & Update PLAN.md** $\rightarrow$ Mark completed task Done with notes on any deviations, promote next task.
 
 ---
 
-## Handling Roadblocks & Circuit Breakers
+## 🤖 Subagent Task Offloading Heuristic
+
+When planning and executing tasks in `PLAN.md`, use this heuristic to decide whether to execute in-context or spawn a background subagent:
+
+| Task Characteristics | Execution Strategy | Rationale |
+| :--- | :--- | :--- |
+| **Sequential / Tightly Coupled** (File B depends on File A) | **Inline Execution** (Current Agent) | Preserves shared working memory and immediate feedback. |
+| **Core Architecture & Refactoring** | **Inline Execution** | Avoids context fragmentation and merge conflicts. |
+| **Independent Parallel Modules** (e.g. 3 distinct microservices) | **Background Subagent** (`invoke_subagent`) | High speed; each subagent operates in parallel without context bloat. |
+| **Deep Read-Only Research & API Exploration** | **Research Subagent** (`TypeName: "research"`) | Prevents search dumps and large manual files from polluting chat history. |
+| **Batch Test / Documentation Sweeps** | **Self Subagent** (`TypeName: "self"`) | Offloads repetitive writes; reports final summary back when done. |
+
+---
+
+## Handling Roadblocks, Blocked Tasks & Circuit Breakers
 
 When a task fails verification or encounters an obstacle:
 
-### Verification Circuit Breaker (3-Attempt Limit)
+### 1. Verification Circuit Breaker (3-Attempt Limit)
 - **Attempts 1–2:** Inspect error output/logs, formulate an alternate fix with `sequential_thinking`, apply the fix, and re-verify.
 - **Attempt 3+ (Circuit Breaker):** **STOP execution.** Do not loop indefinitely. Revert unstable changes, log a roadblock note in `PLAN.md`, and use `ask_question` to consult the user.
 
-### Git-Aware Rollback Protocol
+### 2. Failure & Blocked Task Protocol (`[BLOCKED: reason]`)
+If a task cannot proceed due to missing prerequisites, external dependency errors, or architectural conflicts:
+1. Update `PLAN.md`:
+   ```markdown
+   ## Current Focus
+   - [ ] [BLOCKED: Missing database migration script] Fix user auth route [Verify: npm test]
+   ```
+2. Add a resolution sub-task under `## Discovered / Backlog` or ask the user for guidance via `ask_question`.
+3. If unblocking requires a pivot, document the pivot in `PLAN.md` before writing new code.
+
+### 3. Git-Aware Rollback Protocol
 If an approach fails and must be abandoned:
 1. Inspect working state: `git status` and `git diff`.
 2. Cleanly revert uncommitted changes from the failed attempt:
@@ -131,7 +155,7 @@ If an approach fails and must be abandoned:
    - For scratch files: delete them.
 3. Verify clean state before starting an alternate path.
 
-### Discoveries & Scope Guard
+### 4. Discoveries & Scope Guard
 - If you discover new work, log it in `## Discovered / Backlog`. **Never silently expand the current task.**
 - Mark items as `[BLOCKER]` (must be resolved before proceeding) or `[DEFERRED]` (nice-to-have, does not block completion).
 - If `[BLOCKER]`, promote it to `Current Focus` and add a blocking note.
@@ -151,11 +175,11 @@ If your conversation context was compacted or pruned:
 
 ---
 
-## Completion
+## Completion Gate & Review
 
 When all tasks in `Up Next` are empty and `Discovered` has no remaining `[BLOCKER]` items:
 
 1. Read through `Done` to verify all acceptance criteria were satisfied.
 2. Run full test suite / build checks across the workspace.
-3. Run an audit on all modified files **(see `audit/SKILL.md`)**.
+3. **Critic Review Gate**: Call `critic_review` on the full diff or modified files to verify no security or logic regressions were introduced.
 4. Tell the user you are done and provide a concise summary of deliverables and any `[DEFERRED]` backlog items.

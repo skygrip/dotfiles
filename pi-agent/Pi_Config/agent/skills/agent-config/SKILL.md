@@ -1,6 +1,6 @@
 ---
 name: agent-config
-description: Blueprints and docs for Extensions, Skills, Settings, MCP, and Prompt Templates. Use when modifying agent configuration.
+description: Blueprints for modifying Pi Agent configs: '.pi/AGENTS.md', '.pi/APPEND_SYSTEM.md', extensions ('.ts'), skills ('SKILL.md'), 'settings.json', 'mcp.json', and prompt templates.
 ---
 
 # Agent Configuration Blueprint
@@ -70,6 +70,30 @@ Some configurations are parsed dynamically, while others require manual reloadin
   * Prompt templates (`.pi/prompts/*.md`)
   * TypeScript extensions (`.pi/extensions/*.ts`)
   * Settings & MCP updates (`settings.json`, `mcp.json`, `models.json`)
+
+---
+
+## 🔄 Cross-Platform Synchronization One-Liners
+
+When editing configuration, skills, or extensions inside a repository / dotfiles working directory, use these one-liners to sync changes to the global Pi agent directory (`~/.pi/agent/`):
+
+### Windows (PowerShell)
+```powershell
+# Sync all configuration, skills, and extensions from repo to global Pi agent
+Copy-Item -Path ".\pi-agent\Pi_Config\agent\*" -Destination "$HOME\.pi\agent\" -Recurse -Force
+
+# Sync skills only
+Copy-Item -Path ".\pi-agent\Pi_Config\agent\skills\*" -Destination "$HOME\.pi\agent\skills\" -Recurse -Force
+```
+
+### Linux / macOS (Bash & Zsh)
+```bash
+# Sync all configuration, skills, and extensions with rsync
+rsync -av --delete ./pi-agent/Pi_Config/agent/ ~/.pi/agent/
+
+# Or via standard cp
+cp -R ./pi-agent/Pi_Config/agent/* ~/.pi/agent/
+```
 
 ---
 

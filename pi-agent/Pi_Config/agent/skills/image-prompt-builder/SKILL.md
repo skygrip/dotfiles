@@ -1,6 +1,6 @@
 ---
 name: image-prompt-builder
-description: Builds optimized prompts and parameters for AI image generation engines (Krea 2, Krea 2 Edit, ANIMA, Flux, SDXL, Midjourney).
+description: Construct high-grade prompts with FACS facial mechanics and optical staging for AI image engines: Krea 2 (RAW/Turbo/Edit), ANIMA (Anime/LoRA), Flux, SDXL, and Midjourney.
 ---
 
 # Universal AI Image Prompt Builder
@@ -21,6 +21,25 @@ Before drafting, determine the optimal engine for the user's concept:
 | **Anime, stylized 2D, manga, game key art, character sheets** | **CircleStone Labs ANIMA** | **MANDATORY TARGETED NEGATIVE** (Prevents 3D CGI plastic bleed & anatomy glitches) | See [`anima.md`](anima.md) |
 | **Artistic painterly, fantasy illustration, mixed media** | **Krea 2** | **LEAVE BLANK** | See [`krea2.md`](krea2.md) |
 | **LoRA-centric stylized anime illustration & fine-tuning** | **CircleStone Labs ANIMA** | **MANDATORY TARGETED NEGATIVE** | See [`anima.md`](anima.md) |
+
+---
+
+## 📐 Modern Aspect Ratio & Resolution Grid
+
+Modern diffusion and flow-matching foundation models (Krea 2, Flux.1, SDXL, ANIMA) are trained on bucketed aspect ratio latents around ~1 megapixel (1,048,576 pixels). Use these native standard pixel dimensions to prevent composition cropping, duplicate limbs, and distortion:
+
+| Aspect Ratio | Standard Resolution | Native Latent Dimensions | Primary Use Case |
+| :--- | :--- | :--- | :--- |
+| **`1:1`** | **`1024 × 1024`** | Square $(1.0\text{ MP})$ | Avatars, social profile icons, product packaging, centered close-ups. |
+| **`4:5`** | **`896 × 1152`** | Vertical Portrait | Instagram feed portrait, character concept sheets, card illustrations. |
+| **`3:4`** | **`896 × 1216`** | Vertical Standard | Editorial photography, comic panels, full-body character portraits. |
+| **`2:3`** | **`832 × 1248`** | Vertical Classic | Traditional 35mm portrait photography, poster prints, book covers. |
+| **`9:16`** | **`768 × 1344`** | Vertical Ultra-Tall | Mobile wallpapers, TikTok/Reels stories, smartphone full-screen UI. |
+| **`5:4`** | **`1152 × 896`** | Horizontal Wide | Desktop banners, environmental landscapes, wide portraits. |
+| **`4:3`** | **`1216 × 896`** | Horizontal Standard | Classic cinematic photography, gallery painting canvas, UI hero blocks. |
+| **`3:2`** | **`1248 × 832`** | Horizontal Classic | 35mm film landscape, cinematic stills, double-page spreads. |
+| **`16:9`** | **`1344 × 768`** | Widescreen Cinematic | YouTube thumbnails, 1080p/4K display backgrounds, cinematic film stills. |
+| **`21:9`** | **`1536 × 640`** | Ultrawide Anamorphic | Anamorphic movie aspect, ultrawide monitor wallpapers, panoramic concepts. |
 
 ---
 

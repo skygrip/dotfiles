@@ -1,33 +1,29 @@
 # Agent Guidelines
 
-## Configuration
-This workspace uses `.pi/` for configuration. View Skills, Prompts, or Extensions in the `agent-config` skill. Before implementing a multi-step workflow, check if a relevant skill already exists in `skills/`.
-
 ## Execution Principles
-* **Code Implementation**: Action over explanation. Flow: Read → Edit → Test/Verify. Consider using `plan-execute` for tasks with 3+ steps.
-* **Reasoning Scratchpad**: Use `sequential_thinking` for complex multi-step reasoning, architectural planning, or diagnosing subtle bugs before modifying code.
-* **Exploration & Research**: When asked to investigate, summarize findings and propose options before modifying files. Timebox deep research to 2-3 levels.
-* **Task Resumption**: If work was in progress, inspect existing state and summarize remaining steps before acting; never re-run completed steps.
-* **Document & Media Parsing**: For PDF, DOCX, PPTX, HTML, or media, run `docling <file> --output <dir> --no-ocr --image-export-mode placeholder` to convert to Markdown, then read the generated output.
+* **Code Implementation**: Action over explanation. Flow: Read → Edit → Test/Verify. For 3+ step features, use `plan-execute` (`/plan`).
+* **Subagent Delegation Heuristics**:
+  - **Small batches (2–6 items)**: Spawn background subagents concurrently via `invoke_subagent`. Never poll in a loop—rely on reactive wakeup notifications.
+  - **Large batches (10+ files)**: Do NOT spawn dozens of subagents in chat. Use `batch-automator` (`/sprawl`) to generate a sequential `pi -p` shell loop for the user.
 
 ## Safety & Boundaries
 * **Interactive Confirmation**: Invoke `ask_question` (`type: 'confirm'`) before deleting files, running destructive commands (`rm`, `format`), restarting services, or modifying sensitive configurations.
-* Prefer `--dry-run` or preview flags when available.
+* **Zero-Secret Policy**: Never hardcode API keys, passwords, or tokens in source files or git commits. Use `.env` variables and audit with `secret-scanning` or `semgrep`.
+* **Prefer Dry-Runs**: Use `--dry-run`, `--check`, or git branch isolation (`git checkout -b <branch>`) when performing substantial changes.
 
-## Proactive Alignment & Clarification
-* **Tool-First Clarification**: When facing architectural choices, library trade-offs, or ambiguity, proactively call `ask_question` (`type: 'select'`) with 2-4 concrete choices before writing code.
-* **Freeform Input**: Use `ask_question` (`type: 'input'`) when missing necessary environment variables or user-specific preferences.
-* **Quality Gate**: Use `critic_review` for isolated audits on complex drafts or critical security paths.
-* **Error Escalation**: On error, immediately stop and report: what failed, why, and the proposed next step. Never silently retry or bypass errors.
+## Proactive Alignment & Quality
+* **Tool-First Clarification**: Proactively call `ask_question` (`type: 'select'`) with 2–4 concrete choices when facing ambiguous architectural trade-offs.
+* **Quality Gate**: Run tests (`npm test`, `pytest`, `cargo check`) and apply `critic_review` on complex logic or security-critical paths before marking tasks complete.
+* **Error Escalation**: On error, immediately stop and report: what failed, why, and the proposed next step. Never silently bypass errors.
 
 ## Response Style
 * Match verbosity to task: terse for commands/edits, structured for explanations.
-* When creating files, state the path and purpose explicitly; clean up scratch files.
+* State modified file paths explicitly and clean up temporary scratch files.
 
 ## Evolution
 * Never autonomously edit workspace config files.
-* Propose tool/system improvements by routing to the correct file:
-  - Tool/Env rules → `APPEND_SYSTEM.md`
-  - Behaviors → `AGENTS.md`
-  - Workflows → `skills/`
-  - Shortcuts → `prompts/`
+* Propose improvements by routing to the correct file:
+  - Tool / Environment rules → `APPEND_SYSTEM.md`
+  - Behavioral guidelines → `AGENTS.md`
+  - Multi-step tool workflows → `skills/<name>/SKILL.md`
+  - Slash command templates → `prompts/<name>.md`
