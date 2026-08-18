@@ -12,14 +12,50 @@ healthCheckTimeout: 600
 # MACROS & ENVIRONMENT ALIASES
 # ==============================================================================
 macros:
+  # ============================================================================
+  # ACTIVE PROFILE: NVIDIA RTX 5080 (Windows / CUDA)
+  # ============================================================================
   llama-server: "llama-server.exe --port ${PORT}"
-  ctx: 8192
+  threads: 8
+  threads_batch: 16
+  batch: 2048
+  ubatch: 1024
+  fit: on
+  fit_target: 512         # -fitt: VRAM safety headroom margin in MiB
+  parallel_slots: 1
+  ncmoe_gemma26: "-ncmoe 14"
+  ncmoe_qwen35: "-ncmoe 18"
+
+  hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -fit ${fit} -fitt ${fit_target} -bs --no-mmproj-offload"
+  kv_args: "--kv-unified --parallel ${parallel_slots}"
+
+  # ============================================================================
+  # PROFILE: Apple Silicon Mac Studio (Unified Memory & Metal) [COMMENTED OUT]
+  # ============================================================================
+  # llama-server: "/opt/homebrew/bin/llama-server --port ${PORT}"
+  # threads: 12           # 12 Performance Cores
+  # threads_batch: 12     # Symmetrical prefill threads on M-series
+  # batch: 2048
+  # ubatch: 2048
+  # cache_ram: 65536      # --cache-ram: MiB allocated for unified KV cache
+  # parallel_slots: 1
+  # max_checkpoints: 8    # --ctx-checkpoints
+  # cache_reuse: 16       # --cache-reuse
+  # ncmoe_gemma26: ""     # 100% Metal GPU offload (no CPU offload needed)
+  # ncmoe_qwen35: ""      # 100% Metal GPU offload (no CPU offload needed)
+  #
+  # hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -lm mmap+mlock -bs --swa-full"
+  # kv_args: "--kv-unified --parallel ${parallel_slots} --cache-ram ${cache_ram} --cache-idle-slots --ctx-checkpoints ${max_checkpoints} --cache-reuse ${cache_reuse}"
+
+  # ============================================================================
+  # SHARED BASELINE CONFIGURATION
+  # ============================================================================
+  ctx: 131072
   ctk: q8_0
   ctv: q8_0
   fa: on
-  batch_size: "-b 2048 -ub 1024"
-  thread_args: "-t 8 -tb 16"
-  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${batch_size} ${thread_args}"
+
+  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${hw_args} ${kv_args} --jinja"
   
 # ==============================================================================
 # INFERENCE ROUTINGS & BACKENDS
@@ -37,9 +73,7 @@ models:
         - image
       out: ["text"]
       tools: true
-      context: 65536
-    macros:
-      ctx: 65536
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
@@ -47,8 +81,6 @@ models:
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -70,19 +102,15 @@ models:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: 65536
-    macros:
-      ctx: 65536
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
-      -ncmoe 14
+      ${ncmoe_gemma26}
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -100,19 +128,15 @@ models:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: 65536
-    macros:
-      ctx: 65536
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
-      -ncmoe 18
+      ${ncmoe_qwen35}
       -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -130,23 +154,19 @@ models:
 # --- GEMMA 4 31B  ---
   gemma4-31b:
     name: "Unsloth Gemma 4 31B"
-    description: "unsloth/gemma-4-31B-it-qat-GGUF:UD-IQ3_XXS"
+    description: "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"
     capabilities:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: 8192
-    macros:
-      ctx: 8192
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
-      -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-IQ3_XXS
+      -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -159,23 +179,19 @@ models:
 # --- QWEN 3.8 27B ---
   qwen3.8-27b:
     name: "Unsloth Qwen 3.8 27B"
-    description: "unsloth/Qwen3.8-27B-GGUF:UD-IQ3_XXS"
+    description: "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
     capabilities:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: 8192
-    macros:
-      ctx: 8192
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
-      -hf unsloth/Qwen3.8-27B-GGUF:UD-IQ3_XXS
+      -hf unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -187,11 +203,11 @@ models:
             enable_thinking: false
 
 # ==============================================================================
-# RESEARCH MODELS
+# RESEARCH & ABLITERATED MODELS
 # ==============================================================================
 
-# --- GEMMA 4 12B ---
-  gemma4-12b-uncensored:
+# --- GEMMA 4 12B ABLITERATED ---
+  gemma4-12b-abliterated:
     name: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     description: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     capabilities:
@@ -201,9 +217,7 @@ models:
         - image
       out: ["text"]
       tools: true
-      context: 65536
-    macros:
-      ctx: 65536
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
@@ -211,8 +225,6 @@ models:
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 2
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -222,27 +234,23 @@ models:
           chat_template_kwargs:
             enable_thinking: false
 
-# --- GEMMA 4 26B MOE ---
-  gemma4-26ba4b-uncensored:
+# --- GEMMA 4 26B MOE ABLITERATED ---
+  gemma4-26ba4b-abliterated:
     name: "HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M"
     description: "HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M"
     capabilities:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: 65536
-    macros:
-      ctx: 65536
+      context: ${ctx}
     cmd: |
       ${llama-server}
       ${default_args}
-      -ncmoe 14
+      ${ncmoe_gemma26}
       -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-      --no-mmproj-offload
-      --jinja
     filters:
       setParamsByID:
         "${MODEL_ID}:no_think":
@@ -251,3 +259,41 @@ models:
           min_p: 0.01
           chat_template_kwargs:
             enable_thinking: false
+
+# ==============================================================================
+# RESOURCE SWAP MATRIX CONCURRENT ROUTING
+# ==============================================================================
+# matrix:
+#   # vars: Mapping alphanumeric short names (1-8 chars) to active model IDs
+#   vars:
+#     g12:  gemma4-12b
+#     g12a: gemma4-12b-abliterated
+#     g26:  gemma4-26ba4b
+#     g26a: gemma4-26ba4b-abliterated
+#     q35:  qwen3.6-35ba3b
+#     g31:  gemma4-31b
+#     q27:  qwen3.8-27b
+#
+#   # evict_costs: Relative weight protecting heavy models from premature eviction
+#   evict_costs:
+#     q35:  50  # Qwen 3.6 35B MoE + MTP (~22 GB)
+#     g31:  45  # Gemma 4 31B Dense (~18 GB)
+#     q27:  45  # Qwen 3.8 27B Dense (~16 GB)
+#     g26:  40  # Gemma 4 26B MoE (~18 GB)
+#     g26a: 40  # Gemma 4 26B MoE Abliterated (~18 GB)
+#     g12:  10  # Gemma 4 12B (~10 GB)
+#     g12a: 10  # Gemma 4 12B Abliterated (~10 GB)
+#
+#   # sets: DSL expressions defining valid concurrency combinations
+#   sets:
+#     # 1. MoE Dual-Engine: Keep primary MoE models loaded together
+#     moe_coexistence: "q35 & (g26 | g26a)"
+#
+#     # 2. Dense Dual-Engine: Run Gemma 31B & Qwen 27B dense models together
+#     dense_coexistence: "g31 & q27"
+#
+#     # 3. MoE + Dense Hybrid: Pair any MoE with a Dense model
+#     moe_dense_mix: "(q35 | g26 | g26a) & (g31 | q27)"
+#
+#     # 4. Heavy + Fast Helper: Any heavy model paired with a fast 12B assistant
+#     utility_helper: "(q35 | g26 | g26a | g31 | q27) & (g12 | g12a)"
