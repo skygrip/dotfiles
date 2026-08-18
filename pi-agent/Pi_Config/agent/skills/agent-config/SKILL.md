@@ -1,6 +1,6 @@
 ---
 name: agent-config
-description: Blueprints for modifying Pi Agent configs: '.pi/AGENTS.md', '.pi/APPEND_SYSTEM.md', extensions ('.ts'), skills ('SKILL.md'), 'settings.json', 'mcp.json', and prompt templates.
+description: "Blueprints for modifying Pi Agent configs: '.pi/AGENTS.md', '.pi/APPEND_SYSTEM.md', extensions ('.ts'), skills ('SKILL.md'), 'settings.json', 'mcp.json', and prompt templates."
 ---
 
 # Agent Configuration Blueprint
