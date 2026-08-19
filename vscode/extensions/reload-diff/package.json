@@ -1,0 +1,80 @@
+{
+  "name": "reload-diff",
+  "displayName": "Reload Diff",
+  "description": "Instant in-editor diff highlights on silent file reloads (works without Git).",
+  "version": "1.0.0",
+  "publisher": "local",
+  "icon": "icon.svg",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "reloadDiff.clear",
+        "title": "Clear Highlights",
+        "category": "Reload Diff"
+      },
+      {
+        "command": "reloadDiff.openDiff",
+        "title": "Compare Active File with State Before Reload",
+        "category": "Reload Diff"
+      },
+      {
+        "command": "reloadDiff.toggle",
+        "title": "Toggle Highlighting",
+        "category": "Reload Diff"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Reload Diff",
+      "properties": {
+        "reloadDiff.enabled": {
+          "type": "boolean",
+          "default": true,
+          "order": 1,
+          "description": "Global On/Off: Enable or disable diff highlighting on file reload."
+        },
+        "reloadDiff.autoFadeSeconds": {
+          "type": "number",
+          "default": 30,
+          "order": 2,
+          "description": "Seconds before highlights automatically fade (0 to keep until edit or clear)."
+        },
+        "reloadDiff.highlightLineBackground": {
+          "type": "boolean",
+          "default": true,
+          "order": 3,
+          "description": "Enable or disable line background tinting."
+        },
+        "reloadDiff.addedLineColor": {
+          "type": "string",
+          "default": "",
+          "order": 4,
+          "description": "Background color for added lines (leave empty for theme default green, or set custom RGBA/HEX)."
+        },
+        "reloadDiff.modifiedLineColor": {
+          "type": "string",
+          "default": "",
+          "order": 5,
+          "description": "Background color for modified lines (leave empty for soft blue tint, or set custom RGBA/HEX)."
+        },
+        "reloadDiff.modifiedWordColor": {
+          "type": "string",
+          "default": "",
+          "order": 6,
+          "description": "Highlight color for changed words inside modified lines (leave empty for theme default, or set custom RGBA/HEX)."
+        }
+      }
+    }
+  }
+}
