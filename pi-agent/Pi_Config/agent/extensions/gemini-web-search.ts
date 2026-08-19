@@ -16,9 +16,12 @@ import { lookup as dnsLookup } from "node:dns/promises";
  * - `fetch_url`: Safe HTTP retrieval with SSRF protection, Readability/Turndown parsing, and optional summarization.
  * - `/web-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
  *
- * Configuration:
- * - `GEMINI_API_KEY` / `GOOGLE_API_KEY`: Gemini API key (also read from ~/.pi/agent/auth.json or model registry).
+ * Configuration & CLI Flags:
+ * - Gemini API Key: Resolved securely from Pi Model Registry or ~/.pi/agent/auth.json (google.key).
  * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-flash-lite-latest").
+ * - `--no-web-gate`: CLI flag to disable confirmation prompts for web search and URL fetch.
+ * - `PI_WEB_GATE`: Environment variable override (set to "0" or "false" to disable).
+ * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
  */
 
 const DEFAULT_MODEL = "gemini-flash-lite-latest";
@@ -35,7 +38,31 @@ const COLLAPSED_PREVIEW_LINES = 6;
 const INPUT_PRICE_PER_M = 0.075;
 const OUTPUT_PRICE_PER_M = 0.30;
 
-let gateEnabled = true;
+/**
+ * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
+ */
+function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: ExtensionAPI): boolean {
+  if (pi && typeof pi.getFlag === "function" && pi.getFlag(flagName) === true) {
+    return false;
+  }
+  if (process.argv.includes(`--${flagName}`) || process.argv.includes("--no-gates")) {
+    return false;
+  }
+
+  const master = process.env.PI_GATES?.trim().toLowerCase();
+  if (master && ["0", "false", "off", "disable", "disabled", "no"].includes(master)) {
+    return false;
+  }
+
+  const val = process.env[gateKey]?.trim().toLowerCase();
+  if (val && ["0", "false", "off", "disable", "disabled", "no"].includes(val)) {
+    return false;
+  }
+
+  return true;
+}
+
+let gateEnabled = isGateInitiallyEnabled("PI_WEB_GATE", "no-web-gate");
 
 /**
  * Resolves npm packages from ~/.pi/agent/npm/node_modules or global paths
@@ -346,7 +373,7 @@ export interface WebToolDetails {
 }
 
 /**
- * Resolves Gemini API key from ModelRegistry, environment variables, or ~/.pi/agent/auth.json.
+ * Resolves Gemini API key from Pi ModelRegistry or ~/.pi/agent/auth.json.
  */
 async function resolveApiKey(ctx: ExtensionContext): Promise<string | null> {
   if (typeof ctx.modelRegistry?.getApiKeyAndHeaders === "function") {
@@ -361,11 +388,6 @@ async function resolveApiKey(ctx: ExtensionContext): Promise<string | null> {
       const auth = await ctx.modelRegistry.getProviderAuth("google");
       if (auth?.apiKey) return auth.apiKey;
     } catch {}
-  }
-
-  const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (envKey && envKey.trim().length > 0) {
-    return envKey.trim();
   }
 
   try {
@@ -676,6 +698,16 @@ async function promptPermission(
  */
 export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
+  // 0. CLI Flag Registration
+  // ----------------------------------------------------
+  pi.registerFlag("no-web-gate", {
+    description: "Disable confirmation prompts for web search and URL fetch",
+    type: "boolean"
+  });
+
+  gateEnabled = isGateInitiallyEnabled("PI_WEB_GATE", "no-web-gate", pi);
+
+  // ----------------------------------------------------
   // 1. Slash Command: /web-gate
   // ----------------------------------------------------
   pi.registerCommand("web-gate", {
@@ -772,7 +804,7 @@ export default function (pi: ExtensionAPI) {
         return {
           content: [{
             type: "text",
-            text: "[Web Search Error]: Gemini API Key not found. Please set GEMINI_API_KEY environment variable or configure in ~/.pi/agent/auth.json."
+            text: "[Web Search Error]: Gemini API Key not found. Please configure your Google provider key in ~/.pi/agent/auth.json or via Pi's model registry."
           }],
           details: { query, error: "Missing API Key" } as WebToolDetails
         };
@@ -1285,6 +1317,18 @@ export default function (pi: ExtensionAPI) {
       const formattedBody = formatToolOutput(content, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);
+    }
+  });
+
+  // ----------------------------------------------------
+  // 4. Lifecycle Events
+  // ----------------------------------------------------
+  pi.on("session_start", async (_event, ctx) => {
+    if (typeof pi.getFlag === "function" && pi.getFlag("no-web-gate") === true) {
+      gateEnabled = false;
+    }
+    if (!gateEnabled) {
+      ctx.ui.setStatus("web-gate", "🌐 Web-Gate: OFF");
     }
   });
 }

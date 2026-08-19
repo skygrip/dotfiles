@@ -4,10 +4,51 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 /**
- * State and configuration for permissions-gate.
+ * Permissions Gate Extension for Pi Coding Agent
+ *
+ * Provides granular pre-execution security guards, safety barriers, and workspace
+ * confinement for tool calls made by autonomous coding agents.
+ *
+ * Intercepted Tools & Commands:
+ * - `bash`: Intercepts dangerous system destruction commands, fork bombs, recursive agent execution,
+ *   forceful git deletions, elevated privileges (sudo/doas), credential exfiltration, and out-of-workspace paths.
+ * - `read`: Guards against reading sensitive credential files (.env, .ssh, AWS/Kube keys) or arbitrary system paths outside workspace.
+ * - `write` / `edit`: Prevents silent overwriting of sensitive credential files and accidental out-of-workspace modifications.
+ * - `/permissions-gate`: Slash command to toggle or inspect the permission gate ([status|on|off|toggle]).
+ *
+ * Configuration & CLI Flags:
+ * - `--no-permissions-gate`: CLI flag to disable permissions gate for unattended/automated runs.
+ * - `PI_PERMISSIONS_GATE`: Environment variable override (set to "0" or "false" to disable).
+ * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
  */
-let gateEnabled = true;
+
 const CONFIRM_TIMEOUT_MS = 30000; // 30-second countdown timer auto-defaulting to No (blocked)
+
+/**
+ * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
+ */
+function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: ExtensionAPI): boolean {
+  if (pi && typeof pi.getFlag === "function" && pi.getFlag(flagName) === true) {
+    return false;
+  }
+  if (process.argv.includes(`--${flagName}`) || process.argv.includes("--no-gates")) {
+    return false;
+  }
+
+  const master = process.env.PI_GATES?.trim().toLowerCase();
+  if (master && ["0", "false", "off", "disable", "disabled", "no"].includes(master)) {
+    return false;
+  }
+
+  const val = process.env[gateKey]?.trim().toLowerCase();
+  if (val && ["0", "false", "off", "disable", "disabled", "no"].includes(val)) {
+    return false;
+  }
+
+  return true;
+}
+
+let gateEnabled = isGateInitiallyEnabled("PI_PERMISSIONS_GATE", "no-permissions-gate");
 
 /**
  * Dangerous bash command regex patterns with human-readable violation explanations.
@@ -18,7 +59,7 @@ interface DangerousPattern {
   reason: string;
 }
 
-const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
+export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   {
     name: "Recursive Agent Execution",
     regex: /(?:^|\s|;|&&|\|\|)(?:npx\s+|bunx\s+|pnpm\s+dlx\s+)?pi(?:\.exe)?(?:\s+|$)(?!-v|--version|-h|--help)/i,
@@ -26,12 +67,12 @@ const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   },
   {
     name: "Filesystem Destruction",
-    regex: /\brm\s+-[a-zA-Z]*r[a-zA-Z]*f\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])/i,
+    regex: /\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r|-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r[a-zA-Z]*)\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])/i,
     reason: "Root or home directory recursive forceful removal is forbidden."
   },
   {
     name: "Disk Partitioning & Formatting",
-    regex: /\b(?:mkfs|wipefs|fdisk|parted|gdisk|dd\s+if=)\b/i,
+    regex: /\b(?:mkfs|wipefs|fdisk|parted|gdisk)\b|\bdd\s+if=/i,
     reason: "Low-level disk format/write operations are blocked."
   },
   {
@@ -71,16 +112,9 @@ const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   }
 ];
 
-/**
- * Regex for detecting sensitive credential inspection or access via ANY bash command
- * (cat, rg, grep, ls, dir, find, fd, node, python, powershell, etc.).
- */
-const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
+export const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
 
-/**
- * Sensitive credential file regex patterns for tool calls.
- */
-const CREDENTIAL_FILE_PATTERNS = [
+export const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/])\.env(?:\.local|\.production|\.development|\.staging|\.test|\.example)?$/i,
   /(?:^|[\\\/])\.ssh(?:[\\\/](?:id_rsa|id_ed25519|id_ecdsa|id_dsa|authorized_keys|known_hosts|config))?$/i,
   /(?:^|[\\\/])\.aws(?:[\\\/](?:credentials|config))?$/i,
@@ -96,6 +130,61 @@ const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/]).*\.(?:pem|key|p12|pfx)$/i,
   /(?:^|[\\\/])(?:service_account|client_secret).*\.json$/i
 ];
+
+export function isOutsideWorkspace(targetPath: string): boolean {
+  const workspaceRoot = getWorkspaceRoot();
+  const isRemote = Boolean(process.env.PI_SSH_REMOTE_CWD);
+
+  if (isRemote) {
+    // POSIX path resolution
+    const resolved = path.posix.resolve(workspaceRoot, targetPath.replace(/\\/g, "/"));
+    const normRoot = path.posix.normalize(workspaceRoot);
+    return !resolved.startsWith(normRoot + "/") && resolved !== normRoot;
+  }
+
+  // Local filesystem path resolution
+  const resolved = path.resolve(workspaceRoot, targetPath);
+  const normRoot = path.resolve(workspaceRoot);
+  const rel = path.relative(normRoot, resolved);
+  return rel.startsWith("..") || path.isAbsolute(rel);
+}
+
+export function isCredentialFile(targetPath: string): boolean {
+  if (!targetPath) return false;
+  const raw = targetPath.trim();
+  const norm = normalizePath(raw);
+  return CREDENTIAL_FILE_PATTERNS.some(p => p.test(raw) || p.test(norm));
+}
+
+export function isSensitiveSystemPath(targetPath: string): boolean {
+  if (!targetPath) return false;
+  const raw = targetPath.trim().replace(/\\/g, "/").toLowerCase();
+  const norm = normalizePath(targetPath).toLowerCase();
+  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
+
+  // Root / system sensitive directories
+  const sensitiveRegex = /^(?:[a-z]:)?\/(?:etc|var|usr|bin|sbin|sys|proc|dev|boot|root|System|Library|Windows|Program Files|Program Files \(x86\)|ProgramData)\b/i;
+  if (sensitiveRegex.test(raw) || sensitiveRegex.test(norm)) {
+    return true;
+  }
+
+  // Home-anchored user configuration
+  if (norm.startsWith(`${home}/.config/`) ||
+      norm.startsWith(`${home}/.cargo/`) ||
+      norm.startsWith(`${home}/.gnupg`) ||
+      norm.startsWith(`${home}/.npmrc`)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getWorkspaceRoot(): string {
+  if (process.env.PI_SSH_REMOTE_CWD) {
+    return process.env.PI_SSH_REMOTE_CWD;
+  }
+  return process.cwd();
+}
 
 /**
  * Normalizes and expands paths for uniform analysis.
@@ -122,47 +211,13 @@ function normalizePath(targetPath: string): string {
   }
 }
 
-/**
- * Sensitive system paths (strictly anchored to home/system roots).
- */
-function isSensitiveSystemPath(targetPath: string): boolean {
-  if (!targetPath) return false;
-  const raw = targetPath.trim().replace(/\\/g, "/").toLowerCase();
-  const norm = normalizePath(targetPath).toLowerCase();
-  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
 
-  // Root / system sensitive directories
-  const sensitiveRegex = /^(?:[a-z]:)?\/(?:etc|var|usr|bin|sbin|sys|proc|dev|boot|root|System|Library|Windows|Program Files|Program Files \(x86\)|ProgramData)\b/i;
-  if (sensitiveRegex.test(raw) || sensitiveRegex.test(norm)) {
-    return true;
-  }
-
-  // Home-anchored user configuration
-  if (norm.startsWith(`${home}/.config/`) ||
-      norm.startsWith(`${home}/.cargo/`) ||
-      norm.startsWith(`${home}/.gnupg`) ||
-      norm.startsWith(`${home}/.npmrc`)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Checks if a target path refers to a sensitive credential or secret file.
- */
-function isCredentialFile(targetPath: string): boolean {
-  if (!targetPath) return false;
-  const raw = targetPath.trim();
-  const norm = normalizePath(raw);
-  return CREDENTIAL_FILE_PATTERNS.some(p => p.test(raw) || p.test(norm));
-}
 
 /**
  * Checks if a target path is located inside the global Pi or Agent skills directory.
  * Handles ~ expansion, Windows/POSIX slashes, Git Bash drive prefixes, and environment variables.
  */
-function isGlobalSkillPath(targetPath: string): boolean {
+export function isGlobalSkillPath(targetPath: string): boolean {
   if (!targetPath) return false;
 
   const home = os.homedir().replace(/\\/g, "/").toLowerCase();
@@ -200,37 +255,6 @@ function isGlobalSkillPath(targetPath: string): boolean {
   );
 }
 
-/**
- * Resolves the active workspace root (local or remote SSH).
- */
-function getWorkspaceRoot(): string {
-  if (process.env.PI_SSH_REMOTE_CWD) {
-    return process.env.PI_SSH_REMOTE_CWD;
-  }
-  return process.cwd();
-}
-
-/**
- * Checks if a target path is outside the workspace root.
- */
-function isOutsideWorkspace(targetPath: string): boolean {
-  const workspaceRoot = getWorkspaceRoot();
-  const isRemote = Boolean(process.env.PI_SSH_REMOTE_CWD);
-
-  if (isRemote) {
-    // POSIX path resolution
-    const resolved = path.posix.resolve(workspaceRoot, targetPath.replace(/\\/g, "/"));
-    const normRoot = path.posix.normalize(workspaceRoot);
-    return !resolved.startsWith(normRoot + "/") && resolved !== normRoot;
-  }
-
-  // Local filesystem path resolution
-  const resolved = path.resolve(workspaceRoot, targetPath);
-  const normRoot = path.resolve(workspaceRoot);
-  const rel = path.relative(normRoot, resolved);
-  return rel.startsWith("..") || path.isAbsolute(rel);
-}
-
 const BENIGN_SHELL_PATHS = new Set([
   "/dev/null",
   "/dev/stdin",
@@ -244,7 +268,7 @@ const BENIGN_SHELL_PATHS = new Set([
 /**
  * Extracts potential path arguments from a shell command string (e.g. rg, ck, fd, cat, python).
  */
-function extractPathTokens(command: string): string[] {
+export function extractPathTokens(command: string): string[] {
   if (!command) return [];
 
   // Match path tokens:
@@ -273,10 +297,20 @@ function extractPathTokens(command: string): string[] {
 
 export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
-  // 1. Slash Command: /gate
+  // 0. CLI Flag Registration
   // ----------------------------------------------------
-  pi.registerCommand("gate", {
-    description: "Toggle or inspect permissions gate (usage: /gate [status|on|off|toggle])",
+  pi.registerFlag("no-permissions-gate", {
+    description: "Disable permissions gate safety intercepts",
+    type: "boolean"
+  });
+
+  gateEnabled = isGateInitiallyEnabled("PI_PERMISSIONS_GATE", "no-permissions-gate", pi);
+
+  // ----------------------------------------------------
+  // 1. Slash Command: /permissions-gate
+  // ----------------------------------------------------
+  pi.registerCommand("permissions-gate", {
+    description: "Toggle or inspect permissions gate (usage: /permissions-gate [status|on|off|toggle])",
     handler: async (args, ctx) => {
       const sub = (args || "").trim().toLowerCase();
 
@@ -295,10 +329,12 @@ export default function (pi: ExtensionAPI) {
       }
 
       const stateText = gateEnabled ? "ENABLED (Enforcing safety & credential rules)" : "DISABLED (Bypassing guards)";
-      ctx.ui.setStatus("gate", gateEnabled ? undefined : "⚠️ Gate: OFF");
+      ctx.ui.setStatus("permissions-gate", gateEnabled ? undefined : "⚠️ Permissions-Gate: OFF");
       ctx.ui.notify(`Permissions Gate: ${stateText}`, gateEnabled ? "info" : "warning");
     }
   });
+
+
 
   // ----------------------------------------------------
   // 2. Event Hook: tool_call Interception
@@ -522,8 +558,11 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_start", async (_event, ctx) => {
+    if (typeof pi.getFlag === "function" && pi.getFlag("no-permissions-gate") === true) {
+      gateEnabled = false;
+    }
     if (!gateEnabled) {
-      ctx.ui.setStatus("gate", "⚠️ Gate: OFF");
+      ctx.ui.setStatus("permissions-gate", "⚠️ Permissions-Gate: OFF");
     }
   });
 }
