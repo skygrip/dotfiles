@@ -631,7 +631,8 @@ New-Item -Path $HOME\Build -ItemType directory -Force
 New-Item -Path $HOME\Build\trufflehog -ItemType directory -Force
 cd $HOME\Build\trufflehog
 Remove-Item $HOME\Build\trufflehog\* -Recurse -Force -ErrorAction SilentlyContinue
-Invoke-WebRequest -Uri https://github.com/trufflesecurity/trufflehog/releases/download/v3.88.16/trufflehog_3.88.16_windows_amd64.tar.gz -OutFile trufflehog.tar.gz
+$url = (Invoke-RestMethod "https://api.github.com/repos/trufflesecurity/trufflehog/releases/latest").assets | Where-Object name -like "*windows_amd64.tar.gz" | Select-Object -ExpandProperty browser_download_url
+Invoke-WebRequest -Uri $url -OutFile trufflehog.tar.gz
 tar -xzf trufflehog.tar.gz
 Remove-Item trufflehog.tar.gz
 $PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
