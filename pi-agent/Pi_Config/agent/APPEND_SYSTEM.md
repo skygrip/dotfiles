@@ -16,7 +16,7 @@
 * If a CLI command fails with flag/syntax errors, run `<tool> --help` to inspect options before retrying.
 
 ## Local Windows Host
-*(Applies to local workspace sessions; when connected via SSH, target environment is Linux POSIX)*
+*(Applies to local workspace sessions; when connected via SSH, target environment is Unix-like (Linux or macOS))*
 * Local host OS is Windows; terminal commands run in Git Bash.
 * If PowerShell is required on the local host, invoke via `powershell -Command "..."` or `pwsh -Command "..."`.
 
