@@ -605,16 +605,15 @@ rclone hashsum crc32 --checkers 8 /rclonepath
 Download and install exiftool in a windows PATH
 
 ```powershell
-New-Item -Path $HOME\Build -ItemType directory
-cd $HOME\Build
-Remove-Item $HOME\Build\exiftool.zip
-Remove-Item $HOME\Build\exiftool
-Invoke-WebRequest -Uri https://exiftool.org/exiftool-12.92_64.zip -OutFile exiftool.zip
-Expand-Archive -Path exiftool.zip -DestinationPath $HOME\Build
-Remove-Item $HOME\Build\exiftool.zip
-move $HOME\Build\exiftool-* $HOME\Build\exiftool
+New-Item -Path $HOME\Build\exiftool -ItemType directory -Force
 cd $HOME\Build\exiftool
-move 'exiftool(-k).exe' exiftool.exe
+Remove-Item $HOME\Build\exiftool\* -Recurse -Force -ErrorAction SilentlyContinue
+$page = (Invoke-WebRequest -Uri "https://oliverbetz.de/pages/Artikel/ExifTool-for-Windows").Content
+$relPath = [regex]::Match($page, 'href=["'']([^"'']*exiftool-[\d.]+_64\.zip)["'']').Groups[1].Value
+$url = "https://oliverbetz.de$relPath"
+Invoke-WebRequest -Uri $url -OutFile exiftool.zip
+Expand-Archive -Path exiftool.zip -DestinationPath $HOME\Build\exiftool -Force
+Remove-Item exiftool.zip
 $PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
 $exiftool_path = "$HOME\Build\exiftool"
 if( $PATH -notlike "*"+$exiftool_path+"*" ){
