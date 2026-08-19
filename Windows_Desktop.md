@@ -318,7 +318,6 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
 | [Semgrep](https://semgrep.dev/)                                                                                         | uv tool install semgrep                                        |
 | [Snyk CLI](https://snyk.io/)                                                                                            | npm install -g snyk                                            |
-| [TruffleHog](https://github.com/trufflesecurity/trufflehog)                                                              | winget install -e --id trufflesecurity.trufflehog              |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
@@ -620,6 +619,25 @@ $PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
 $exiftool_path = "$HOME\Build\exiftool"
 if( $PATH -notlike "*"+$exiftool_path+"*" ){
     [Environment]::SetEnvironmentVariable("PATH", "$PATH;$exiftool_path", "User")
+}
+```
+
+## TruffleHog
+
+Download and install TruffleHog in a windows PATH
+
+```powershell
+New-Item -Path $HOME\Build -ItemType directory -Force
+New-Item -Path $HOME\Build\trufflehog -ItemType directory -Force
+cd $HOME\Build\trufflehog
+Remove-Item $HOME\Build\trufflehog\* -Recurse -Force -ErrorAction SilentlyContinue
+Invoke-WebRequest -Uri https://github.com/trufflesecurity/trufflehog/releases/download/v3.88.16/trufflehog_3.88.16_windows_amd64.tar.gz -OutFile trufflehog.tar.gz
+tar -xzf trufflehog.tar.gz
+Remove-Item trufflehog.tar.gz
+$PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
+$trufflehog_path = "$HOME\Build\trufflehog"
+if( $PATH -notlike "*"+$trufflehog_path+"*" ){
+    [Environment]::SetEnvironmentVariable("PATH", "$PATH;$trufflehog_path", "User")
 }
 ```
 
