@@ -774,7 +774,7 @@ export default function (pi: ExtensionAPI) {
         `Current working directory: ${target.remoteCwd} (Remote SSH: ${target.username}@${target.host})`
       );
 
-      const sshHint = `\n\n# Remote SSH Environment\nYou are working directly on a remote Linux server via SSH (${target.username}@${target.host}:${target.port}).\n- The remote working directory is \`${target.remoteCwd}\`.\n- Standard tools (read, write, edit, bash) execute remotely on this server.\n- Do NOT run nested \`ssh\` commands within \`bash\`.\n- All file modifications and shell commands affect the remote host.`;
+      const sshHint = `\n\n# Remote SSH Environment (Overrides Local Host OS Rules)\nYou are working directly on a remote Linux server via SSH (${target.username}@${target.host}:${target.port}).\n- The remote environment is POSIX Linux: do NOT use PowerShell or Windows-specific commands.\n- The remote working directory is \`${target.remoteCwd}\`.\n- Standard tools (read, write, edit, bash) execute remotely on this server.\n- Do NOT run nested \`ssh\` commands within \`bash\`.\n- All file modifications and shell commands affect the remote host.`;
 
       return { systemPrompt: modified + sshHint };
     }
