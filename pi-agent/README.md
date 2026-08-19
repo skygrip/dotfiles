@@ -20,11 +20,12 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   *Source*: [Pi_Config/agent/APPEND_SYSTEM.md](./Pi_Config/agent/APPEND_SYSTEM.md)
 *   **Custom TypeScript Extensions (`extensions/`)**: Tools that expand Pi's capabilities.
     *   *Source Directory*: [Pi_Config/agent/extensions/](./Pi_Config/agent/extensions/)
-    *   `permissions-gate.ts`: Restricts dangerous commands and out-of-workspace writes.
-    *   `sequential-thinking.ts`: Step-by-step reasoning tree mechanism.
-    *   `critic-review.ts`: Objective auditing sandbox for code and markdown.
-    *   `ask-question.ts`: Interactive TUI-based user prompts and menus.
-    *   `ssh.ts`: Enables remote Linux management via SSH.
+    *   `permissions-gate.ts`: Restricts dangerous commands, secret credential leaks, and out-of-workspace writes.
+    *   `gemini-web-search.ts`: Grounded web search and URL content fetcher powered by Google Gemini with SSRF guards.
+    *   `critic-review.ts`: Objective auditing sandbox for code drafts, refactors, and markdown slices.
+    *   `ask-question.ts`: Interactive TUI-based user prompts, select menus, and confirmation dialogs.
+    *   `ssh.ts`: Enables remote Linux management via multiplexed in-memory SSH/SFTP sessions.
+    *   `sequential-thinking.ts`: Step-by-step reasoning tree scratchpad.
 *   **Workspace Skills (`skills/`)**: Checklists and instruction sets loaded via the `use` command.
     *   *Source Directory*: [Pi_Config/agent/skills/](./Pi_Config/agent/skills/)
     *   `agent-config`: Configuration blueprints, templates, and setup guidelines.
@@ -61,13 +62,14 @@ Add `.pi\agent\bin` (`$HOME\.pi\agent\bin`) to your user PATH:
 echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
 ```
 
-#### Install Dependencies and Plugins
+#### Install Extension Dependencies & Plugins
+
+Install runtime packages required by custom extensions (`ssh2` for `ssh.ts`, `turndown` for `gemini-web-search.ts`) and global plugins:
 
 ```bash
 cd ~/.pi/agent/npm
-#pi install npm:pi-mcp-adapter
+npm install ssh2 turndown
 pi install npm:pi-subagents
-pi install npm:pi-web-access
 ```
 
 #### Sync Extensions
@@ -78,6 +80,29 @@ New-Item -ItemType Directory -Force -Path "$HOME\.pi\agent\extensions"
 
 # Copy extensions from Pi_Config
 Copy-Item -Path ".\Pi_Config\agent\extensions\*" -Destination "$HOME\.pi\agent\extensions\" -Force
+```
+
+#### Running Extension Tests
+
+Automated test suites for all non-trivial extensions are available under `./tests/`:
+
+```bash
+# 1. SSH Extension Tests (Offline unit + loopback server)
+node tests/test_ssh.mjs
+# Optional live remote host test:
+# node tests/test_ssh.mjs --live user@hostname
+
+# 2. Permissions Gate Safety Tests (Zero-Execution Invariant)
+node tests/test_permissions_gate.mjs
+
+# 3. Critic Review Auditor Tests (Model aliases + context isolation)
+node tests/test_critic_review.mjs
+
+# 4. Ask Question Interactive Tests (Modes + choice sanitization)
+node tests/test_ask_question.mjs
+
+# 5. Gemini Web Search & SSRF Guard Tests
+node tests/test_gemini_web_search.mjs
 ```
 
 #### Configure External Editor
