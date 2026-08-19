@@ -91,5 +91,5 @@ To deploy all portable skills into a specific project repository so any team mem
 $projectSkills = ".\.agents\skills"
 if (!(Test-Path $projectSkills)) { New-Item -ItemType Directory -Path $projectSkills -Force | Out-Null }
 
-Copy-Item -Path "C:\Users\Glen\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination $projectSkills -Exclude @("agent-config", "batch-automator") -Recurse -Force
+Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination $projectSkills -Exclude @("agent-config", "batch-automator") -Recurse -Force
 ```
