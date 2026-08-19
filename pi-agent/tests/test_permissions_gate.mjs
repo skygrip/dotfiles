@@ -184,6 +184,9 @@ export async function runPermissionsGateTests() {
     const tokens3 = extractPathTokens("python script.py ../../other_workspace/data.json > /dev/null");
     assert.ok(tokens3.some(t => t.includes("../..")));
     assert.ok(!tokens3.includes("/dev/null"), "Benign /dev/null must be filtered out");
+
+    const tokens4 = extractPathTokens("ls -lh ~/.pi/agent/extensions/");
+    assert.ok(tokens4.some(t => t.includes("~/.pi/agent/extensions")), "Must extract tilde-anchored extension directory path");
   });
 
   // ----------------------------------------------------
@@ -197,6 +200,7 @@ export async function runPermissionsGateTests() {
     assert.equal(isOutsideWorkspace("src/app.ts"), false);
     assert.equal(isOutsideWorkspace("./README.md"), false);
     assert.equal(isOutsideWorkspace("../../other_workspace/file"), true);
+    assert.equal(isOutsideWorkspace("~/.pi/agent/extensions"), true, "~/.pi/agent/extensions must resolve as outside project workspace");
   });
 
   test("Workspace Boundary: remote POSIX workspace resolution (PI_SSH_REMOTE_CWD)", () => {
@@ -283,6 +287,47 @@ export async function runPermissionsGateTests() {
       headlessCtx
     );
     assert.equal(res?.block, true, "Writing to .env must be blocked in headless mode");
+  });
+
+  await asyncTest("Out-of-Workspace Shell Interception: tool_call hook intercepts 'ls -lh ~/.pi/agent/extensions/'", async () => {
+    const registeredEvents = new Map();
+    const mockPi = {
+      registerTool() {},
+      registerCommand() {},
+      registerFlag() {},
+      on(event, handler) { registeredEvents.set(event, handler); },
+      getFlag() { return false; }
+    };
+
+    extensionFactory(mockPi);
+    const toolCallHook = registeredEvents.get("tool_call");
+
+    // 1. Headless mode: should block out-of-workspace shell access
+    const headlessCtx = { hasUI: false };
+    const resHeadless = await toolCallHook(
+      { type: "tool_call", toolName: "bash", name: "bash", input: { command: "ls -lh ~/.pi/agent/extensions/" } },
+      headlessCtx
+    );
+    assert.equal(resHeadless?.block, true, "Out-of-workspace shell command must be blocked in headless mode");
+    assert.ok(resHeadless?.reason?.includes("WORKSPACE CONFINEMENT"), "Reason must mention workspace confinement");
+
+    // 2. Interactive mode: prompts user for confirmation
+    let userPrompted = false;
+    const interactiveCtx = {
+      hasUI: true,
+      ui: {
+        async confirm(title, msg) {
+          userPrompted = true;
+          return true; // User allows it
+        }
+      }
+    };
+    const resInteractive = await toolCallHook(
+      { type: "tool_call", toolName: "bash", name: "bash", input: { command: "ls -lh ~/.pi/agent/extensions/" } },
+      interactiveCtx
+    );
+    assert.ok(userPrompted, "Interactive mode must present confirmation prompt for out-of-workspace shell access");
+    assert.equal(resInteractive, undefined, "When approved by user, hook must not block");
   });
 
   // ----------------------------------------------------

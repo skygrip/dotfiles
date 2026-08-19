@@ -132,20 +132,25 @@ export const CREDENTIAL_FILE_PATTERNS = [
 ];
 
 export function isOutsideWorkspace(targetPath: string): boolean {
+  if (!targetPath) return false;
   const workspaceRoot = getWorkspaceRoot();
   const isRemote = Boolean(process.env.PI_SSH_REMOTE_CWD);
 
   if (isRemote) {
-    // POSIX path resolution
-    const resolved = path.posix.resolve(workspaceRoot, targetPath.replace(/\\/g, "/"));
+    let p = targetPath.trim().replace(/\\/g, "/");
+    if (p === "~" || p.startsWith("~/")) {
+      const remoteHome = path.posix.dirname(workspaceRoot);
+      p = remoteHome + p.slice(1);
+    }
+    const resolved = path.posix.resolve(workspaceRoot, p);
     const normRoot = path.posix.normalize(workspaceRoot);
     return !resolved.startsWith(normRoot + "/") && resolved !== normRoot;
   }
 
-  // Local filesystem path resolution
-  const resolved = path.resolve(workspaceRoot, targetPath);
-  const normRoot = path.resolve(workspaceRoot);
-  const rel = path.relative(normRoot, resolved);
+  // Local filesystem path resolution with ~ and drive normalization
+  const normTarget = normalizePath(targetPath);
+  const normRoot = path.resolve(workspaceRoot).replace(/\\/g, "/");
+  const rel = path.relative(normRoot, normTarget);
   return rel.startsWith("..") || path.isAbsolute(rel);
 }
 
