@@ -20,6 +20,7 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
+import * as fs from "node:fs/promises";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -42,9 +43,11 @@ function loadSshModule() {
   const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
   const jiti = require(jitiPkg);
   const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
+  const piNodeModules = path.join(globalBase, "node_modules");
   const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
     alias: {
-      "@earendil-works/pi-coding-agent": globalBase
+      "@earendil-works/pi-coding-agent": globalBase,
+      "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js")
     }
   });
   const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/ssh.ts");
@@ -462,6 +465,73 @@ export async function runMockServerTests() {
       // Test /ssh command handler
       const sshCmd = registeredCommands.get("ssh");
       assert.ok(sshCmd, "/ssh command handler must be registered");
+
+      // Test write tool diff & render functionality
+      const writeTool = registeredTools.get("write");
+      assert.ok(writeTool, "write tool must be registered");
+
+      const mockTheme = {
+        fg(role, text) {
+          return `<fg:${role}>${text}</fg>`;
+        },
+        bold(text) {
+          return `<b>${text}</b>`;
+        }
+      };
+
+      // 1. renderCall format on existing file
+      const callRenderExisting = writeTool.renderCall({ path: "src/app.ts" }, mockTheme);
+      assert.ok(callRenderExisting.text.includes("write"), "renderCall must include tool name 'write'");
+
+      // 2. New file creation
+      const tempTestDir = await fs.mkdtemp(path.join(os.tmpdir(), "ssh-write-test-"));
+      const newFilePath = path.join(tempTestDir, "new_file.txt");
+      try {
+        const multiContent = Array.from({ length: 15 }, (_, i) => `line ${i + 1}`).join("\n");
+        const createRes = await writeTool.execute("call_w_1", { path: newFilePath, content: multiContent }, undefined, undefined, {});
+        assert.equal(createRes.details?.isOverwrite, false, "Must detect new file creation");
+        assert.equal(createRes.details?.lineCount, 15, "Must report 15 lines");
+
+        const collapsedRender = writeTool.renderResult(createRes, { expanded: false }, mockTheme);
+        assert.ok(collapsedRender.text.includes("ctrl+o"), "Collapsed new file render must include ctrl+o hint");
+
+        const expandedRender = writeTool.renderResult(createRes, { expanded: true }, mockTheme);
+        assert.ok(expandedRender.text.includes("line 15"), "Expanded new file render must show all lines");
+
+        // 3. File overwrite with Myers diff (contextLines = 1)
+        const overwriteRes = await writeTool.execute("call_w_2", { path: newFilePath, content: multiContent + "\nline 16" }, undefined, undefined, {});
+        assert.equal(overwriteRes.details?.isOverwrite, true, "Must detect overwrite");
+        assert.ok(overwriteRes.details?.diff, "Must compute diff");
+        assert.equal(overwriteRes.details?.diff?.addedCount, 1, "Must detect 1 added line ('line 16')");
+
+        // 4. renderResult formatted with diff and ctrl+o support
+        const diffRender = writeTool.renderResult(overwriteRes, { expanded: false }, mockTheme);
+        assert.ok(diffRender.text.includes("Overwrite Diff"), "renderResult must include 'Overwrite Diff' header");
+        assert.ok(diffRender.text.includes("+1"), "renderResult must include +1 added");
+        assert.ok(diffRender.text.includes("line 16"), "renderResult must include added content");
+
+        const expandedDiffRender = writeTool.renderResult(overwriteRes, { expanded: true }, mockTheme);
+        assert.ok(expandedDiffRender.text.includes("line 16"), "Expanded render must include full diff");
+
+        // 5. No-change overwrite (exact duplicate write)
+        const noChangeRes = await writeTool.execute("call_w_3", { path: newFilePath, content: multiContent + "\nline 16" }, undefined, undefined, {});
+        assert.equal(noChangeRes.details?.noChanges, true, "Must detect no-change overwrite");
+        const noChangeRender = writeTool.renderResult(noChangeRes, {}, mockTheme);
+        assert.ok(noChangeRender.text.includes("no changes"), "Must render 'no changes'");
+
+        // 6. Alternate parameter name: file_path
+        const altParamPath = path.join(tempTestDir, "alt_param.txt");
+        const altParamRes = await writeTool.execute("call_w_4", { file_path: altParamPath, content: "hello world" }, undefined, undefined, {});
+        assert.equal(altParamRes.details?.isOverwrite, false, "Must handle file_path parameter");
+
+        // 7. CRLF line endings normalization
+        const crlfPath = path.join(tempTestDir, "crlf.txt");
+        await writeTool.execute("call_w_5", { path: crlfPath, content: "line A\r\nline B" }, undefined, undefined, {});
+        const crlfModRes = await writeTool.execute("call_w_6", { path: crlfPath, content: "line A\r\nline C" }, undefined, undefined, {});
+        assert.equal(crlfModRes.details?.diff?.modifiedCount, 1, "Must detect modified count with CRLF endings");
+      } finally {
+        await fs.rm(tempTestDir, { recursive: true, force: true });
+      }
 
       let notifiedMsg = "";
       let setStatusVal = "initial";

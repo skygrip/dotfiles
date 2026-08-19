@@ -48,7 +48,6 @@
  *    - `before_agent_start`: Updates CWD in the system prompt and injects Remote SSH environment instructions.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
   type BashOperations,
   createBashTool,
@@ -56,9 +55,11 @@ import {
   createReadTool,
   createWriteTool,
   type EditOperations,
+  highlightCode,
   type ReadOperations,
   type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
+import { Container, Text } from "@earendil-works/pi-tui";
 import { createRequire } from "node:module";
 import * as fsSync from "node:fs";
 import * as path from "node:path";
@@ -621,6 +622,349 @@ export function createRemoteBashOps(session: SshSessionManager, remoteCwd: strin
   };
 }
 
+interface WordRange {
+  start: number;
+  end: number;
+}
+
+interface DiffHunk {
+  oldStart: number;
+  newStart: number;
+  lines: HunkLine[];
+}
+
+interface HunkLine {
+  type: "add" | "del" | "ctx" | "mod";
+  oldLineNum?: number;
+  newLineNum?: number;
+  text: string;
+  wordHighlights?: WordRange[];
+}
+
+interface LineDiffResult {
+  addedCount: number;
+  modifiedCount: number;
+  deletedCount: number;
+  hunks: DiffHunk[];
+}
+
+function tokenizeLine(line: string): { text: string; start: number; end: number }[] {
+  const tokens: { text: string; start: number; end: number }[] = [];
+  const regex = /\w+|\s+|[^\w\s]/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(line)) !== null) {
+    tokens.push({ text: match[0], start: match.index, end: match.index + match[0].length });
+  }
+  return tokens;
+}
+
+function diffArrays(oldArr: string[], newArr: string[]): { type: "equal" | "insert" | "delete"; oldIdx: number; newIdx: number }[] {
+  const N = oldArr.length;
+  const M = newArr.length;
+  if (N === 0 && M === 0) return [];
+
+  let start = 0;
+  while (start < N && start < M && oldArr[start] === newArr[start]) {
+    start++;
+  }
+  let oldEnd = N - 1;
+  let newEnd = M - 1;
+  while (oldEnd >= start && newEnd >= start && oldArr[oldEnd] === newArr[newEnd]) {
+    oldEnd--;
+    newEnd--;
+  }
+
+  const oldSlice = oldArr.slice(start, oldEnd + 1);
+  const newSlice = newArr.slice(start, newEnd + 1);
+  const script: { type: "equal" | "insert" | "delete"; oldIdx: number; newIdx: number }[] = [];
+
+  for (let i = 0; i < start; i++) {
+    script.push({ type: "equal", oldIdx: i, newIdx: i });
+  }
+
+  const subN = oldSlice.length;
+  const subM = newSlice.length;
+  const subMax = subN + subM;
+
+  if (subMax > 0) {
+    const v: Record<number, number> = { 1: 0 };
+    const trace: Record<number, number>[] = [];
+
+    for (let d = 0; d <= subMax; d++) {
+      trace.push({ ...v });
+      for (let k = -d; k <= d; k += 2) {
+        let x: number;
+        if (k === -d || (k !== d && (v[k - 1] === undefined ? -Infinity : v[k - 1]) < (v[k + 1] === undefined ? -Infinity : v[k + 1]))) {
+          x = v[k + 1];
+        } else {
+          x = v[k - 1] + 1;
+        }
+        let y = x - k;
+        while (x < subN && y < subM && oldSlice[x] === newSlice[y]) {
+          x++;
+          y++;
+        }
+        v[k] = x;
+        if (x >= subN && y >= subM) break;
+      }
+      if (v[subN - subM] >= subN) break;
+    }
+
+    let x = subN;
+    let y = subM;
+    const middleScript: { type: "equal" | "insert" | "delete"; oldIdx: number; newIdx: number }[] = [];
+
+    for (let d = trace.length - 1; d > 0; d--) {
+      const vState = trace[d];
+      const k = x - y;
+      let prevK: number;
+      if (k === -d || (k !== d && (vState[k - 1] === undefined ? -Infinity : vState[k - 1]) < (vState[k + 1] === undefined ? -Infinity : vState[k + 1]))) {
+        prevK = k + 1;
+      } else {
+        prevK = k - 1;
+      }
+      const prevX = vState[prevK];
+      const prevY = prevX - prevK;
+
+      while (x > prevX && y > prevY) {
+        x--;
+        y--;
+        middleScript.unshift({ type: "equal", oldIdx: start + x, newIdx: start + y });
+      }
+
+      if (x === prevX) {
+        y--;
+        middleScript.unshift({ type: "insert", oldIdx: -1, newIdx: start + y });
+      } else if (y === prevY) {
+        x--;
+        middleScript.unshift({ type: "delete", oldIdx: start + x, newIdx: -1 });
+      }
+    }
+
+    while (x > 0 && y > 0) {
+      x--;
+      y--;
+      middleScript.unshift({ type: "equal", oldIdx: start + x, newIdx: start + y });
+    }
+
+    script.push(...middleScript);
+  }
+
+  for (let i = 0; i < (N - 1 - oldEnd); i++) {
+    script.push({ type: "equal", oldIdx: oldEnd + 1 + i, newIdx: newEnd + 1 + i });
+  }
+
+  return script;
+}
+
+function getWordDiffs(oldLine: string, newLine: string): WordRange[] {
+  if (oldLine === newLine || !oldLine) return [];
+  const oldTokens = tokenizeLine(oldLine);
+  const newTokens = tokenizeLine(newLine);
+  const script = diffArrays(oldTokens.map(t => t.text), newTokens.map(t => t.text));
+
+  const ranges: WordRange[] = [];
+  let cur: WordRange | null = null;
+
+  for (const op of script) {
+    if (op.type === "insert") {
+      const tok = newTokens[op.newIdx];
+      if (!cur) cur = { start: tok.start, end: tok.end };
+      else cur.end = tok.end;
+    } else {
+      if (cur) {
+        ranges.push(cur);
+        cur = null;
+      }
+    }
+  }
+  if (cur) ranges.push(cur);
+  return ranges;
+}
+
+function buildDiff(oldText: string, newText: string, contextLines = 1): LineDiffResult {
+  const oldLines = oldText.split(/\r?\n/);
+  const newLines = newText.split(/\r?\n/);
+  const script = diffArrays(oldLines, newLines);
+
+  let addedCount = 0;
+  let modifiedCount = 0;
+  let deletedCount = 0;
+
+  const rawHunkLines: HunkLine[] = [];
+
+  let i = 0;
+  while (i < script.length) {
+    if (script[i].type === "equal") {
+      rawHunkLines.push({
+        type: "ctx",
+        oldLineNum: script[i].oldIdx + 1,
+        newLineNum: script[i].newIdx + 1,
+        text: newLines[script[i].newIdx]
+      });
+      i++;
+      continue;
+    }
+
+    const delOps = [];
+    const insOps = [];
+
+    while (i < script.length && script[i].type !== "equal") {
+      if (script[i].type === "delete") delOps.push(script[i]);
+      else if (script[i].type === "insert") insOps.push(script[i]);
+      i++;
+    }
+
+    const pairCount = Math.min(delOps.length, insOps.length);
+
+    for (let j = 0; j < pairCount; j++) {
+      const oldIdx = delOps[j].oldIdx;
+      const newIdx = insOps[j].newIdx;
+      modifiedCount++;
+
+      rawHunkLines.push({
+        type: "del",
+        oldLineNum: oldIdx + 1,
+        text: oldLines[oldIdx]
+      });
+
+      const wordHighlights = getWordDiffs(oldLines[oldIdx], newLines[newIdx]);
+      rawHunkLines.push({
+        type: "mod",
+        newLineNum: newIdx + 1,
+        text: newLines[newIdx],
+        wordHighlights
+      });
+    }
+
+    for (let j = pairCount; j < insOps.length; j++) {
+      addedCount++;
+      rawHunkLines.push({
+        type: "add",
+        newLineNum: insOps[j].newIdx + 1,
+        text: newLines[insOps[j].newIdx]
+      });
+    }
+
+    for (let j = pairCount; j < delOps.length; j++) {
+      deletedCount++;
+      rawHunkLines.push({
+        type: "del",
+        oldLineNum: delOps[j].oldIdx + 1,
+        text: oldLines[delOps[j].oldIdx]
+      });
+    }
+  }
+
+  const hunks: DiffHunk[] = [];
+  let currentHunkLines: HunkLine[] = [];
+  let lastChangeIdx = -1;
+
+  for (let idx = 0; idx < rawHunkLines.length; idx++) {
+    const item = rawHunkLines[idx];
+    const isChange = item.type !== "ctx";
+
+    if (isChange) {
+      if (currentHunkLines.length === 0) {
+        const startCtx = Math.max(0, idx - contextLines);
+        for (let c = startCtx; c < idx; c++) {
+          currentHunkLines.push(rawHunkLines[c]);
+        }
+      }
+      currentHunkLines.push(item);
+      lastChangeIdx = idx;
+    } else {
+      if (currentHunkLines.length > 0) {
+        if (idx - lastChangeIdx <= contextLines) {
+          currentHunkLines.push(item);
+        } else {
+          hunks.push({
+            oldStart: currentHunkLines[0].oldLineNum || 1,
+            newStart: currentHunkLines[0].newLineNum || 1,
+            lines: currentHunkLines
+          });
+          currentHunkLines = [];
+        }
+      }
+    }
+  }
+
+  if (currentHunkLines.length > 0) {
+    hunks.push({
+      oldStart: currentHunkLines[0].oldLineNum || 1,
+      newStart: currentHunkLines[0].newLineNum || 1,
+      lines: currentHunkLines
+    });
+  }
+
+  return { addedCount, modifiedCount, deletedCount, hunks };
+}
+
+function renderThemeDiff(filePath: string, diff: LineDiffResult, theme: any, expanded = false): string {
+  const parts: string[] = [];
+
+  const addTag = theme.fg("success", `+${diff.addedCount}`);
+  const modTag = theme.fg("accent", `~${diff.modifiedCount}`);
+  const delTag = theme.fg("error", `-${diff.deletedCount}`);
+  const fileHeader = theme.bold(path.basename(filePath));
+
+  parts.push(theme.fg("accent", "⚡ Overwrite Diff: ") + `${fileHeader} ${addTag} ${modTag} ${delTag}\n`);
+
+  const diffLines: string[] = [];
+  for (const hunk of diff.hunks) {
+    diffLines.push(theme.fg("muted", `  @@ -${hunk.oldStart} +${hunk.newStart} @@`));
+
+    for (const hl of hunk.lines) {
+      const lineNumStr = String(hl.newLineNum || hl.oldLineNum || "").padStart(4, " ");
+      const gutterNum = theme.fg("dim", lineNumStr);
+
+      if (hl.type === "del") {
+        const sign = theme.fg("error", "-");
+        const body = theme.fg("error", hl.text);
+        diffLines.push(`  ${sign} ${gutterNum} ${body}`);
+      } else if (hl.type === "add") {
+        const sign = theme.fg("success", "+");
+        const body = theme.fg("success", hl.text);
+        diffLines.push(`  ${sign} ${gutterNum} ${body}`);
+      } else if (hl.type === "mod") {
+        const sign = theme.fg("accent", "~");
+        let body = hl.text;
+
+        if (hl.wordHighlights && hl.wordHighlights.length > 0) {
+          let res = "";
+          let last = 0;
+          for (const r of hl.wordHighlights) {
+            res += theme.fg("accent", hl.text.substring(last, r.start));
+            res += theme.bold(theme.fg("warning", hl.text.substring(r.start, r.end)));
+            last = r.end;
+          }
+          res += theme.fg("accent", hl.text.substring(last));
+          body = res;
+        } else {
+          body = theme.fg("accent", hl.text);
+        }
+
+        diffLines.push(`  ${sign} ${gutterNum} ${body}`);
+      } else {
+        diffLines.push(`    ${gutterNum} ${theme.fg("dim", hl.text)}`);
+      }
+    }
+    diffLines.push("");
+  }
+
+  const maxLines = expanded ? diffLines.length : 12;
+  const displayed = diffLines.slice(0, maxLines);
+  const remaining = diffLines.length - maxLines;
+
+  parts.push(displayed.join("\n"));
+
+  if (remaining > 0) {
+    parts.push(theme.fg("muted", `... (${remaining} more lines, `) + theme.fg("accent", "ctrl+o") + theme.fg("muted", " to expand)"));
+  }
+
+  return parts.join("\n");
+}
+
 /**
  * Pi Extension Default Entrypoint.
  *
@@ -692,14 +1036,110 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     ...localWrite,
+    renderCall(args: any, theme: any, _renderCtx: any) {
+      const rawPath = args?.path ?? args?.file_path ?? "file";
+      return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
+    },
     async execute(id, params, signal, onUpdate, _ctx) {
+      const rawPath = params.path ?? (params as any).file_path ?? "";
+      const content = params.content ?? "";
+      let oldContent: string | null = null;
+      let isOverwrite = false;
+
       if (session.isConnected() && session.targetInfo) {
+        try {
+          const remoteOps = createRemoteReadOps(session, session.targetInfo.remoteCwd, localCwd);
+          const buf = await remoteOps.readFile(rawPath);
+          oldContent = buf.toString("utf-8");
+          isOverwrite = true;
+        } catch {
+          oldContent = null;
+        }
+
         const tool = createWriteTool(localCwd, {
           operations: createRemoteWriteOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, params, signal, onUpdate);
+        const result: any = await tool.execute(id, { path: rawPath, content }, signal, onUpdate);
+
+        if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
+          const diff = buildDiff(oldContent, content, 1);
+          result.details = { isOverwrite: true, diff, filePath: rawPath, content };
+        } else if (isOverwrite && oldContent === content && !result.isError) {
+          result.details = { isOverwrite: true, noChanges: true, filePath: rawPath };
+        } else if (!isOverwrite && !result.isError) {
+          result.details = { isOverwrite: false, content, lineCount: content.split(/\r?\n/).length, filePath: rawPath };
+        }
+        return result;
       }
-      return localWrite.execute(id, params, signal, onUpdate);
+
+      const absPath = path.isAbsolute(rawPath) ? rawPath : path.resolve(localCwd, rawPath);
+      if (fsSync.existsSync(absPath)) {
+        try {
+          oldContent = fsSync.readFileSync(absPath, "utf-8");
+          isOverwrite = true;
+        } catch {
+          oldContent = null;
+        }
+      }
+
+      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate);
+
+      if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
+        const diff = buildDiff(oldContent, content, 1);
+        const relPath = path.relative(localCwd, absPath);
+        result.details = { isOverwrite: true, diff, filePath: relPath, content };
+      } else if (isOverwrite && oldContent === content && !result.isError) {
+        const relPath = path.relative(localCwd, absPath);
+        result.details = { isOverwrite: true, noChanges: true, filePath: relPath };
+      } else if (!isOverwrite && !result.isError) {
+        const relPath = path.relative(localCwd, absPath);
+        result.details = { isOverwrite: false, content, lineCount: content.split(/\r?\n/).length, filePath: relPath };
+      }
+
+      return result;
+    },
+    renderResult(result: any, options: any, theme: any, renderCtx: any) {
+      if (result.isError) {
+        const text = result.content?.[0]?.text || "Write error";
+        return new Text(theme.fg("error", text), 0, 0);
+      }
+
+      const isExpanded = Boolean(options?.expanded || renderCtx?.expanded);
+      const details = result.details;
+
+      if (details?.noChanges) {
+        return new Text(theme.fg("muted", "✓ no changes"), 0, 0);
+      }
+
+      if (details?.isOverwrite && details.diff) {
+        const formatted = renderThemeDiff(details.filePath, details.diff, theme, isExpanded);
+        return new Text(formatted, 0, 0);
+      }
+
+      if (details && !details.isOverwrite && details.content) {
+        const ext = path.extname(details.filePath || "").slice(1);
+        let lines: string[];
+        try {
+          lines = highlightCode(details.content, ext);
+        } catch {
+          lines = details.content.split(/\r?\n/).map((l: string) => theme.fg("dim", l));
+        }
+
+        const totalLines = lines.length;
+        const maxLines = isExpanded ? totalLines : 10;
+        const displayLines = lines.slice(0, maxLines);
+        const remaining = totalLines - maxLines;
+
+        let body = displayLines.join("\n");
+        if (remaining > 0) {
+          body += `\n${theme.fg("muted", `... (${remaining} more lines, ${totalLines} total, `)}${theme.fg("accent", "ctrl+o")}${theme.fg("muted", " to expand)")}`;
+        }
+        return new Text(body, 0, 0);
+      }
+
+      const component = renderCtx?.lastComponent instanceof Container ? renderCtx.lastComponent : new Container();
+      component.clear();
+      return component;
     }
   });
 

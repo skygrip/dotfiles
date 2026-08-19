@@ -229,18 +229,24 @@ Default values: ${1:-default_value}. Note: Pi uses bash-style parameter substitu
 
 ### 7. Extensions Blueprint (`.pi/extensions/[name].ts`)
 TypeScript modules compiled dynamically by JITI. Used to register custom tools, commands, or lifecycle interceptors:
+
+#### Key Architectural Rule: Tool Registration vs Event Interception
+* **`pi.registerTool({ name: "toolName", ... })`**: Defines a new LLM-callable tool or overrides a built-in tool. **Only ONE extension can register a tool with a given name**; multiple extensions attempting to register the same tool name will trigger a startup conflict error.
+* **`pi.on("tool_call")` & `pi.on("tool_result")`**: Lifecycle event hooks. **Zero conflicts**—multiple extensions can listen to, patch arguments for, block, snapshot, or enrich the same tool execution simultaneously.
+
 ```typescript
 /**
- * @fileoverview Custom Pi Coding Agent Extension.
- * @description Registers custom tools, commands, and tool interceptors.
+ * @fileoverview Custom Pi Coding Agent Extension Blueprint.
+ * @description Demonstrates custom tools, commands, and non-conflicting event hooks.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { isToolCallEventType, isWriteToolResult } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 
 export default function (pi: ExtensionAPI) {
-  // 1. Register a custom tool
+  // 1. Register a custom tool (Unique name)
   pi.registerTool({
     name: "custom_tool_name",
     label: "Custom Tool",
@@ -278,13 +284,20 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // 3. Register lifecycle interceptors
-  pi.on("tool_call", async (event: any, ctx: any) => {
-    // Intercept bash or file tools before execution
-    if (event.toolName === "bash" && event.input?.command?.includes("dangerous_cmd")) {
-      return { block: true, reason: "Blocked by safety policy." };
+  // 3. Pre-execution Lifecycle Hook (tool_call: argument patching & safety checks)
+  pi.on("tool_call", async (event, ctx) => {
+    if (isToolCallEventType("bash", event)) {
+      if (event.input.command?.includes("dangerous_cmd")) {
+        return { block: true, reason: "Blocked by safety policy." };
+      }
     }
-    return undefined;
+  });
+
+  // 4. Post-execution Lifecycle Hook (tool_result: output enrichment)
+  pi.on("tool_result", async (event, ctx) => {
+    if (isWriteToolResult(event)) {
+      // Non-destructively enrich or format tool output
+    }
   });
 }
 ```
