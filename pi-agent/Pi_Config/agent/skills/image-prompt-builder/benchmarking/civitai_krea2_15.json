@@ -1,0 +1,405 @@
+[
+  {
+    "id": 137624813,
+    "model": "krea2\\krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/0bcbe2e0-e70a-4ecc-b388-bf75212ee1b7/original=true/0bcbe2e0-e70a-4ecc-b388-bf75212ee1b7.jpeg",
+    "width": 872,
+    "height": 1152,
+    "reactions": 1366,
+    "stats": {
+      "cryCount": 113,
+      "laughCount": 155,
+      "likeCount": 1366,
+      "dislikeCount": 0,
+      "heartCount": 525,
+      "commentCount": 15
+    },
+    "prompt": "Ink splatter,   A whimsical and minimalist ink illustration of a cartoon black cat sitting perfectly inside a giant black crescent moon. The cat has oversized, glowing lemon-yellow eyes, delicate whiskers, and a stylized silhouette. The crescent moon and the cat's body share a textured black ink fill with subtle scratchy white highlights and lines. The background is a vintage, aged beige parchment paper texture, densely covered with tiny black stippling dots, small black crosses, and hand-drawn sparkling stars representing a starry night sky. Linocut art style, screen print aesthetic, charming and mystical atmosphere. <lora:Detailer-KREA2:1>",
+    "negativePrompt": "Ink splatter,   A whimsical and minimalist ink illustration of a cartoon black cat sitting perfectly inside a giant black crescent moon. The cat has oversized, glowing lemon-yellow eyes, delicate whiskers, and a stylized silhouette. The crescent moon and the cat's body share a textured black ink fill with subtle scratchy white highlights and lines. The background is a vintage, aged beige parchment paper texture, densely covered with tiny black stippling dots, small black crosses, and hand-drawn sparkling stars representing a starry night sky. Linocut art style, screen print aesthetic, charming and mystical atmosphere.",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler_simple",
+      "seed": 696617783003877,
+      "model": "krea2\\krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-07-24T03:50:09.000Z"
+  },
+  {
+    "id": 139241307,
+    "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/423662f9-bceb-491f-b513-e17c23a52b4a/original=true/423662f9-bceb-491f-b513-e17c23a52b4a.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 395,
+    "stats": {
+      "cryCount": 15,
+      "laughCount": 13,
+      "likeCount": 395,
+      "dislikeCount": 0,
+      "heartCount": 113,
+      "commentCount": 5
+    },
+    "prompt": "M4nga5tyle, 水彩手描きイラストテイスト、リアルな表現。水彩のにじみを活かした線画風ライン。黒髪の女の子、白いワンピース、水たまりが広がる雨上がりの野原で赤い傘をさし、黄色い長靴を履いて歩いている。白い猫、広がる田園風景。水面に朧げに写る女の子の姿。シンプルでやわらかい、自然で穏やかな雰囲気。エメラルドグリーン、ホワイトを基調とした配色。",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "euler_ancestral_simple",
+      "seed": 243689102054763,
+      "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-11T10:28:52.000Z"
+  },
+  {
+    "id": 138531798,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/141279fc-5c8c-41c2-8f71-d786853a8ebb/original=true/141279fc-5c8c-41c2-8f71-d786853a8ebb.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 126,
+    "stats": {
+      "cryCount": 5,
+      "laughCount": 12,
+      "likeCount": 126,
+      "dislikeCount": 0,
+      "heartCount": 32,
+      "commentCount": 10
+    },
+    "prompt": "Thick buttery strokes. Vermilion red and cyan blue occupy the same space, neither backing down. A woman's face exists where they fight—her cheek catching cyan on its curve, her temple holding vermilion in its hollow, the transition between them painted in strokes of deep violet and burnt umber. Her eye is half cyan, half vermilion, the division running through the pupil, the iris a small point of gold where they meet. Her lips are painted with strokes of both, vermilion on the upper, cyan on the lower, blending at the corners into purple. Her hair escapes around her face, auburn strokes taking cyan on their edges, vermilion in their depths. She is not central. She is the surface where color happens. <lora:KREA2_ta86_myw4y:1.0> <lora:KreaDreamfog_V2:0.5> <lora:we_paint_krea2:0.5>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 236305059647313,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 138291698,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/9e039b97-e343-45b1-a106-f0511202d893/original=true/9e039b97-e343-45b1-a106-f0511202d893.jpeg",
+    "width": 1536,
+    "height": 2048,
+    "reactions": 28,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 28,
+      "dislikeCount": 0,
+      "heartCount": 3,
+      "commentCount": 3
+    },
+    "prompt": "A woman stands at the edge of a small, still pond deep in a dense, pine forest in the quiet hours of early evening, the water dark and glassy, reflecting the deep green of the surrounding trees and the sliver of pale sky visible through the canopy, the air cool and thick with the scent of earth and pine needles. The scene is rendered in soft, photorealistic detail, every needle and shadow captured with quiet, melancholic precision, the forest holding its breath around her. She wears a simple, oversized sweater and jeans, her hands tucked into her pockets, her face turned toward the water, her expression distant and heavy, her gaze fixed on something beyond the surface, a memory or a loss she carries with her always. The mood is one of gentle, aching melancholy, the woman a solitary figure in the deep, silent forest, the pond a mirror of her own quiet grief, the fading light a soft reminder of all that has passed and cannot be reclaimed. <lora:KreaDreamfog_V1:1.0>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 496285465652640,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-07-31T00:12:00.000Z"
+  },
+  {
+    "id": 138291691,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/2e9e07df-413c-4467-889e-c1b6d2a461f6/original=true/2e9e07df-413c-4467-889e-c1b6d2a461f6.jpeg",
+    "width": 1536,
+    "height": 2048,
+    "reactions": 17,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 17,
+      "dislikeCount": 0,
+      "heartCount": 1,
+      "commentCount": 0
+    },
+    "prompt": "A remote, windswept causeway stretches across a vast, grey marshland at low tide, the mud flats glistening under a pale, watery sun that offers no warmth, the reeds on either side bending low in the persistent, damp wind. The scene is rendered in crisp, photorealistic detail, every ripple in the mud and blade of grass captured with stark precision, the air cold and heavy with the smell of salt and decay. A woman in a long, black dress and veil stands at the midpoint of the causeway, her figure sharp and impossibly still against the flat, grey horizon, her face obscured, her hands clasped at her waist, her presence a dark, fixed point in the vast, empty landscape. Behind her, a small, horse-drawn carriage has stopped, the driver frozen in place, the horse restless and tossing its head, the figures in the carriage leaning forward with expressions of confusion and fear as they stare at the woman blocking their path. The mood is one of deep, creeping dread, the woman in black a silent, immovable obstacle, her stillness more threatening than any movement, the marsh stretching endlessly around them, the sky pressing down like a lid. <lora:KreaDreamfog_V1:1.0>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 840736957423316,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-07-31T00:12:00.000Z"
+  },
+  {
+    "id": 138291703,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/05568e76-f809-4211-aaa3-67539a14932f/original=true/05568e76-f809-4211-aaa3-67539a14932f.jpeg",
+    "width": 1536,
+    "height": 2048,
+    "reactions": 23,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 23,
+      "dislikeCount": 0,
+      "heartCount": 3,
+      "commentCount": 0
+    },
+    "prompt": "A woman stands at the railing of a slow-moving riverboat on a humid, hazy afternoon, the water below her dark and thick, the banks of the river dense with tangled, green vegetation, the air heavy with heat and the smell of mud and decay, the light soft and golden, filtering through the haze like a half-remembered dream. She wears a simple, white dress and a wide-brimmed hat, her face turned away from the viewer, her gaze fixed on the distant shore, her body young and slender, her skin pale against the deep, saturated greens of the riverbank. Behind her, scattered across the open deck, other passengers exist as soft, indistinct shapes — a man in a pale suit leaning against the far railing, holding a cigarette, his face obscured by shadow and the angle of his hat. The scene is drenched in the deep, bleeding colors of a fading afternoon — warm amber, burnt orange, pale gold, the green of the vegetation so rich it seems to pulse with life. Her expression is one of quiet, knowing melancholy, her eyes holding a distance that suggests she is watching something she will not see again, the river a slow, patient current carrying her away from the past and toward a future she cannot imagine. The air is thick with the sound of insects and the distant, muffled voices of the passengers around her, the boat moving with a slow, languid rhythm that feels both timeless and fleeting, her stillness a quiet act of memory, the other passengers a blur of life that she cannot touch, the river a stage for a love that has already ended, the haze a veil that separates her from the world she is leaving behind. <lora:KreaDreamfog_V1:1.0>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 300234179678821,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-07-31T00:12:00.000Z"
+  },
+  {
+    "id": 139403316,
+    "model": "Model_2726029",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/a871421c-e9fd-4cd9-aba2-9c38ccbe8c75/original=true/a871421c-e9fd-4cd9-aba2-9c38ccbe8c75.jpeg",
+    "width": 1216,
+    "height": 1664,
+    "reactions": 137,
+    "stats": {
+      "cryCount": 4,
+      "laughCount": 1,
+      "likeCount": 137,
+      "dislikeCount": 0,
+      "heartCount": 32,
+      "commentCount": 2
+    },
+    "prompt": "A surreal dreamcore double-exposure painting combining Makoto Shinkai anime brilliance with award-winning photography concepts. Set on a mirror-like salt flat under a twilight blue sky, an asymmetric wide shot shows a small human child sitting beside a colossal, glowing snowy owl. The crisp, razor-sharp reflection of distant cumulus clouds and starlight on the water's surface overlaps with a blurred foreground layer of motion-streaked white feathers and out-of-focus sapphire lens bokeh. Blown-out sky highlights, deep shadow tones, and dense film grain unify the quiet, otherworldly serenity.",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "loras": {}
+    },
+    "createdAt": "2026-08-12T00:08:00.000Z"
+  },
+  {
+    "id": 138554156,
+    "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/02e664f8-5697-4881-bc68-d5f78ca74c17/original=true/02e664f8-5697-4881-bc68-d5f78ca74c17.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 169,
+    "stats": {
+      "cryCount": 4,
+      "laughCount": 8,
+      "likeCount": 169,
+      "dislikeCount": 0,
+      "heartCount": 36,
+      "commentCount": 2
+    },
+    "prompt": "M4nga5tyle, Luminogram, japanese monster, yokai, hyakume, (many eyes on her hole body:1.2), (chromatic aberration, polarized:1.2), gradation grading, color contrast, impressionism, horror film grain, 1girl, walking toward viewer awkwardly. Photogram technique, ethereal and abstract effects, light and shadow interplay, luminous quality, experimental process, direct light exposure, unique and unpredictable results, artistic experimentation. dutch angle,",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "euler_ancestral_simple",
+      "seed": 950361966331035,
+      "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-03T10:30:25.000Z"
+  },
+  {
+    "id": 138531804,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/545205ff-27ef-4b4b-a6b6-174155decac4/original=true/545205ff-27ef-4b4b-a6b6-174155decac4.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 18,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 18,
+      "dislikeCount": 0,
+      "heartCount": 4,
+      "commentCount": 0
+    },
+    "prompt": "An oil painting, an impressionist nocturne dominated by profound, luminous black. The scene is a cat stepping through a shadowed doorway, its body a fluid dark shape against the deeper gloom, where over ninety percent of the canvas is a masterful mixture of thick, separate oil strokes: ivory black, Prussian blue, and alizarin crimson that coalesce into a velvety, infinite darkness. The only vivid color is a slash of impasto emerald, the cat's collar, and a few broken reflections of it on the dark floorboards and the edge of the doorframe. The painting is a study in extracting light and a single, shocking hue from an abyss of textured black paint. <lora:KREA2_ta86_myw4y:1.0> <lora:KreaDreamfog_V2:0.5> <lora:we_paint_krea2:0.5>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 1013651904321303,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 139622896,
+    "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/053ecbc6-5aa1-4d75-835a-799c135782d2/original=true/053ecbc6-5aa1-4d75-835a-799c135782d2.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 186,
+    "stats": {
+      "cryCount": 7,
+      "laughCount": 6,
+      "likeCount": 186,
+      "dislikeCount": 0,
+      "heartCount": 39,
+      "commentCount": 5
+    },
+    "prompt": "wabisabi, japan, a woman, samurai, holding a katana ,sheathing , from side. In the background is a sun resembling the Japanese flag, with slightly faded, pale colors. wind, stray hair, \nA ferociously energetic illustration style built on wild, gestural linework that captures raw movement every stroke, loose ink-driven cross-hatching layered with confident painterly color, chaotic yet controlled compositions bursting with kinetic tension, richly textured surface detail giving textures a visceral, almost sculptural intensity, and a bold, untamed painterly ferocity that feels equally at home in fine art and manga tradition.",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "euler_ancestral_simple",
+      "seed": 389524718335799,
+      "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-14T10:31:39.000Z"
+  },
+  {
+    "id": 138532377,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/1d381220-060e-4db9-a645-316017427bfa/original=true/1d381220-060e-4db9-a645-316017427bfa.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 33,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 33,
+      "dislikeCount": 0,
+      "heartCount": 6,
+      "commentCount": 7
+    },
+    "prompt": "A mysterious hooded figure emerges from shadows bathed in a dynamic gradient of golden yellows to electric blues, punctuated by vibrant floral accents. The figure's form is rendered with seamless gradient transitions and ethereal luminosity, showcasing meticulous textural depth characteristic of digital painting and anime-inspired illustration. A velvety darkness contrasts with luminous elements creating serene enchantment and wonder. Integral luminous glow effects simulate dynamic radiance while scattered glowing particles and subtle bioluminescent motifs enhance magical vibrancy. Smooth gradient transitions produce fluid motion, enhancing the images ethereal quality and immersive depth. <lora:KREA2_ta86_myw4y:1.0> <lora:KreaDreamfog_V2:0.5> <lora:we_paint_krea2:0.5>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 346222624555027,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 138531896,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/dc1cf2cc-4660-49dd-b9f6-ad7d86108082/original=true/dc1cf2cc-4660-49dd-b9f6-ad7d86108082.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 15,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 15,
+      "dislikeCount": 0,
+      "heartCount": 2,
+      "commentCount": 0
+    },
+    "prompt": "An impressionist oil painting with aggressive impasto, depicting a woman standing alone on a windswept cliffside under a starless night sky. The scene is almost entirely consumed by an abyss of layered black paint, thick strokes of ivory black and Prussian blue applied in a rough, sculptural manner that mimics the rugged texture of the rocks and the turbulence of the sea below. Her figure is a dark shape against the void, her hair whipped across her face, rendered in sweeping strokes of deep charcoal. The only luminous element is the faint, silvery glow of moonlight breaking through a crack in the clouds, spilling a narrow column of pale blue-white light onto the woman's shoulder and the edge of the cliff at her feet. The light is applied in thick, separate dabs of pigment, creating a rough, glistening texture that stands out starkly against the matte, velvety darkness of the surrounding paint, while the waves below are suggested by faint, broken strokes of deep teal that seem to absorb the light rather than reflect it. <lora:KREA2_ta86_myw4y:1.0>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 538530679579938,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 138531628,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/85702886-c4c2-4392-bbbf-98bf2523e77e/original=true/85702886-c4c2-4392-bbbf-98bf2523e77e.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 14,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 14,
+      "dislikeCount": 0,
+      "heartCount": 1,
+      "commentCount": 0
+    },
+    "prompt": "An oil painting, an impressionist nocturne dominated by profound, luminous black. The scene is a woman descending shadowed opera house steps at night, where over ninety percent of the canvas is a masterful mixture of thick, separate oil strokes: Prussian blue, ivory black, and raw umber that coalesce into a velvety, infinite darkness. The only vivid color is a slash of impasto crimson, the lining of a cloak over her arm, and a few broken reflections of it on wet cobblestones. The painting is a study in extracting light and a single, shocking hue from an abyss of textured black paint. <lora:KREA2_ta86_myw4y:1.0>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 1001624185060018,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 138531795,
+    "model": "krea2_turbo_int8_convrot.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/2e6239c1-2f61-4b01-8866-4c24788a7f4a/original=true/2e6239c1-2f61-4b01-8866-4c24788a7f4a.jpeg",
+    "width": 1256,
+    "height": 1672,
+    "reactions": 17,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 17,
+      "dislikeCount": 0,
+      "heartCount": 3,
+      "commentCount": 2
+    },
+    "prompt": "An oil painting, an impressionist nocturne dominated by profound, luminous black. The scene is a woman seated on a shadowed park bench in a modern city at night, her body folded into the darkness, where over ninety percent of the canvas is a masterful mixture of thick, separate oil strokes: ivory black, burnt umber, and deep violet that coalesce into a velvety, infinite darkness. The only vivid color is a slash of impasto electric pink, the thin straps of her sandals, and a few broken reflections of it on her bare ankles and the dark ground beneath her feet. The painting is a study in extracting light and a single, shocking hue from an abyss of textured black paint. <lora:KREA2_ta86_myw4y:1.0> <lora:KreaDreamfog_V2:0.5> <lora:we_paint_krea2:0.5>",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 485008979761222,
+      "model": "krea2_turbo_int8_convrot.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-02T12:37:00.000Z"
+  },
+  {
+    "id": 139495544,
+    "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/90f9a4d1-a7e2-46c0-9f96-f4813deda9be/original=true/90f9a4d1-a7e2-46c0-9f96-f4813deda9be.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 170,
+    "stats": {
+      "cryCount": 6,
+      "laughCount": 6,
+      "likeCount": 170,
+      "dislikeCount": 0,
+      "heartCount": 36,
+      "commentCount": 9
+    },
+    "prompt": "((painterly)), score_9, oil\\(medium\\),faux traditional media, Chiaroscuro, impressionism, 1 girl , wabisabi, japan, she is holding a bamboo broom and looks a little sad. in the garden of traditional japanese house , sliding door with shouji , wide shot. She stands there wearing a white kimono, a navy-blue hakama skirt, and red-strapped zori sandals. She exudes an air of simplicity. Sunlight filtering through the trees illuminates her youthful profile, on which a hint of sadness is visible; she looks as if she might burst into tears at any moment.",
+    "negativePrompt": "",
+    "meta": {
+      "steps": 8,
+      "cfgScale": 1,
+      "sampler": "res_multistep_simple",
+      "seed": 513966314777189,
+      "model": "krea2TurboOfficialComfy_krea2TurboInt8.safetensors",
+      "loras": {}
+    },
+    "createdAt": "2026-08-14T10:30:35.000Z"
+  }
+]

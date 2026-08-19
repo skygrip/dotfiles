@@ -25,61 +25,37 @@ This playbook provides a complete technical guide to instruction-based image edi
 ```
 
 ### A. Appearance Path: In-Context DiT Patching & 3D RoPE Positioning
-`Krea2EditModelPatch` intercepts Krea 2's `SingleStreamDiT` forward pass, concatenating the clean source latents directly into the sequence:
-
-$$\text{Sequence} = [\text{context (text)} \mid \text{source\_imgs (clean refs)} \mid \text{tgt\_img (noisy target)}]$$
-
-* **3D Rotary Position Embeddings (3D-RoPE):**
-  * **Text tokens:** Assigned frame index $(0, 0, 0)$.
-  * **Source reference 1 (Scene / Primary):** Assigned RoPE **Frame 1** $(1, y, x)$.
-  * **Source reference 2 (Subject / Person):** Assigned RoPE **Frame 2** $(2, y, x)$.
-  * **Target latent:** Assigned RoPE **Frame 0** $(0, y, x)$.
-* **`fit` Mode Geometry (v1.2+ Fractional Centering):**
-  Resamples the source image onto the exact $/16$ latent patch grid at scale $sc = \min(px\_h/ih, px\_w/iw)$, eliminating coordinate skip and seam artifacts when source and target aspect ratios differ.
+`Krea2EditModelPatch` intercepts Krea 2's `SingleStreamDiT` forward pass, concatenating clean source latents into the sequence via 3D Rotary Position Embeddings (3D-RoPE):
+* **Frame Index Allocations:**
+  * **Text tokens:** Frame $(0, 0, 0)$.
+  * **Source Reference 1 (Scene / Primary):** Frame **1** $(1, y, x)$.
+  * **Source Reference 2 (Subject / Person):** Frame **2** $(2, y, x)$.
+  * **Target Latent:** Frame **0** $(0, y, x)$.
+* **`fit` Mode Geometry (v1.2+ Fractional Centering):** Resamples source images onto the exact $/16$ latent patch grid, eliminating coordinate skip and seam artifacts when source and target aspect ratios differ.
 * **Reference Attention Fidelity Dial (`ref_boost`):**
-  Applies an additive logit bias to the self-attention mechanism:
-  $$\text{bias}[:, :, \text{rows0}:, \text{cols}] = \ln(\max(\text{ref\_boost}, 10^{-4}))$$
-  * Recommended: **`ref_boost: 4.0`** (for the subject reference in v1.2) to strongly lock facial identity.
-  * `ref_boost_mask`: Downsamples a pixel-space mask via area interpolation to restrict the attention logit boost specifically to the face or garment.
+  * **`ref_boost: 4.0`** (recommended for subject reference) strongly locks facial identity and fine features.
+  * **`ref_boost: 0.9`** loosens self-attention anchor to allow seamless object removal.
+  * `ref_boost_mask`: Restricts the attention boost specifically to a masked face or garment.
 
 ### B. Semantic Grounding Path: Qwen3-VL Vision-Language Encoding
-`Krea2EditGroundedEncode` feeds the instruction prompt and the downscaled source image(s) into **Qwen3-VL (4B)** via an image-grounded ChatML template:
-```text
-<|im_start|>system
-Describe the image by detailing the color, shape, size, texture, quantity, text, spatial relationships of the objects and background:<|im_end|>
-<|im_start|>user
-<|vision_start|><|image_pad|><|vision_end|>{prompt}<|im_end|>
-<|im_start|>assistant
-```
+`Krea2EditGroundedEncode` feeds the instruction prompt and the downscaled source image(s) into **Qwen3-VL (4B)**:
 * **`grounding_px` Quality Dial (default `768`):**
   * **`1024`**: Maximizes facial identity and fine likeness retention (optimal for portraits).
   * **`512`**: Loosens grounding for stubborn, heavy environment/background replacements.
 
 ### C. Pixel Path & VRAM Pre-Encoding (`target_latent`)
-* When using `vae` + `source_image`, wire `target_latent` (the same empty latent feeding `KSampler.latent_image`).
-* This primes the resolution cache during node execution, preventing mid-sampling VAE encode calls that force ComfyUI to offload model weights to CPU.
+* When using `vae` + `source_image`, wire `target_latent` (the empty latent feeding `KSampler.latent_image`) to prime the resolution cache and prevent offloading model weights to CPU during sampling.
 
 ---
 
 ## 2. Model Selection, CFG & Sampling Matrix
 
-```
-┌───────────────────────────┬─────────────┬───────────┬──────────────┬──────────────┬────────────────────────────────────────────────────────┐
-│ Edit Operation            │ Engine Base │ Steps     │ CFG Scale    │ Sampler      │ Mechanical Rules & Wiring                              │
-├───────────────────────────┼─────────────┼───────────┼──────────────┼──────────────┼────────────────────────────────────────────────────────┤
-│ 1. Attribute / Garment /  │ K2 Turbo    │ 8–12      │ **CFG 1.0**  │ `euler`      │ Fast path (~1 min at 2MP). Empty prompt negative.      │
-│    Recolor / Restyle      │             │           │              │ (simple)     │ Negative prompt is inert at CFG 1.0.                   │
-├───────────────────────────┼─────────────┼───────────┼──────────────┼──────────────┼────────────────────────────────────────────────────────┤
-│ 2. Salient Object /       │ **K2 RAW**  │ **20–25** │ **CFG 3.0**  │ `euler`      │ **CRITICAL:** Turbo at CFG 1 will re-render subject!   │
-│    Subject Deletion       │             │           │              │ (simple)     │ Must use RAW at CFG 3.0 with grounded empty negative.  │
-├───────────────────────────┼─────────────┼───────────┼──────────────┼──────────────┼────────────────────────────────────────────────────────┤
-│ 3. Two-Input Composition  │ K2 RAW or   │ 12–25     │ CFG 1.0–3.0  │ `euler`      │ Place both references simultaneously in one pass       │
-│    (Person into Scene)    │ Turbo       │           │              │ (simple)     │ (Scene → main inputs, Person → `_b` inputs).           │
-├───────────────────────────┼─────────────┼───────────┼──────────────┼──────────────┼────────────────────────────────────────────────────────┤
-│ 4. Environment / Lighting │ **K2 RAW**  │ **22–28** │ **CFG 2.5**  │ `euler`      │ Replaces entire backdrop and restyles ambient light    │
-│    Restage & Relight      │             │           │              │ (simple)     │ while preserving character posture and identity.       │
-└───────────────────────────┴─────────────┴───────────┴──────────────┴──────────────┴────────────────────────────────────────────────────────┘
-```
+| Edit Operation | Engine Base | Steps | CFG Scale | Sampler | Mechanical Rules & Wiring |
+|---|---|---|---|---|---|
+| **1. Attribute / Garment / Recolor / Restyle** | K2 Turbo | 8–12 | **CFG 1.0** | `euler` (simple) | Fast path (~1 min at 2MP). Empty prompt negative (inert at CFG 1.0). |
+| **2. Salient Object / Subject Deletion** | **K2 RAW** | **20–25** | **CFG 3.0** | `euler` (simple) | **CRITICAL:** Turbo at CFG 1 re-renders subject! Must use RAW at CFG 3.0 with grounded empty negative (`""`). |
+| **3. Two-Input Composition (Person into Scene)** | K2 RAW or Turbo | 12–25 | CFG 1.0–3.0 | `euler` (simple) | Place both references simultaneously (Scene $\rightarrow$ main inputs, Person $\rightarrow$ `_b` inputs). |
+| **4. Environment / Lighting Restage & Relight** | **K2 RAW** | **22–28** | **CFG 2.5** | `euler` (simple) | Replaces entire backdrop and restyles ambient light while preserving character posture and identity. |
 
 > ⚠️ **Sampler Warning:** Always use **`euler` (ODE)** with the `simple` scheduler at **denoise `1.0`**. Avoid SDE samplers like `er_sde`, which degrade reference coherence in edit pipelines.
 

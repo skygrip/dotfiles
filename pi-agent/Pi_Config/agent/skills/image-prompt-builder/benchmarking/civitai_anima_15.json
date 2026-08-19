@@ -1,0 +1,392 @@
+[
+  {
+    "id": 138330976,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/f4143944-4822-423d-a823-9e6c5701dd8b/original=true/f4143944-4822-423d-a823-9e6c5701dd8b.jpeg",
+    "width": 1080,
+    "height": 1584,
+    "reactions": 134,
+    "stats": {
+      "cryCount": 7,
+      "laughCount": 8,
+      "likeCount": 134,
+      "dislikeCount": 0,
+      "heartCount": 32,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality, amazing quality, very aesthetic, extremely detailed, very detailed, absurdres, newest, highres, score_9, score_8, \nbloom effects,\n\nsignature \"Futurabbit\",\n\n(1girl, solo, simple background), miku, green hair, spring onion,  running, holding onion, foreshortening, focus on spring onion, \nblending, abstract lines in background showing her speed forward,",
+    "negativePrompt": "face focus, cropped image, cropped, messy hair, dim light, score_1, score_2, score_3, bad anatomy, bad proportions, deformed anatomy, deformed face, deformed eyes, multiple fingers,",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 4,
+      "sampler": "er_sde",
+      "seed": 924038729048860,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-07-31T11:43:52.000Z"
+  },
+  {
+    "id": 139083425,
+    "model": "Model_2458426",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/979a37c7-651d-4f89-8d95-44871699677b/original=true/979a37c7-651d-4f89-8d95-44871699677b.jpeg",
+    "width": 1024,
+    "height": 1536,
+    "reactions": 308,
+    "stats": {
+      "cryCount": 21,
+      "laughCount": 21,
+      "likeCount": 308,
+      "dislikeCount": 0,
+      "heartCount": 109,
+      "commentCount": 0
+    },
+    "prompt": "TakamichiStyle,\n\n1girl,glasses,black hair,twintail,\n\nA girl holding a DSLR camera smiles from beneath a tree thick with autumn-colored leaves.\n\nanime coloring,masterpiece,best quality,newest,highres,absurdres,incredibly absurdres,very awa,very aesthetic,extreme aesthetic, general,High Resolution,Esthetic,Excellent,score_10,",
+    "negativePrompt": "(worst quality, low quality, score_1, score_2, score_3:2), jpeg artifacts, logo, watermark, (bad anatomy:1.2), (bad hands:1.6), missing finger, (extra digits:1.4), fewer digits, disfigured, mutation, 4 fingers, (6 fingers:1.5),  missing toe,  4toes, (6 toes:1.5), anthro,twitching penis,(((pen, score_1, score_2, score_3, artist name, text,twitter username,pixiv id, pixiv username,patreon username, korean text,arrow \\(symbol\\), chibi inset, chibi,pointless censoring,web address, company name,Squid))),traditional chinese text,chinese text,jpeg artifacts, signature, watermark, multiple views, 2koma, (chibi,speech bubble:2), text,commentary request,(bad anatomy, bad hands:1.2), abstract, signature, worst quality, red theme, blue theme,ai-generated,bad hands,halo,bad feet,extra digits,fewer digits,extra hands,extra arms,extra legs,extra foots,extra faces,multiple heads,missing limb,amputee,severed limb,blur censor,mutated hands,distorted,anatomy,bar_censor,censored,text,twitter_username,mosaic_censoring,black bar,black bar censor,text, abstract, glitch, deformed, mutated, ugly, disfigured, long body, lowres, bad anatomy, bad hands, extra digit, fewer digits, cropped, lowres, (worst quality, bad quality:1.2), bad anatomy, jpeg artifacts, signature, watermark, username, signature, simple background, conjoined,twitter_username, coat,cloak,overcoat,sweat,Wrinkles on clothes, see-through, heart censor, patreon logo,Monochrome, line art,",
+    "meta": {
+      "loras": {}
+    },
+    "createdAt": "2026-08-08T06:27:15.000Z"
+  },
+  {
+    "id": 139480925,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/276c04e1-df67-4df9-bc93-57ed8f7e53af/original=true/276c04e1-df67-4df9-bc93-57ed8f7e53af.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 58,
+    "stats": {
+      "cryCount": 2,
+      "laughCount": 13,
+      "likeCount": 58,
+      "dislikeCount": 0,
+      "heartCount": 18,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality, score_9, very aesthetic, , aisaka taiga, toradora!, 1girl, brown eyes, hair between eyes, brown hair, long hair, white shirt, in trash can, sticky note on forehead, ffrlogo on sticky note, angry,  A girl is inside a trash can with only her head sticking out. A note is stuck to the girl's forehead. The note says ffrlogo. , <lora:Anima\\style\\anima-turbo-lora-v0.2.safetensors:1.0:1.0> <lora:Anima\\edit\\new\\ffrlogo-step00001200.safetensors:0.8:0.8>",
+    "negativePrompt": ", bad quality, worst quality,bad anatomy, jpeg artifacts, ugly, blurry, signature,  score_1, score_2, score_3, artist name",
+    "meta": {
+      "steps": 12,
+      "cfgScale": 1,
+      "sampler": "Euler",
+      "seed": 567128343897290,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-12T08:11:38.000Z"
+  },
+  {
+    "id": 138590240,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/a91a34ef-ba19-4bb9-8ff7-b0c78f6f9119/original=true/a91a34ef-ba19-4bb9-8ff7-b0c78f6f9119.jpeg",
+    "width": 832,
+    "height": 1216,
+    "reactions": 71,
+    "stats": {
+      "cryCount": 4,
+      "laughCount": 4,
+      "likeCount": 71,
+      "dislikeCount": 0,
+      "heartCount": 31,
+      "commentCount": 0
+    },
+    "prompt": "@hyouuani, masterpiece, best quality, newest, absurdres, highres, black bodysuit, gauntlets, eyeshadow, red gloves, two sides up, black capelet, red hairband, medium hair, black eyes, 1girl, solo, toeless legwear, foreshortening, from below, looking down at viewer, sitting, lip gloss, water, onsen, knees up, hugging knees, visible air, smell, mature female, medium build, steam, toe ring, female focus, dynamic angle, heavy breathing, blush, (feet:1.2), toes, gradient, toenails, toenail polish, lips, breath, groin,",
+    "negativePrompt": "low quality, worst quality, low resolution, blurry, pixelated, jpeg artifacts, poorly detailed, bad shading, oversaturated, dull colors, bad anatomy, disproportioned body, extra limbs, bad hands, deformed fingers, extra digits, bad feet, fused toes, missing toes, asymmetrical face, lopsided eyes, multiple views, cloned face, extra heads, messy composition, censored, censor bar, mosaic censoring, monochrome, watermark, artist name, username, low quality, worst quality, low resolution, blurry, pixelated, jpeg artifacts, poorly detailed, bad shading, oversaturated, dull colors, bad anatomy, disproportioned body, extra limbs, bad hands, deformed fingers, extra digits, bad feet, fused toes, missing toes, logo",
+    "meta": {
+      "steps": 24,
+      "cfgScale": 4,
+      "sampler": "Euler a",
+      "seed": 189780805,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-03T01:22:15.000Z"
+  },
+  {
+    "id": 139818112,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/914a886f-6fb1-447a-8991-4060b77ffe9d/original=true/914a886f-6fb1-447a-8991-4060b77ffe9d.jpeg",
+    "width": 1248,
+    "height": 1824,
+    "reactions": 112,
+    "stats": {
+      "cryCount": 7,
+      "laughCount": 7,
+      "likeCount": 112,
+      "dislikeCount": 0,
+      "heartCount": 40,
+      "commentCount": 1
+    },
+    "prompt": "masterpiece, best quality, Smo0thL1nes, a dramatic and eerie scene. The central figure is a woman with a fair complexion and long, dark hair, partially obscured by a tattered, black cloth that drapes over her head and face, creating a sense of mystery and concealment. Her lips are slightly parted, revealing a hint of pink, and she has a serene yet intense expression. The woman's eyes are covered, and she wears a dark, hooded cloak that wraps around her shoulders and neck, blending seamlessly into the shadowy background. The texture of the cloak appears rough and worn, suggesting it might be made of coarse fabric or even animal hide. To the right of the woman, perched on her shoulder, is a large, black raven. The bird's glossy feathers contrast sharply with the dark tones of the woman's attire, and its beak is poised close to her lips, creating an almost ominous, intimate connection between the two. The raven's eyes are bright and alert, adding to the sense of tension and mystique in the image. The background is a muted, dark green, with subtle gradients and textures that enhance the overall dark, gothic atmosphere of the piece. <lora:AnimaMythSmo0thL1nes:1>",
+    "negativePrompt": "worst quality, low quality, artist name, blurry, jpeg artifacts, chromatic aberration",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 5,
+      "sampler": "ER SDE",
+      "seed": 4184602932,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-15T23:06:09.000Z"
+  },
+  {
+    "id": 139658658,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/f00d224b-128b-4ea2-90c7-8af2cd2ebab7/original=true/f00d224b-128b-4ea2-90c7-8af2cd2ebab7.jpeg",
+    "width": 1248,
+    "height": 1824,
+    "reactions": 233,
+    "stats": {
+      "cryCount": 7,
+      "laughCount": 5,
+      "likeCount": 233,
+      "dislikeCount": 0,
+      "heartCount": 49,
+      "commentCount": 6
+    },
+    "prompt": "masterpiece, best quality, Smo0thL1nes, a close-up of a woman's face partially submerged in water. Her skin is pale, and her wet, dark hair clings to her face, adding a dramatic effect. The most striking feature is her glowing yellow eyes, which stand out against the dimly lit background. The water reflects her face, creating a mirror-like effect. The setting appears to be a natural body of water, with reeds and a faint light source visible in the background, suggesting a nighttime scene. The overall mood is mysterious and slightly eerie, enhanced by the dark color palette and the intense gaze of the subject. <lora:AnimaMythSmo0thL1nes:1>",
+    "negativePrompt": "worst quality, low quality, artist name, blurry, jpeg artifacts, chromatic aberration",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 5,
+      "sampler": "ER SDE",
+      "seed": 1466835235,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-14T15:00:00.000Z"
+  },
+  {
+    "id": 139640249,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/3d604565-f94f-4ede-9810-1323b2addb98/original=true/3d604565-f94f-4ede-9810-1323b2addb98.jpeg",
+    "width": 1248,
+    "height": 1824,
+    "reactions": 56,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 2,
+      "likeCount": 56,
+      "dislikeCount": 0,
+      "heartCount": 20,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality, a lively tavern scene. The central figure is a female tiefling with distinct fantasy features: she has large, curved ram horns, pointed ears, and a playful, mischievous expression. Her skin is a rich purple hue, and her wavy, dark blue hair cascades over her shoulders. She is wearing a stylish outfit: a white, off-the-shoulder blouse adorned with gold embroidery, a deep purple corset with a golden trim, and a flowing blue skirt with intricate gold patterns. She accessorizes with gold hoop earrings, a matching necklace, and a pair of fingerless gloves. She is playing a lute, with her fingers deftly pressing the strings, her eyes closed in concentration. The background shows a bustling tavern with warm, ambient lighting from lanterns hanging from the wooden beams. Patrons are seated at wooden tables, engaged in conversation and drinking. The atmosphere is lively and festive, with rich colors and textures enhancing the cozy, rustic environment. The detailed textures of the wooden furniture and the soft fabric of the characters' clothes add depth to the scene, making it feel immersive and inviting.  <lora:AnimaMythSmo0thL1nes:1> Smo0thL1nes",
+    "negativePrompt": "worst quality, low quality, artist name, blurry, jpeg artifacts, chromatic aberration",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 5,
+      "sampler": "ER SDE",
+      "seed": 2510842423,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-13T23:46:29.000Z"
+  },
+  {
+    "id": 139127666,
+    "model": "anima_aestheticV11_",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/e24af534-1ed0-4b29-bbde-4228e06036c5/original=true/e24af534-1ed0-4b29-bbde-4228e06036c5.jpeg",
+    "width": 1024,
+    "height": 1536,
+    "reactions": 12,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 12,
+      "dislikeCount": 0,
+      "heartCount": 3,
+      "commentCount": 0
+    },
+    "prompt": "@Ani3rel, @4x0style, @p1ct01, @rella, @748cm_style, @kiriainaANIMAstyle, masterpiece, absurdres, very aesthetic, best quality, highres, newest, score_9, score_8, blurry background,\nprofessor niyaniya \\(blue archive\\), blue archive, 1girl, green eyes, hair between eyes, blonde hair, long hair, black pantyhose, black gloves, black coat, black skirt, open coat, halo, yellow halo, red bowtie, black sailor collar, long sleeves, beret, black hat, cane, light blush, sitting on an old carousel horse, holding cane, light smile, looking at viewer, nostalgic, sepia, monochrome, muted colors, warm sunlight",
+    "negativePrompt": "worst quality, low quality, lowres, score_1, score_2, score_3, bad anatomy,    watermark, artist name",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 5,
+      "sampler": "er_sde",
+      "seed": 743976702145778,
+      "model": "anima_aestheticV11_",
+      "loras": {}
+    },
+    "createdAt": "2026-08-08T16:47:29.000Z"
+  },
+  {
+    "id": 139419929,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/88a69f12-9d70-4bb8-8206-75793271be5f/original=true/88a69f12-9d70-4bb8-8206-75793271be5f.jpeg",
+    "width": 2592,
+    "height": 4608,
+    "reactions": 6,
+    "stats": {
+      "cryCount": 1,
+      "laughCount": 1,
+      "likeCount": 6,
+      "dislikeCount": 0,
+      "heartCount": 3,
+      "commentCount": 0
+    },
+    "prompt": "@fefss, @p1ct01, Dark fantasy style, score_7, score_8, oil painting, Hand-drawn feel, impasto, brush stroke, highres, extremely detailed 8k wallpaper, illustration, depth of field, great quality, masterpiece, best quality, amazing quality, very aesthetic, absurdres, wallpaper, detail eyes, dark background, Cinematic Lighting, \n@wlop, @dino_(dinoartforame), @ciloranko ---, 1girl, pa-15 (high school thrills) (girls' frontline), girls' frontline, \nblue hair, long hair, twintails, messy hair, blue eyes, heart-shaped pupils, fox ears, fox tail, \ndark school uniform, white shirt, sweater vest, black skirt, plaid skirt, white thighhighs, blue bowtie, \nstanding, holding blade, \nlooking at viewer, closed mouth, \nupper body, from front, \nindoors, abandoned classroom, dusk, \nA fox-eared schoolgirl standing in an abandoned classroom at dusk with a blade in hand, Her expression is quiet and dangerous, rating: sensitive\n<lora:Turbo-ANIMA-v3:1.0> <lora:anima_base_slider_step800:3.0> <lora:anima-darklight-style-v1-000194:0.65> <lora:ff_v1_epoch20:0.5> <lora:p1ct01_v1_epoch20:0.5> <lora:Dark fantasy style:0.7>",
+    "negativePrompt": "worst quality, low quality, score_1, score_2, score_3, artist name, censored, shiny skin",
+    "meta": {
+      "steps": 12,
+      "cfgScale": 1,
+      "sampler": "Euler a Simple",
+      "seed": 636634320071375,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-11T17:14:26.000Z"
+  },
+  {
+    "id": 139100597,
+    "model": "anima_aestheticV11_",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/0a146bcb-5929-41de-a2b1-b717031266fe/original=true/0a146bcb-5929-41de-a2b1-b717031266fe.jpeg",
+    "width": 1024,
+    "height": 1536,
+    "reactions": 9,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 9,
+      "dislikeCount": 0,
+      "heartCount": 2,
+      "commentCount": 0
+    },
+    "prompt": "@Ani3rel, @4x0style, @p1ct01, @rella, @748cm_style, @kiriainaANIMAstyle, masterpiece, absurdres, very aesthetic, best quality, highres, newest, score_9, score_8, blurry background,\nplana \\(blue archive\\), blue archive, 1girl, black eyes, grey eyes, hair over one eye, red pupils, white hair, pink hair, colored inner hair, very long hair, long hair, grey hair, two-tone hair, black hairband, single braid, hair ribbon, small breasts, black serafuku, black coat, black pantyhose, black skirt, pleated skirt, halo, red halo, black choker, long sleeves, black sailor collar, white ribbon, white neckerchief, foot out of frame, sitting on bench, crossed legs, holding shoe, loafers, bus station, rainy, from below, looking down at viewer, straight-on, blush, jitome, closed mouth, feet, soles, toes, spread toes, see-through toes, foot focus, smell feet, smell shoe, heavy breathing, steam, wet pantyhose, wet feet",
+    "negativePrompt": "worst quality, low quality, lowres, score_1, score_2, score_3, bad anatomy,    watermark, artist name",
+    "meta": {
+      "steps": 35,
+      "cfgScale": 5,
+      "sampler": "er_sde",
+      "seed": 129789217449812,
+      "model": "anima_aestheticV11_",
+      "loras": {}
+    },
+    "createdAt": "2026-08-08T10:22:24.000Z"
+  },
+  {
+    "id": 139520877,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/1a59a2a0-ac84-4348-859f-7e19f750c8e8/original=true/1a59a2a0-ac84-4348-859f-7e19f750c8e8.jpeg",
+    "width": 1152,
+    "height": 1472,
+    "reactions": 137,
+    "stats": {
+      "cryCount": 3,
+      "laughCount": 2,
+      "likeCount": 137,
+      "dislikeCount": 0,
+      "heartCount": 48,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality, good quality, highres, absurdres, shiny skin, shadow, (anime screenshot:1.5), (@hanavbara, @butcha-u @re:shimashima:0.3), sidelighting, grey theme,\ntakashiro hiroko, 1girl, mature female, solo, holding book, cowboy shot, hand up, hand on own cheek, floating cursive text in the air (\"Did you miss your sensei? ❤️\":1.2) on left side of screen,\nlooking at viewer, smile, blush, head tilt, happy,\npurple eyes, long hair, red hair, earrings, red nails, \nblouse, bowtie, blazer, red skirt, taut skirt, black thighhighs, garter straps,\ncurvy, large breasts,\nschool, window, sky, sunlight, city, sunset, evening,\n<lora:Anima-Dit 1_0 Takashiro Hiroko Teacher:1>",
+    "negativePrompt": "worst quality, low quality, bad quality, lowres, extra digits, fewer digits, bad hands, bad feet, missing limbs, mutated hands, jpeg artifacts, old, early, flat color, (blurry:1.2), head out of frame, speech bubble,",
+    "meta": {
+      "steps": 30,
+      "cfgScale": 1.4,
+      "sampler": "Euler a CFG++",
+      "seed": 523351531,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-12T18:22:44.000Z"
+  },
+  {
+    "id": 138924288,
+    "model": "Model_2458426",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/f96dce89-ec2c-401a-a1d9-199bfe65b9e6/original=true/f96dce89-ec2c-401a-a1d9-199bfe65b9e6.jpeg",
+    "width": 1024,
+    "height": 1536,
+    "reactions": 4,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 4,
+      "dislikeCount": 0,
+      "heartCount": 4,
+      "commentCount": 0
+    },
+    "prompt": "TakamichiStyle,\n\nThree characters appear, with the following appearances:\n\ngirl1: (1girl,brown hair,short hair,young female,flat chest,blue summer dress,hat,bare foot)\n\ngirl2: (2girl,brown hair,twintail,young female,flat chest,pink summer dress,hat,bare foot)\n\nmother: (3girl,brown hair,long hair,single braid hair,parted bangs, curtain bangs.(mature female:2),medium breasts,T-shirt,jeans,bare foot)\n\n\nTwo young girls wearing summer dresses are lying on the wooden floor of an old country house, laughing. They are sweaty and wearing hats; an adult woman—their mother—sits beside them, smiling as she watches them. A suitcase sits nearby.\nThe interior of the house is dim and shaded, with the earthen-floored entryway visible a short distance away. Outside, it is bright, and dazzling sunlight pours in.\n\nanime coloring,masterpiece,best quality,newest,highres,absurdres,incredibly absurdres,very awa,very aesthetic,extreme aesthetic, general,High Resolution,Esthetic,Excellent,score_10,",
+    "negativePrompt": "(worst quality, low quality, score_1, score_2, score_3:2), jpeg artifacts, logo, watermark, (bad anatomy:1.2), (bad hands:1.6), missing finger, (extra digits:1.4), fewer digits, disfigured, mutation, 4 fingers, (6 fingers:1.5),  missing toe,  4toes, (6 toes:1.5), anthro,twitching penis,(((pen, score_1, score_2, score_3, artist name, text,twitter username,pixiv id, pixiv username,patreon username, korean text,arrow \\(symbol\\), chibi inset, chibi,pointless censoring,web address, company name,Squid))),traditional chinese text,chinese text,jpeg artifacts, signature, watermark, multiple views, 2koma, (chibi,speech bubble:2), text,commentary request,(bad anatomy, bad hands:1.2), abstract, signature, worst quality, red theme, blue theme,ai-generated,bad hands,halo,bad feet,extra digits,fewer digits,extra hands,extra arms,extra legs,extra foots,extra faces,multiple heads,missing limb,amputee,severed limb,blur censor,mutated hands,distorted,anatomy,bar_censor,censored,text,twitter_username,mosaic_censoring,black bar,black bar censor,text, abstract, glitch, deformed, mutated, ugly, disfigured, long body, lowres, bad anatomy, bad hands, extra digit, fewer digits, cropped, lowres, (worst quality, bad quality:1.2), bad anatomy, jpeg artifacts, signature, watermark, username, signature, simple background, conjoined,twitter_username, coat,cloak,overcoat,sweat,Wrinkles on clothes, see-through, heart censor, patreon logo,Monochrome, line art,",
+    "meta": {
+      "loras": {}
+    },
+    "createdAt": "2026-08-06T14:04:28.000Z"
+  },
+  {
+    "id": 139432289,
+    "model": "anima-aesthetic-v1.1",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/8fcb6054-83d2-4141-b5ff-f106c98199ce/original=true/8fcb6054-83d2-4141-b5ff-f106c98199ce.jpeg",
+    "width": 1152,
+    "height": 896,
+    "reactions": 4,
+    "stats": {
+      "cryCount": 0,
+      "laughCount": 0,
+      "likeCount": 4,
+      "dislikeCount": 0,
+      "heartCount": 2,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality,\nscore_9, score_8_up, score_7_up, very aesthetic, ultra-detailed,\nellen joe, zenless zone zero, maid outfit,\nretro pop art comic poster style, manga advertisement aesthetic,\nlimited duotone palette, hot pink and dark maroon only, white base background,\nhalftone dot pattern background, polka dot texture overlay, pink halftone screen,\nhorizontal stripe panel divider at top, dark header bar,\nfull body sitting pose, three quarter angle, holding large oversized claymore sword diagonally across body, confident slightly pouty expression,\nflat cel shading, heavy black ink outlines, no gradients, high contrast,\nspeech bubble top right rounded cloud shape containing (text: \"Cute\" cursive bubbly font pink color with heart symbol),\nlarge bold block text left side (text: \"ELLEN JOE\" massive stacked letters, white fill black outline bold comic font, slight perspective tilt),\ndiamond speech bubble center right (text: \"ViCTORiA HOUSEKEEPiNG\" mixed case bold font white background black text),\nrounded rectangle bubble bottom center (text: \"ZENLESS ZONE ZERO\" bold caps black text white background),\nstarburst explosion shape bottom right (text: \"BANG!\" bold black caps comic font),\nrounded bubble bottom left (text: \"CooL!\" cursive mixed case white text pink outline),\nsmall japanese katakana text scattered background faded,\nexclamation mark floating near head, small heart symbols scattered,\naction lines radiating from character, dynamic energy lines,\ncomic book retro energy, playful aggressive mood",
+    "negativePrompt": "realistic, 3d, cgi, full color palette, multicolor, gradient shading, soft lighting, bloom, plastic, extra limbs, bad anatomy, ugly, low quality, watermark, simple background, plain",
+    "meta": {
+      "steps": 35,
+      "cfgScale": 5,
+      "sampler": "Euler a",
+      "seed": 702614016502976,
+      "model": "anima-aesthetic-v1.1",
+      "loras": {}
+    },
+    "createdAt": "2026-08-11T19:56:34.000Z"
+  },
+  {
+    "id": 139334527,
+    "model": "anima_aestheticV11",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/27516cf5-f016-4c21-9015-49738fde678c/original=true/27516cf5-f016-4c21-9015-49738fde678c.jpeg",
+    "width": 960,
+    "height": 1280,
+    "reactions": 214,
+    "stats": {
+      "cryCount": 8,
+      "laughCount": 5,
+      "likeCount": 214,
+      "dislikeCount": 0,
+      "heartCount": 72,
+      "commentCount": 0
+    },
+    "prompt": "masterpiece, best quality, good quality, highres, absurdres, shadow, shadow, bloom, \ningrid \\(taimanin murasaki\\), \n(portrait:1.5), close-up,\nmature female, dark-skinned female, solo, three quarter view,  three quarter profile, from side,\nlooking at viewer, kubrick stare, parted lips, \npink hair, long hair, hair intakes, makeup, purple lips, lipstick, thick eyebrows, (mole under mouth:0.9), yellow eyes,\nhigh-low black dress, high collar, red cape, turtleneck,\ncurvy,\noutdoors, city, night, neon lights,\n<lora:Anima-Dit 1_0 Ingrid Taimanin Murasaki Makai Kishi Ingrid:1>",
+    "negativePrompt": "worst quality, low quality, bad quality, lowres, extra digits, fewer digits, bad hands, bad feet, missing limbs, mutated hands, jpeg artifacts, old, early, flat color, (blurry:1.5), sketch, lineart, muscular, stomach, naked, (nude:1.5), cleavage, breasts, underboob, clothing cutout, head out of frame, hair out of frame, large breasts, huge breasts,",
+    "meta": {
+      "steps": 35,
+      "cfgScale": 5,
+      "sampler": "ER SDE",
+      "seed": 2023122161,
+      "model": "anima_aestheticV11",
+      "loras": {}
+    },
+    "createdAt": "2026-08-10T20:25:35.000Z"
+  },
+  {
+    "id": 139102071,
+    "model": "Model_2458426",
+    "imageUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/fc4413c6-36a7-4d98-9eb8-4aa45902dec2/original=true/fc4413c6-36a7-4d98-9eb8-4aa45902dec2.jpeg",
+    "width": 1024,
+    "height": 1536,
+    "reactions": 15,
+    "stats": {
+      "cryCount": 1,
+      "laughCount": 2,
+      "likeCount": 15,
+      "dislikeCount": 0,
+      "heartCount": 7,
+      "commentCount": 0
+    },
+    "prompt": "TakamichiStyle,\nTwo girls appear.\n\n1girl,black hair,twin long pigtail,slender,One wears a short-sleeved shirt with blue horizontal stripes and a flared polka-dot skirt; she has a clear tote bag slung over her shoulder and is holding a beach ball. She has a popsicle in her mouth.\n\n2girl,brown hair,short hair,plump,The other wears a pink camisole and denim shorts; she has a water bottle slung over her shoulder and is carrying a backpack. She is holding a swim ring and has a towel resting on her head. She also has a popsicle in her mouth.\n\nThe two girls are walking along a coastal road in Japan, looking toward the viewer. Bright summer sunlight pours down, and towering cumulus clouds float in the blue sky. In the background, the deep blue sea is visible, and an old Japanese-style shop stands by the roadside; the rest of the scenery is covered in fresh green foliage.\n\nanime coloring,masterpiece,best quality,newest,highres,absurdres,incredibly absurdres,very awa,very aesthetic,extreme aesthetic, general,High Resolution,Esthetic,Excellent,score_10,",
+    "negativePrompt": "(worst quality, low quality, score_1, score_2, score_3:2), jpeg artifacts, logo, watermark, (bad anatomy:1.2), (bad hands:1.6), missing finger, (extra digits:1.4), fewer digits, disfigured, mutation, 4 fingers, (6 fingers:1.5),  missing toe,  4toes, (6 toes:1.5), anthro,twitching penis,(((pen, score_1, score_2, score_3, artist name, text,twitter username,pixiv id, pixiv username,patreon username, korean text,arrow \\(symbol\\), chibi inset, chibi,pointless censoring,web address, company name,Squid))),traditional chinese text,chinese text,jpeg artifacts, signature, watermark, multiple views, 2koma, (chibi,speech bubble:2), text,commentary request,(bad anatomy, bad hands:1.2), abstract, signature, worst quality, red theme, blue theme,ai-generated,bad hands,halo,bad feet,extra digits,fewer digits,extra hands,extra arms,extra legs,extra foots,extra faces,multiple heads,missing limb,amputee,severed limb,blur censor,mutated hands,distorted,anatomy,bar_censor,censored,text,twitter_username,mosaic_censoring,black bar,black bar censor,text, abstract, glitch, deformed, mutated, ugly, disfigured, long body, lowres, bad anatomy, bad hands, extra digit, fewer digits, cropped, lowres, (worst quality, bad quality:1.2), bad anatomy, jpeg artifacts, signature, watermark, username, signature, simple background, conjoined,twitter_username, coat,cloak,overcoat,sweat,Wrinkles on clothes, see-through, heart censor, patreon logo,Monochrome, line art,",
+    "meta": {
+      "loras": {}
+    },
+    "createdAt": "2026-08-08T10:54:55.000Z"
+  }
+]
