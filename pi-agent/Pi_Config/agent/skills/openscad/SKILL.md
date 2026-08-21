@@ -1,6 +1,6 @@
 ---
 name: openscad
-description: 3D parametric CSG modeling in OpenSCAD. Enforces immutable SSA variable rules, difference/union CSG hygiene, BOSL2 library usage, and OpenSCAD MCP preview generation.
+description: 3D parametric CSG modeling in OpenSCAD. Enforces immutable SSA variable rules, difference/union CSG hygiene, BOSL2 library usage, headless CLI rendering, and multimodal vision inspection.
 ---
 
 # OpenSCAD Agent Guide
@@ -12,8 +12,8 @@ This document covers what LLMs get wrong when writing OpenSCAD — traps, anti-p
 Look up primitives, transforms, functions, and modules here — do not guess syntax from memory:
 - **Cheat Sheet**: [openscad.org/cheatsheet](https://openscad.org/cheatsheet/)
 - **Full Manual**: [OpenSCAD Wikibook](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language)
+- **CLI Usage**: [Command-Line Reference](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Using_OpenSCAD_in_a_command_line_environment)
 - **BOSL2 Library Wiki**: [github.com/revarbat/BOSL2/wiki](https://github.com/revarbat/BOSL2/wiki)
-- **MCP Server**: [quellant/openscad-mcp](https://github.com/quellant/openscad-mcp)
 
 ---
 
@@ -88,7 +88,7 @@ Avoid setting a fixed global `$fn = 64` — it wastes thousands of polygons on t
 Instead, control smoothness globally with `$fa` (minimum angle in degrees) and `$fs` (minimum fragment size in mm), coupled with dynamic `$preview` LOD:
 
 ```openscad
-// Fast draft preview in MCP, ultra-smooth for export:
+// Fast draft preview in CLI/GUI, ultra-smooth for export:
 $fa = $preview ? 12 : 5;
 $fs = $preview ? 1.5 : 0.4;
 
@@ -156,9 +156,9 @@ difference() {
 
 ---
 
-## Multi-Part MCP Inspection Pattern
+## Multi-Part Parametric Inspection Pattern
 
-Structure multi-part projects so MCP can inspect fit, exploded internal cavities, and flat print plates:
+Structure multi-part projects so agents can inspect assembly fit, exploded internal cavities, and flat print plates via parameter injection:
 
 ```openscad
 /* [View Mode] */
@@ -219,12 +219,25 @@ cuboid([40, 30, 15], rounding=3, anchor=BOTTOM) {
 
 ---
 
-## Headless CLI Image & STL Rendering (Zero-MCP Fallback)
+## Binary Discovery & CLI Locations
 
-If the OpenSCAD MCP server is unavailable, render previews directly from the command line:
+When invoking OpenSCAD directly, check the system PATH or the standard platform paths below:
 
-```bash
-# 1. Fast PNG preview render with Manifold backend & custom camera
+| Platform | Default Path / Binary | Notes |
+| :--- | :--- | :--- |
+| **Windows (Nightly)** | `C:\Program Files\OpenSCAD (Nightly)\openscad.com` | Preferred for modern **Manifold** engine. Always use `.com` (console wrapper) over `.exe` to keep stdout/stderr attached. |
+| **Windows (Stable)** | `C:\Program Files\OpenSCAD\openscad.com` | Standard release path. |
+| **macOS** | `/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD` | Headless CLI inside the `.app` bundle. |
+| **Linux** | `/usr/bin/openscad` or `flatpak run org.openscad.OpenSCAD` | Standard package manager path. |
+
+---
+
+## Headless CLI Image & STL Rendering
+
+Agents with shell access should render previews and export models directly via the CLI:
+
+```powershell
+# 1. Fast PNG preview render with Manifold backend & custom isometric camera
 openscad -o preview.png --camera=0,0,0,55,0,25,120 --imgsize=1024,768 --colorscheme="Tomorrow Night" --backend=manifold model.scad
 
 # 2. Orthographic top-down / front view
@@ -237,20 +250,63 @@ openscad -o output.3mf --backend=manifold model.scad
 
 ---
 
-## MCP Workflow
+## 🔁 Autonomous Design & Inspection Loop
 
-Use the [openscad-mcp](https://github.com/quellant/openscad-mcp) server tools to validate and render models. **Never rely solely on code review — always visually verify.**
+Follow this structured cycle for all OpenSCAD modeling tasks:
 
-### Design Loop
-1. **Write/edit** the `.scad` code following the rules in this document.
-2. **Validate syntax** $\rightarrow$ `validate_scad`.
-3. **Render previews** $\rightarrow$ `render_perspectives` for multi-angle views, or `render_single` for a specific view.
-4. **Visually inspect** the rendered images — check for:
-   - Flatness on $Z = 0$ build plane
-   - Missing or misplaced cuts (use `#` highlight modifier if unclear)
-   - Wall thickness ($> 1.2\text{ mm}$ for FDM printing)
-   - Overhang angles ($< 45^\circ$ without support)
-5. **Export** $\rightarrow$ `export_model` to generate STL/3MF once verified.
+```mermaid
+graph LR
+    A["1. Parameter Spec"] --> B["2. 2D/3D Code"]
+    B --> C["3. Multi-View Render"]
+    C --> D{"4. Vision Check"}
+    D -- "Defect / Fit Issue" --> E["5. Modifier Debug (#, !, %)"]
+    E --> B
+    D -- "Verified" --> F["6. Production Export"]
+```
+
+### Step 1: Constraint & Parameter Declaration
+* Declare all critical mating dimensions, clearances, and customizer ranges at the top of the file.
+* Include standard print clearance offsets (`+0.4mm` for loose fit, `+0.15mm` for press fit).
+* Define the `mode` switch (`assembled`, `exploded`, `print_*`).
+
+### Step 2: Parametric Implementation
+* Build 2D cross-sections first and `linear_extrude()`.
+* Apply `epsilon = 0.01` overlap on all negative `difference()` cuts.
+* Add bottom-edge chamfers (0.5–1.0 mm) on bed-contact surfaces to avoid elephant's foot.
+
+### Step 3: Multi-View Compilation & Rendering
+Render both isometric and orthographic projections:
+```powershell
+# Isometric assembly overview
+openscad -o preview_iso.png --camera=0,0,0,55,0,25,120 --imgsize=1024,768 --colorscheme="Tomorrow Night" --backend=manifold -D 'mode="assembled"' model.scad
+
+# Exploded internal cavity check
+openscad -o preview_exploded.png --camera=0,0,0,55,0,25,140 --imgsize=1024,768 --colorscheme="Tomorrow Night" --backend=manifold -D 'mode="exploded"' model.scad
+
+# Top-down orthographic hole alignment check
+openscad -o preview_top.png --projection=o --camera=0,0,0,0,0,0,100 --backend=manifold model.scad
+```
+
+### Step 4: Visual Inspection Checklist (Agent Vision / `view_file`)
+Inspect rendered PNGs against the following criteria:
+* [ ] **Bed Contact**: Bottom face sits completely flat on $Z = 0$.
+* [ ] **Cut Cleanness**: No coincident-face shimmer (Z-fighting) or paper-thin ghost membranes.
+* [ ] **Fastener Pockets**: Screw heads and nuts have sufficient counterbore depth and rim clearance.
+* [ ] **Wall Thickness**: No FDM structural walls thinner than $1.2\text{ mm}$ (3 perimeters).
+* [ ] **Overhangs**: Overhangs stay under $45^\circ$, or bridges have straight anchor paths.
+
+### Step 5: Diagnostic Debugging (When Issues Arise)
+* **Highlight Cuts (`#`)**: Prefix cutter with `#` (e.g., `#cylinder(...)`) to render it in transparent red and verify cut boundaries.
+* **Isolate Module (`!`)**: Prefix suspected buggy module with `!` to render only that child tree.
+* **Ghost Reference (`%`)**: Prefix reference envelopes with `%` to view mating boundaries without affecting CSG booleans.
+* **Non-Manifold Warning**: If Manifold warns of non-manifold geometry, look for shared edges with 0 thickness or cuts missing `-epsilon` offset.
+
+### Step 6: Production Export
+Compile final production meshes with the Manifold backend:
+```powershell
+openscad -o output.stl --backend=manifold -D 'mode="print_base"' model.scad
+openscad -o output.3mf --backend=manifold -D 'mode="print_base"' model.scad
+```
 
 > [!TIP]
 > **Fast CSG Rendering (`Manifold` Backend):**
