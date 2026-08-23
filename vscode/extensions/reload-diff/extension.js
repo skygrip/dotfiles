@@ -4,10 +4,12 @@ const vscode = require('vscode');
 const path = require('path');
 const { computeLineDiff } = require('./diff');
 
-let snapshots = new Map();         // fsPath.toLowerCase() -> text
-let previousSnapshots = new Map(); // fsPath.toLowerCase() -> text (before latest reload)
-let activeDiffs = new Map();       // fsPath.toLowerCase() -> diffResult
+let snapshots = new Map();              // fsPath.toLowerCase() -> text (baseline text)
+let previousSnapshots = new Map();      // fsPath.toLowerCase() -> text (before latest reload)
+let activeDiffs = new Map();            // fsPath.toLowerCase() -> diffResult
 let autoFadeTimers = new Map();
+let internalSaves = new Map();          // fsPath.toLowerCase() -> timestamp
+let pendingExternalReloads = new Map(); // fsPath.toLowerCase() -> timestamp
 let statusBarItem;
 let outputChannel;
 
@@ -17,6 +19,7 @@ let deletedDecorationType;
 let wordDiffDecorationType;
 
 function getKey(uri) {
+    if (!uri) return '';
     return uri.fsPath ? uri.fsPath.toLowerCase() : uri.toString().toLowerCase();
 }
 
@@ -24,6 +27,12 @@ function log(msg) {
     if (outputChannel) {
         outputChannel.appendLine(`[${new Date().toLocaleTimeString()}] ${msg}`);
     }
+}
+
+function isRecentInternalSave(key) {
+    const lastSave = internalSaves.get(key);
+    if (!lastSave) return false;
+    return (Date.now() - lastSave) < 2000;
 }
 
 function createDecorations(context) {
@@ -127,6 +136,22 @@ function clearDecorations(editor) {
     editor.setDecorations(wordDiffDecorationType, []);
 }
 
+function clearDocumentDiff(key) {
+    activeDiffs.delete(key);
+    if (autoFadeTimers.has(key)) {
+        clearTimeout(autoFadeTimers.get(key));
+        autoFadeTimers.delete(key);
+    }
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (getKey(editor.document.uri) === key) {
+            clearDecorations(editor);
+        }
+    }
+    if (vscode.window.activeTextEditor && getKey(vscode.window.activeTextEditor.document.uri) === key) {
+        updateStatusBar(vscode.window.activeTextEditor);
+    }
+}
+
 function updateStatusBar(editor) {
     if (!editor || editor.document.uri.scheme !== 'file') {
         statusBarItem.hide();
@@ -143,6 +168,69 @@ function updateStatusBar(editor) {
         statusBarItem.show();
     } else {
         statusBarItem.hide();
+    }
+}
+
+function processExternalReload(doc) {
+    const config = vscode.workspace.getConfiguration('reloadDiff');
+    if (!config.get('enabled', true)) return;
+    if (doc.uri.scheme !== 'file') return;
+
+    const key = getKey(doc.uri);
+
+    // If the document has unsaved user edits, VS Code does not reload from disk.
+    // Changes cannot be viewed in the editor, so do not trigger diffs.
+    if (doc.isDirty) {
+        pendingExternalReloads.delete(key);
+        return;
+    }
+
+    const oldText = snapshots.get(key);
+    const newText = doc.getText();
+
+    if (oldText === undefined) {
+        snapshots.set(key, newText);
+        pendingExternalReloads.delete(key);
+        return;
+    }
+
+    if (oldText === newText) {
+        return;
+    }
+
+    // Save previous snapshot for side-by-side comparison
+    previousSnapshots.set(key, oldText);
+
+    // Compute line and intra-line word diff
+    const diff = computeLineDiff(oldText, newText);
+    activeDiffs.set(key, diff);
+    snapshots.set(key, newText);
+    pendingExternalReloads.delete(key);
+
+    log(`External reload diff applied in ${path.basename(doc.fileName)}: +${diff.stats.addedCount} ~${diff.stats.modifiedCount} -${diff.stats.deletedCount}, ${diff.wordRanges.length} word changes`);
+
+    // Apply decorations to visible editors showing this document
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (getKey(editor.document.uri) === key) {
+            applyDecorations(editor, diff);
+        }
+    }
+
+    if (vscode.window.activeTextEditor && getKey(vscode.window.activeTextEditor.document.uri) === key) {
+        updateStatusBar(vscode.window.activeTextEditor);
+    }
+
+    // Handle auto-fade if configured (default 30 seconds)
+    const autoFade = config.get('autoFadeSeconds', 30);
+    if (autoFade > 0) {
+        if (autoFadeTimers.has(key)) {
+            clearTimeout(autoFadeTimers.get(key));
+        }
+        const timer = setTimeout(() => {
+            clearDocumentDiff(key);
+            log(`Auto-cleared highlights after ${autoFade}s for ${path.basename(doc.fileName)}`);
+        }, autoFade * 1000);
+        autoFadeTimers.set(key, timer);
     }
 }
 
@@ -247,6 +335,8 @@ function activate(context) {
                 snapshots.delete(key);
                 previousSnapshots.delete(key);
                 activeDiffs.delete(key);
+                internalSaves.delete(key);
+                pendingExternalReloads.delete(key);
                 if (autoFadeTimers.has(key)) {
                     clearTimeout(autoFadeTimers.get(key));
                     autoFadeTimers.delete(key);
@@ -255,7 +345,63 @@ function activate(context) {
         })
     );
 
-    // Main diff detection on reload / modification
+    // Track internal saves performed by VS Code so we never confuse them with external disk writes
+    context.subscriptions.push(
+        vscode.workspace.onWillSaveTextDocument(event => {
+            if (event.document.uri.scheme === 'file') {
+                const key = getKey(event.document.uri);
+                internalSaves.set(key, Date.now());
+                snapshots.set(key, event.document.getText());
+                pendingExternalReloads.delete(key);
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidSaveTextDocument(doc => {
+            if (doc.uri.scheme === 'file') {
+                const key = getKey(doc.uri);
+                internalSaves.set(key, Date.now());
+                snapshots.set(key, doc.getText());
+                pendingExternalReloads.delete(key);
+            }
+        })
+    );
+
+    // Watch for external file modifications on disk
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
+    context.subscriptions.push(fileWatcher);
+
+    function handleExternalDiskChange(uri) {
+        if (!uri || uri.scheme !== 'file') return;
+        const key = getKey(uri);
+
+        // If this disk write was performed by VS Code itself, ignore it
+        if (isRecentInternalSave(key)) {
+            return;
+        }
+
+        // If the document is open and has unsaved edits, VS Code does not reload from disk.
+        // The changes cannot be viewed in the editor buffer, so do not trigger.
+        const openDoc = vscode.workspace.textDocuments.find(d => getKey(d.uri) === key);
+        if (openDoc && openDoc.isDirty) {
+            log(`Ignoring external disk change because document has unsaved user edits: ${path.basename(uri.fsPath)}`);
+            pendingExternalReloads.delete(key);
+            return;
+        }
+
+        log(`External disk modification detected: ${path.basename(uri.fsPath)}`);
+        pendingExternalReloads.set(key, Date.now());
+
+        if (openDoc) {
+            processExternalReload(openDoc);
+        }
+    }
+
+    context.subscriptions.push(fileWatcher.onDidChange(handleExternalDiskChange));
+    context.subscriptions.push(fileWatcher.onDidCreate(handleExternalDiskChange));
+
+    // Handle document changes: strictly differentiate external reloads vs user edits
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event => {
             const config = vscode.workspace.getConfiguration('reloadDiff');
@@ -265,59 +411,25 @@ function activate(context) {
             if (doc.uri.scheme !== 'file') return;
 
             const key = getKey(doc.uri);
-            const oldText = snapshots.get(key);
-            const newText = doc.getText();
 
-            if (oldText === undefined) {
-                snapshots.set(key, newText);
-                return;
-            }
+            // Determine if this change was triggered externally:
+            // 1. A file watcher external event is pending for this file (within last 5s), OR
+            // 2. It's a clean silent reload (!doc.isDirty, not Undo/Redo, and not a recent internal save)
+            const hasPendingExternal = pendingExternalReloads.has(key) && (Date.now() - pendingExternalReloads.get(key) < 5000);
+            const isSilentReload = !doc.isDirty && event.reason === undefined && !isRecentInternalSave(key);
 
-            if (oldText === newText) {
-                return;
-            }
+            if (hasPendingExternal || isSilentReload) {
+                processExternalReload(doc);
+            } else {
+                // User is actively editing within VS Code (typing, deleting, pasting, undo/redo, etc.)
+                // Update baseline snapshot so subsequent external reloads diff against user's latest code
+                snapshots.set(key, doc.getText());
 
-            // Save previous snapshot for side-by-side comparison
-            previousSnapshots.set(key, oldText);
-
-            // Compute line and intra-line word diff
-            const diff = computeLineDiff(oldText, newText);
-            activeDiffs.set(key, diff);
-            snapshots.set(key, newText);
-
-            log(`Diff detected in ${path.basename(doc.fileName)}: +${diff.stats.addedCount} ~${diff.stats.modifiedCount} -${diff.stats.deletedCount}, ${diff.wordRanges.length} word changes`);
-
-            // Apply decorations to visible editors showing this document
-            for (const editor of vscode.window.visibleTextEditors) {
-                if (getKey(editor.document.uri) === key) {
-                    applyDecorations(editor, diff);
+                // Clear any prior reload diff highlights immediately on user edit
+                if (activeDiffs.has(key)) {
+                    clearDocumentDiff(key);
+                    log(`User edit detected: dismissed reload diff for ${path.basename(doc.fileName)}`);
                 }
-            }
-
-            if (vscode.window.activeTextEditor && getKey(vscode.window.activeTextEditor.document.uri) === key) {
-                updateStatusBar(vscode.window.activeTextEditor);
-            }
-
-            // Handle auto-fade if configured (default 30 seconds)
-            const autoFade = config.get('autoFadeSeconds', 30);
-            if (autoFade > 0) {
-                if (autoFadeTimers.has(key)) {
-                    clearTimeout(autoFadeTimers.get(key));
-                }
-                const timer = setTimeout(() => {
-                    activeDiffs.delete(key);
-                    for (const editor of vscode.window.visibleTextEditors) {
-                        if (getKey(editor.document.uri) === key) {
-                            clearDecorations(editor);
-                        }
-                    }
-                    if (vscode.window.activeTextEditor && getKey(vscode.window.activeTextEditor.document.uri) === key) {
-                        updateStatusBar(vscode.window.activeTextEditor);
-                    }
-                    autoFadeTimers.delete(key);
-                    log(`Auto-cleared highlights after ${autoFade}s for ${path.basename(doc.fileName)}`);
-                }, autoFade * 1000);
-                autoFadeTimers.set(key, timer);
             }
         })
     );
@@ -330,6 +442,12 @@ function activate(context) {
                 if (!snapshots.has(key)) {
                     snapshots.set(key, editor.document.getText());
                 }
+
+                // If an external disk change occurred while tab was inactive/backgrounded, process it
+                if (pendingExternalReloads.has(key) && (Date.now() - pendingExternalReloads.get(key) < 60000)) {
+                    processExternalReload(editor.document);
+                }
+
                 const diff = activeDiffs.get(key);
                 if (diff) {
                     applyDecorations(editor, diff);
@@ -361,9 +479,7 @@ function activate(context) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const key = getKey(editor.document.uri);
-                activeDiffs.delete(key);
-                clearDecorations(editor);
-                updateStatusBar(editor);
+                clearDocumentDiff(key);
                 log(`Cleared highlights for ${editor.document.fileName}`);
             }
         })
@@ -412,6 +528,15 @@ function deactivate() {
     if (modifiedDecorationType) modifiedDecorationType.dispose();
     if (deletedDecorationType) deletedDecorationType.dispose();
     if (wordDiffDecorationType) wordDiffDecorationType.dispose();
+    snapshots.clear();
+    previousSnapshots.clear();
+    activeDiffs.clear();
+    internalSaves.clear();
+    pendingExternalReloads.clear();
+    for (const timer of autoFadeTimers.values()) {
+        clearTimeout(timer);
+    }
+    autoFadeTimers.clear();
 }
 
 module.exports = { activate, deactivate };
