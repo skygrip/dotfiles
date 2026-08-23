@@ -72,14 +72,26 @@ npm install ssh2 turndown
 pi install npm:pi-subagents
 ```
 
-#### Sync Extensions
+#### Syncing Skills, Extensions & Config
 
+To sync all skills, extensions, prompts, and configurations from `Pi_Config/agent/` to your global `~/.pi/agent` directory (and optionally Antigravity):
+
+**Windows (PowerShell):**
 ```powershell
-# Create the directory
-New-Item -ItemType Directory -Force -Path "$HOME\.pi\agent\extensions"
+# Sync everything to Pi Agent:
+Copy-Item -Path ".\Pi_Config\agent\*" -Destination "$HOME\.pi\agent" -Recurse -Force
 
-# Copy extensions from Pi_Config
-Copy-Item -Path ".\Pi_Config\agent\extensions\*" -Destination "$HOME\.pi\agent\extensions\" -Force
+# Sync portable skills to Antigravity:
+Copy-Item -Path ".\Pi_Config\agent\skills\*" -Destination "$HOME\.gemini\config\skills" -Exclude @("agent-config", "batch-automator") -Recurse -Force
+```
+
+**Linux / macOS (Bash):**
+```bash
+# Sync everything to Pi Agent:
+rsync -av --delete ./Pi_Config/agent/ "$HOME/.pi/agent/"
+
+# Sync portable skills to Antigravity:
+rsync -av --exclude="agent-config" --exclude="batch-automator" ./Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
 ```
 
 #### Running Extension Tests

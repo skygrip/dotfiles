@@ -1,11 +1,11 @@
 ---
 name: openscad
-description: 3D parametric CSG modeling in OpenSCAD. Enforces immutable SSA variable rules, difference/union CSG hygiene, BOSL2 library usage, headless CLI rendering, and multimodal vision inspection.
+description: 3D parametric CSG modeling in OpenSCAD and BOSL2. Enforces immutable SSA variable rules, difference/union CSG hygiene, BOSL2 semantic attachments, tag-based boolean diffs, path sweeps, headless CLI rendering, and multimodal vision inspection.
 ---
 
-# OpenSCAD Agent Guide
+# OpenSCAD & BOSL2 Agent Guide
 
-This document covers what LLMs get wrong when writing OpenSCAD — traps, anti-patterns, and practical rules that aren't in the manual. It does **not** duplicate the language reference; consult the official docs for syntax details.
+This document covers what LLMs get wrong when writing OpenSCAD — traps, anti-patterns, declarative architecture, and practical rules that aren't in the manual. It does **not** duplicate the full language reference; consult the official docs and BOSL2 wiki links for exhaustive syntax details.
 
 ## Official References
 
@@ -13,7 +13,9 @@ Look up primitives, transforms, functions, and modules here — do not guess syn
 - **Cheat Sheet**: [openscad.org/cheatsheet](https://openscad.org/cheatsheet/)
 - **Full Manual**: [OpenSCAD Wikibook](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language)
 - **CLI Usage**: [Command-Line Reference](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Using_OpenSCAD_in_a_command_line_environment)
-- **BOSL2 Library Wiki**: [github.com/revarbat/BOSL2/wiki](https://github.com/revarbat/BOSL2/wiki)
+- **BOSL2 Main Wiki**: [github.com/BelfrySCAD/BOSL2/wiki](https://github.com/BelfrySCAD/BOSL2/wiki)
+- **BOSL2 Cheat Sheet**: [BOSL2 Cheat Sheet Wiki](https://github.com/BelfrySCAD/BOSL2/wiki/CheatSheet)
+- **BOSL2 Tutorials**: [BOSL2 Tutorials Index](https://github.com/BelfrySCAD/BOSL2/wiki/Tutorials)
 
 ---
 
@@ -191,31 +193,242 @@ if (mode == "assembled" || mode == "exploded") {
 }
 ```
 
-## BOSL2 Attachment Model & Semantic Alignment
+## BOSL2 Declarative Modeling Architecture
 
-When using the **BOSL2** library (`include <BOSL2/std.scad>`), avoid manual nested `translate()` and `rotate()` trigonometry. Instead, use BOSL2's semantic attachment system:
+The **BOSL2** library (`include <BOSL2/std.scad>`) replaces vanilla OpenSCAD coordinate trigonometry and nested CSG with semantic attachments, tagged booleans, native filleted primitives, and path sweeping.
+
+---
+
+### 1. Semantic Attachments & Relative Positioning
+
+> 📖 **Wiki References**:
+> - [BOSL2 attachments.scad Reference](https://github.com/BelfrySCAD/BOSL2/wiki/attachments.scad)
+> - [BOSL2 Attachments Tutorial](https://github.com/BelfrySCAD/BOSL2/wiki/Tutorial-Attachments)
+
+Avoid manual nested `translate()` and `rotate()` trigonometry. BOSL2 objects encapsulate their own bounding geometry and can be snapped or aligned relative to anchors.
+
+```
+       [TOP+BACK+LEFT] -------- [TOP+BACK] -------- [TOP+BACK+RIGHT]
+              /|                                           /|
+             / |                                          / |
+      [TOP+LEFT]                                    [TOP+RIGHT]
+           /   |                                       /    |
+   [TOP+FRONT+LEFT] -------- [TOP+FRONT] -------- [TOP+FRONT+RIGHT]
+          |    |                    |                 |     |
+          |  [BACK+LEFT]         [BACK]               |  [BACK+RIGHT]
+          |    |                    |                 |     |
+       [LEFT]  |                 [CENTER]             |  [RIGHT]
+          |    |                    |                 |     |
+          |  [BOT+BACK+LEFT] --- [BOT+BACK] ----------|- [BOT+BACK+RIGHT]
+          |   /                                       |   /
+     [FRONT+LEFT] ----------- [FRONT] ----------- [FRONT+RIGHT]
+          | /                                         | /
+   [BOT+FRONT+LEFT] -------- [BOT+FRONT] -------- [BOT+FRONT+RIGHT]
+```
+
+#### Core Anchors
+- **Cardinal Anchors**: `TOP` (`UP`), `BOTTOM` (`DOWN`), `LEFT`, `RIGHT`, `FRONT` (`FWD`), `BACK`, `CENTER` (`CTR`).
+- **Edge Anchors**: Sum of two vectors (e.g. `TOP+RIGHT`, `BOTTOM+FRONT`).
+- **Corner Anchors**: Sum of three vectors (e.g. `TOP+FRONT+LEFT`, `BOT+BACK+RIGHT`).
+- **Curved Surfaces**: `cyl(anchor=FRONT)` dynamically calculates `[0, -r, 0]` on the perimeter.
+
+#### Positioning Operators
+
+| Module | Translation | Orientation / Rotation | Use Case |
+| :--- | :--- | :--- | :--- |
+| `attach(from, to, overlap=0)` | Snaps child's `to` to parent's `from` | **Rotates** child perpendicular to parent face | Fasteners, bosses, or attached arms. |
+| `position(anchor)` | Moves child to parent's `anchor` point | **Preserves** child orientation | Placing drill holes or aligned sub-assemblies. |
+| `align(anchor, inside=false)` | Aligns bounding boxes | **Preserves** child orientation | Flushing parts against edges or corners. |
+| `show_anchors(s=...)` | *Debug helper* | Displays visual 3D coordinate axes and anchor points | Debugging custom attachment points. |
 
 ```openscad
 include <BOSL2/std.scad>
 
-// Attach a cylinder directly to the TOP face of a cuboid:
 cuboid([40, 30, 15], rounding=3, anchor=BOTTOM) {
-    // Child geometry attaches relative to parent surface
-    attach(TOP, align=CENTER)
-        cyl(d=12, h=10, anchor=BOTTOM);
+    // Attach cylinder perpendicular to TOP face (sinks 0.01mm for manifold union)
+    attach(TOP, BOTTOM, overlap=0.01)
+        cyl(d=12, h=10);
         
-    // Attach screw boss to the RIGHT side
+    // Position hole cutter on RIGHT side without changing orientation
     position(RIGHT)
-        cyl(d=8, h=6, anchor=LEFT);
+        tag("remove") xcyl(d=6, h=20);
 }
 ```
 
-### BOSL2 Anchors Reference
-- **Cardinal Anchors**: `TOP`, `BOTTOM`, `LEFT`, `RIGHT`, `FRONT`, `BACK`, `CENTER`.
-- **Compound Anchors**: `TOP+RIGHT`, `BOTTOM+FRONT+LEFT`.
-- **`attach()` vs `position()`**:
-  - `attach(face)`: Re-orients the child so its default bottom attaches perpendicular to the parent's face.
-  - `position(face)`: Moves the child to the parent's anchor point without rotating it.
+---
+
+### 2. Declarative CSG & Boolean Tagging
+
+> 📖 **Wiki Reference**: [BOSL2 Tagging & Diff Operations](https://github.com/BelfrySCAD/BOSL2/wiki/attachments.scad#section-tagging-and-diff-operations)
+
+BOSL2 decouples boolean execution from hierarchy using **Tags**. Instead of deeply nested `difference()` blocks, group complete assemblies together and tag cutters with `"remove"`:
+
+```openscad
+include <BOSL2/std.scad>
+
+tag_scope() {
+    diff() {
+        // Base solid (retained by default)
+        cuboid([50, 40, 20], rounding=3) {
+            // Additive boss (inherits keep)
+            attach(TOP, BOTTOM)
+                cyl(d=14, h=8);
+
+            // Subtractive screw hole
+            tag("remove")
+                attach(TOP, TOP)
+                    cyl(d=4.5, h=30);
+        }
+    }
+}
+```
+
+- **`diff(remove="remove", keep="keep")`**: Subtracts all descendant objects tagged with `remove` from those tagged with `keep` (or untagged base solids).
+- **`intersect(intersect="intersect", keep="keep")`**: Intersects tagged shapes with the assembly.
+- **`tag_scope() { ... }`**: Isolates tag evaluation so internal module cuts do not leak into parent assemblies.
+
+---
+
+### 3. Primitives with Built-in Fillets & Chamfers
+
+> 📖 **Wiki References**:
+> - [BOSL2 3D Shapes Reference (`shapes3d.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/shapes3d.scad)
+> - [BOSL2 2D Shapes Reference (`shapes2d.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/shapes2d.scad)
+> - [BOSL2 Rounding Reference (`rounding.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/rounding.scad)
+
+Never use 3D `minkowski()` for filleting. BOSL2 primitives calculate filleted polyhedra mathematically in compile-time SSA code:
+
+| Primitive | Key Parameters | Capabilities |
+| :--- | :--- | :--- |
+| **`cuboid([x,y,z])`** | `rounding`, `chamfer`, `edges`, `trim_corners` | Selectively round/chamfer individual edges (e.g. `edges=TOP`, `edges="Z"`, `edges=[TOP+FRONT, TOP+BACK]`). |
+| **`cyl(h, d/r)`** | `rounding`, `rounding1`, `rounding2`, `chamfer`, `chamfer1`, `chamfer2` | Independent top/bottom edge fillets. Axis shortcuts: `xcyl()`, `ycyl()`, `zcyl()`. |
+| **`tube(h, od/id, wall)`** | `rounding`, `chamfer`, `wall` | Hollow cylinder with independent interior/exterior filleting. |
+| **`prismoid(size1, size2, h)`** | `shift`, `rounding`, `chamfer` | Rectangular frustums with asymmetric face offsets and edge rounding. |
+| **`teardrop(r/d, h, ang)`** | `ang=45`, `cap_h` | Horizontal cylindrical hole shaped for 3D printing without overhang sag. |
+
+```openscad
+// Box with rounded vertical corners and chamfered top rim:
+cuboid([40, 30, 20], rounding=3, edges="Z") {
+    attach(TOP, BOTTOM)
+        cyl(h=10, d=16, rounding2=2, chamfer1=0.8);
+}
+```
+
+---
+
+### 4. Sweeps, Paths & Bezier Curves
+
+> 📖 **Wiki References**:
+> - [BOSL2 Skin & Path Sweep Reference (`skin.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/skin.scad)
+> - [BOSL2 Bezier Curves Reference (`beziers.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/beziers.scad)
+> - [BOSL2 Paths Reference (`paths.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/paths.scad)
+
+Replace iterative `hull()` loops with high-performance continuous 3D path sweeping and lofting:
+
+#### `path_sweep(shape, path, ...)`
+Sweeps any 2D closed profile along an arbitrary 3D trajectory:
+```openscad
+include <BOSL2/std.scad>
+
+// 3D Bezier spine
+ctrl_pts = [[0, 0, 0], [0, 0, 15], [0, 10, 25], [10, 20, 35]];
+spline = bezier_curve(ctrl_pts, splinesteps=32);
+
+// Sweeping a filleted rectangular cross-section along the 3D curve
+path_sweep(
+    shape = rect([6, 3], rounding=1),
+    path = spline,
+    twist = 45,
+    caps = true
+);
+```
+
+#### `skin(profiles, ...)`
+Lofts an arbitrary sequence of 2D/3D cross-sectional profiles into a smooth manifold shell:
+```openscad
+p1 = path3d(rect([30, 30], rounding=4), 0);
+p2 = path3d(circle(r=12), 20);
+p3 = path3d(star(n=5, r=10, ir=5), 40);
+
+skin([p1, p2, p3], slices=20, caps=true);
+```
+
+---
+
+### 5. Duplication & Spatial Distributors
+
+> 📖 **Wiki Reference**: [BOSL2 Distributors Reference (`distributors.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/distributors.scad)
+
+Replace procedural `for` coordinate loops with declarative duplication:
+
+```
+xcopies(spacing=20, n=3)         rot_copies(n=6, r=30)          grid_copies(n=[3,2], spacing=20)
+     [o]   [o]   [o]                    [o]                          [o]   [o]   [o]
+                                  [o]         [o]                    [o]   [o]   [o]
+                                  [o]         [o]
+                                        [o]
+```
+
+- **`xcopies()` / `ycopies()` / `zcopies()`**: Linear arrays centered along cardinal axes.
+- **`rot_copies(n, r, v, cp)`**: Polar circular arrays around an axis.
+- **`grid_copies(spacing, n, stagger)`**: Rectangular or hexagonal grid layouts.
+- **`path_copies(path, n)`**: Distributes children evenly along an arbitrary 3D curve.
+- **`xflip_copy()` / `mirror_copy()`**: Duplicates geometry along with its mirrored reflection.
+
+```openscad
+diff() {
+    cyl(d=80, h=8) {
+        tag("remove")
+            rot_copies(n=6, r=30)
+                cyl(d=4.5, h=10);
+    }
+}
+```
+
+---
+
+### 6. Fasteners, Hardware & Masking
+
+> 📖 **Wiki References**:
+> - [BOSL2 Screws & Fasteners Reference (`screws.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/screws.scad)
+> - [BOSL2 Threading Reference (`threading.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/threading.scad)
+> - [BOSL2 3D Masks Reference (`masks3d.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/masks3d.scad)
+> - [BOSL2 Partitions Reference (`partitions.scad`)](https://github.com/BelfrySCAD/BOSL2/wiki/partitions.scad)
+
+- **Standard Screw Holes**: `screw_hole("M3", length=12, head="socket", counterbore=3)` automatically cuts ISO screw channels with head recesses.
+- **Parametric Lead Threads**: `threaded_rod(d=10, l=30, pitch=1.5)` and `threaded_nut()`.
+- **Edge & Corner Masks**: `edge_mask(edges)` and `corner_mask(corners)` for filleting non-standard organic shapes.
+- **Printable Partitions**: `partition(cutpath="dovetail")` automatically divides oversized assemblies into interlocking pieces.
+
+---
+
+### 7. Custom Attachable Components
+
+> 📖 **Wiki Reference**: [BOSL2 Writing Custom Attachables](https://github.com/BelfrySCAD/BOSL2/wiki/Tutorial-Attachments#writing-custom-attachable-modules)
+
+Wrap custom modules with `attachable()` to make them first-class participants in the attachment and tagging system:
+
+```openscad
+include <BOSL2/std.scad>
+
+module custom_bracket(size=[30, 20, 10], anchor=CENTER, spin=0, orient=UP) {
+    custom_anchors = [
+        named_anchor("cable_in",  [0, -size.y/2, 0], orient=FRONT),
+        named_anchor("cable_out", [0,  size.y/2, 0], orient=BACK)
+    ];
+
+    attachable(anchor=anchor, spin=spin, orient=orient, size=size, anchors=custom_anchors) {
+        cuboid(size, rounding=2);
+        children();
+    }
+}
+
+// Downstream usage with named anchor:
+custom_bracket() {
+    attach("cable_in")
+        cyl(d=4, h=10, anchor=BOTTOM);
+}
+```
 
 ---
 
@@ -314,10 +527,70 @@ openscad -o output.3mf --backend=manifold -D 'mode="print_base"' model.scad
 
 ---
 
-## Complete Parametric Example
+## Complete Parametric Examples
+
+### Example 1: Idiomatic BOSL2 Architecture (Recommended)
 
 ```openscad
-// Parametric Mounting Bracket (Production Quality)
+// Parametric Sensor Mounting Bracket (Idiomatic BOSL2 Architecture)
+include <BOSL2/std.scad>
+
+/* [Bracket Dimensions] */
+base_w      = 40.0; // [25.0:1.0:80.0] Base width (X)
+base_d      = 30.0; // [20.0:1.0:60.0] Base depth (Y)
+base_h      = 4.0;  // [2.0:0.5:8.0]  Base thickness (Z)
+wall_h      = 28.0; // [15.0:1.0:50.0] Upright wall height
+wall_t      = 3.5;  // [2.0:0.5:6.0]  Wall thickness
+
+/* [Fasteners & Tolerances] */
+hole_d      = 3.4;  // [2.5:0.1:5.0] M3 clearance hole (+0.4mm tolerance)
+hole_inset  = 7.0;  // [4.0:0.5:15.0] Inset from base corners
+boss_od     = 10.0; // [8.0:0.5:16.0] Upright sensor boss outer diameter
+boss_id     = 4.5;  // [2.0:0.1:8.0]  Upright sensor wire pass-through
+
+/* [Hidden] */
+$fa = $preview ? 10 : 4;
+$fs = $preview ? 1.0 : 0.25;
+
+module sensor_bracket() {
+    tag_scope() {
+        diff() {
+            // 1. Base Plate with Rounded Corners & Chamfered Bottom Bed Contact
+            cuboid([base_w, base_d, base_h], rounding=3, edges="Z", chamfer2=0.6, anchor=BOTTOM) {
+                
+                // 2. Base Mounting Holes via Linear Copies
+                tag("remove")
+                    xcopies(base_w - 2 * hole_inset)
+                        ycopies(base_d - 2 * hole_inset)
+                            cyl(h=base_h + 1, d=hole_d);
+
+                // 3. Upright Wall Attached to Rear Edge
+                attach(BACK, BACK, overlap=0.01)
+                    cuboid([base_w, wall_t, wall_h], rounding=2, edges=[TOP+LEFT, TOP+RIGHT], anchor=BOTTOM) {
+                        
+                        // 4. Sensor Boss Protruding from Wall Front Face
+                        attach(FRONT, BOTTOM, overlap=0.01)
+                            cyl(h=6, d=boss_od, rounding2=1) {
+                                // 5. Through-hole cutting through both boss and wall
+                                tag("remove")
+                                    cyl(h=wall_t + 8, d=boss_id);
+                            }
+                    }
+            }
+        }
+    }
+}
+
+// Render Master Component
+sensor_bracket();
+```
+
+---
+
+### Example 2: Vanilla 2D-First Extrusion (For environments without libraries)
+
+```openscad
+// Parametric Mounting Bracket (Vanilla OpenSCAD 2D Extrusion)
 
 /* [Bracket Dimensions] */
 base_width  = 30;  // [20:60]

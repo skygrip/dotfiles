@@ -39,23 +39,22 @@ By default, **all skills** in `pi-agent/Pi_Config/agent/skills/` are portable an
 
 ---
 
-## 💻 Sync Commands
+## 💻 Automated Sync Scripts
+
+The root of this repository includes automated synchronization scripts that sync skills, extensions, and configurations across both **Pi Agent** (`~/.pi/agent`) and **Antigravity** (`~/.gemini/config/skills`):
 
 ### 1. Windows (PowerShell)
 
 Run from the root of your `dotfiles` repository:
 
 ```powershell
-$target = "$HOME\.gemini\config\skills"
-if (!(Test-Path $target)) { New-Item -ItemType Directory -Path $target -Force | Out-Null }
+# Sync everything (Pi Agent configs + Antigravity skills)
+.\Sync-AgentConfigs.ps1
 
-# Define excluded Pi-specific skills
-$excludeSkills = @("agent-config", "batch-automator")
-
-Get-ChildItem -Path ".\pi-agent\Pi_Config\agent\skills" -Directory | Where-Object { $excludeSkills -notcontains $_.Name } | ForEach-Object {
-    Copy-Item -Path $_.FullName -Destination $target -Recurse -Force
-    Write-Host "✅ Synced $($_.Name) -> $target\$($_.Name)"
-}
+# Optional flags:
+.\Sync-AgentConfigs.ps1 -Target Antigravity   # Sync only Antigravity
+.\Sync-AgentConfigs.ps1 -Target Pi            # Sync only Pi Agent
+.\Sync-AgentConfigs.ps1 -DryRun               # Preview changes without modifying files
 ```
 
 ---
@@ -65,19 +64,15 @@ Get-ChildItem -Path ".\pi-agent\Pi_Config\agent\skills" -Directory | Where-Objec
 Run from the root of your `dotfiles` repository:
 
 ```bash
-TARGET="$HOME/.gemini/config/skills"
-mkdir -p "$TARGET"
+# Make executable (first time only)
+chmod +x ./sync-agent-configs.sh
 
-# Define excluded Pi-specific skills
-EXCLUDE="agent-config batch-automator"
+# Sync everything
+./sync-agent-configs.sh
 
-for dir in ./pi-agent/Pi_Config/agent/skills/*/; do
-    name=$(basename "$dir")
-    if [[ ! " $EXCLUDE " =~ " $name " ]]; then
-        cp -r "$dir" "$TARGET/"
-        echo "✅ Synced $name -> $TARGET/$name"
-    fi
-done
+# Target specific environment:
+./sync-agent-configs.sh antigravity
+./sync-agent-configs.sh pi
 ```
 
 ---

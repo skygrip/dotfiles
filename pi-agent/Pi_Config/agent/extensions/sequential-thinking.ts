@@ -34,6 +34,7 @@ export default function initExtension(pi: ExtensionAPI) {
 
     promptGuidelines: [
       "Use sequential_thinking to formulate complex architectural plans or multi-file refactors before executing edits.",
+      "You can call sequential_thinking multiple times in sequence to reason through problems across multiple turns before proceeding.",
       "Keep thoughts structured, actionable, and focused on current task milestones."
     ],
 
@@ -71,7 +72,7 @@ export default function initExtension(pi: ExtensionAPI) {
         content: [
           {
             type: "text",
-            text: "Thought logged successfully. Proceed with the next step."
+            text: "Thought logged successfully. Consider if you have another thought to lodge, otherwise proceed with the next step."
           }
         ]
       };
