@@ -1,6 +1,6 @@
 ---
 name: batch-automator
-description: Advise the user and generate copy-pasteable sequential 'pi -p' shell commands for the user to execute bulk refactoring, docstrings, or audits across 100+ files in their own terminal.
+description: Generate sequential 'pi -p' shell commands for headless bulk refactoring, docstring generation, or audits across 100+ files.
 ---
 
 # Batch Automator Skill (Unix-Style Headless Automation)

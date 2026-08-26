@@ -1,56 +1,56 @@
 ---
 name: duckdb
-description: Fast in-process SQL analytics on Parquet, CSV, JSON, and SQLite files without importing. Run 'duckdb -json -c "SELECT * FROM '\''data.parquet'\'' LIMIT 10;"' for structured agent output.
+description: Fast in-process SQL analytics on Parquet, CSV, JSONL, and SQLite files. Run 'duckdb -json -bail -c "SELECT * FROM '\''data.parquet'\'' LIMIT 10;"'.
 ---
 
 # DuckDB CLI Analytics Skill
 
-`duckdb` is an in-process, vectorized SQL OLAP engine optimized for analytical queries directly on local or remote data files (Parquet, CSV, JSON, Arrow, SQLite) with zero ingestion required.
+In-process, vectorized SQL OLAP engine optimized for analytical queries directly on local or remote data files (Parquet, CSV, JSONL, Arrow, SQLite) with zero ingestion or server setup required.
 
 ---
 
-## 1. Essential CLI Flags
+## 1. Programs Used
 
-Execute queries directly from the shell without starting an interactive session:
-
-| Flag | Description |
+| Program / Tool | Role / Purpose |
 | :--- | :--- |
-| `-c "SQL"` | Execute SQL statements non-interactively and exit |
-| `-json` | Format query results as a JSON array (ideal for agent parsing) |
-| `-csv` | Format query results as comma-separated values |
-| `-bail` | Abort immediately if any SQL error occurs |
-| `-readonly` | Open database/files in read-only mode (prevents lock conflicts) |
-| `-nullvalue ""` | Set custom string representation for `NULL` in output |
-| `-s "SQL"` | Run SQL command upon entering the interactive shell |
+| **`duckdb`** | Vectorized analytical SQL engine for querying files directly in memory or disk |
 
-### Quick Execution Pattern for Agents
+---
+
+## 2. Negative Guardrails (Small Model Safety)
+
+Small models frequently trip on CLI flags, file quoting, or unbounded results:
+
+| Hallucination / Mistake | Why It Fails | Correct Syntax |
+| :--- | :--- | :--- |
+| `duckdb --format json` or `-o json` | DuckDB uses single-dash flags | `duckdb -json -bail -c "..."` |
+| `FROM "events.parquet"` | Double quotes denote column/table identifiers | `FROM 'events.parquet'` (single quotes for paths) |
+| `SELECT * FROM 'huge.parquet'` | Omitting LIMIT floods agent context window | Always append `LIMIT 25` for inspection |
+| `read_csv_auto(...)` | Deprecated in modern DuckDB | Query directly: `FROM 'file.csv'` or `read_csv(...)` |
+| `duckdb -c "..."` in pwsh stripping quotes | PowerShell treats nested quotes ambiguously | Use explicit escaping: `"SELECT * FROM 'data.csv'"` |
+
+---
+
+## 3. Essential CLI Invocations (Cross-Platform)
+
+Always execute queries non-interactively using `-c` with `-bail` (abort immediately on SQL error) and `-json` (for structured agent ingestion):
+
 ```bash
-# Return structured JSON directly into terminal/scripts
-duckdb -json -bail -c "SELECT status, COUNT(*) AS count FROM 'logs.parquet' GROUP BY status;"
+# Windows (PowerShell)
+duckdb -json -bail -c "SELECT status, COUNT(*) AS count FROM 'logs.parquet' GROUP BY status LIMIT 10;"
+
+# Linux / WSL (Bash)
+duckdb -json -bail -c 'SELECT status, COUNT(*) AS count FROM '\''logs.parquet'\'' GROUP BY status LIMIT 10;'
+
+# Read-Only flag (prevents database locking conflicts on active files)
+duckdb -readonly -json -bail -c "SELECT * FROM 'production.db' LIMIT 5;"
 ```
 
 ---
 
-## 2. Direct File Querying
+## 4. Schema & Data Introspection
 
-DuckDB can directly query file paths inside the `FROM` clause:
-
-```sql
--- Parquet (fastest, column-pruned)
-SELECT user_id, action FROM 'data/events.parquet' WHERE status = 'failed' LIMIT 20;
-
--- CSV (auto-detects delimiter, quotes, and headers)
-SELECT * FROM 'data/sales.csv' WHERE total > 1000;
-
--- JSON / NDJSON / JSON Lines
-SELECT id, payload->>'name' AS name FROM 'data/records.jsonl' LIMIT 10;
-```
-
----
-
-## 3. Schema & Data Introspection
-
-Inspect structure, column types, and statistical summaries before constructing complex queries:
+Inspect column types and statistical distributions before constructing complex queries:
 
 ```bash
 # 1. Schema & Column Types
@@ -65,121 +65,114 @@ duckdb -c "PRAGMA table_info('dataset.parquet');"
 
 ---
 
-## 4. High-Value Agent Recipes
+## 5. Forensic, DFIR & Log Analytics Recipes
 
-### A. Multi-File Globs & Filename Tracking
-Query across partitioned files or multiple directories, with file provenance:
+### A. Windows Event Logs (EVTX JSONL)
+Analyze Windows events exported as JSON Lines (e.g. via `evtx_dump`):
 
 ```sql
--- Read all Parquet files matching pattern and capture source filename
-SELECT filename, country, SUM(revenue) AS total_revenue
-FROM read_parquet('metrics/year=2026/month=*/*.parquet', filename=true)
-GROUP BY filename, country;
+-- Count top failed logon accounts (EventID 4625)
+SELECT 
+  Event->'EventData'->>'TargetUserName' AS target_user,
+  Event->'EventData'->>'IpAddress' AS source_ip,
+  COUNT(*) AS failure_count
+FROM 'security_events.jsonl'
+WHERE CAST(Event->'System'->>'EventID' AS INTEGER) = 4625
+GROUP BY 1, 2
+ORDER BY failure_count DESC
+LIMIT 20;
 
--- Union multiple CSVs with mismatched schema order
-SELECT * FROM read_csv('logs/*.csv', union_by_name=true, filename=true);
+-- Identify suspicious process spawns (EventID 4688)
+SELECT 
+  Event->'EventData'->>'NewProcessName' AS process_name,
+  Event->'EventData'->>'CommandLine' AS command_line,
+  Event->'EventData'->>'ParentProcessName' AS parent_process
+FROM 'security_events.jsonl'
+WHERE CAST(Event->'System'->>'EventID' AS INTEGER) = 4688
+  AND (
+    Event->'EventData'->>'CommandLine' ILIKE '%powershell%'
+    OR Event->'EventData'->>'CommandLine' ILIKE '%certutil%'
+    OR Event->'EventData'->>'CommandLine' ILIKE '%mshta%'
+  )
+LIMIT 25;
 ```
 
-### B. Nested JSON Extraction (`->` and `->>`) & UNNEST
-- `->` extracts sub-structures as JSON / Structs.
-- `->>` extracts leaf values as `VARCHAR`.
+### B. Network Traffic Slicing (Zeek `conn.log` / CSV / Parquet)
+```sql
+-- Top communicating external IP addresses by bytes transferred
+SELECT 
+  id_orig_h AS src_ip,
+  id_resp_h AS dest_ip,
+  id_resp_p AS dest_port,
+  proto,
+  SUM(orig_bytes) AS bytes_sent,
+  COUNT(*) AS connection_count
+FROM read_csv('conn.log', header=true, delim='\t')
+WHERE dest_port NOT IN (80, 443, 53)
+GROUP BY 1, 2, 3, 4
+ORDER BY bytes_sent DESC
+LIMIT 20;
+```
+
+### C. Multi-File Globbing with Source Provenance
+Query across directories or date partitions while tracking the origin file:
 
 ```sql
--- Extract scalar values from nested JSON objects
+-- Search for a malicious hash or filename across multiple artifact dumps
+SELECT filename, computer_name, file_path, sha256
+FROM read_csv('triage_exports/*/Amcache.csv', union_by_name=true, filename=true)
+WHERE sha256 = '<SUSPECT_SHA256>'
+LIMIT 20;
+```
+
+### D. Nested JSON Extraction (`->` and `->>`) & UNNEST
+- `->` extracts sub-structures as JSON / Structs.
+- `->>` extracts scalar values as `VARCHAR`.
+
+```sql
+-- Unnest array elements into individual relational rows
 SELECT 
   id,
   payload->>'user_id' AS user_id,
-  CAST(payload->'metadata'->>'response_time_ms' AS INTEGER) AS response_time,
-  payload->'tags' AS raw_tags
-FROM 'events.jsonl';
-
--- Unnest JSON arrays into individual rows
-SELECT id, unnest(payload->'tags') AS tag
-FROM 'events.jsonl';
+  unnest(payload->'tags') AS tag
+FROM 'events.jsonl'
+LIMIT 20;
 ```
 
-### C. Time-Window Slicing & Aggregations
-Bucket and aggregate time-series data using built-in date functions:
-
+### E. Attaching External SQLite Databases
 ```sql
--- Aggregate requests into 1-hour windows
-SELECT 
-  time_bucket(INTERVAL '1 hour', CAST(timestamp AS TIMESTAMP)) AS window_start,
-  status_code,
-  COUNT(*) AS request_count,
-  AVG(response_time_ms) AS avg_latency
-FROM 'web_access.parquet'
-WHERE timestamp >= '2026-08-01T00:00:00Z'
-GROUP BY 1, 2
-ORDER BY 1 DESC, 3 DESC;
-```
+-- Attach SQLite database in read-only mode and query directly
+ATTACH 'browsing_history.sqlite' AS history (TYPE SQLITE, READ_ONLY);
 
-### D. Handling Dirty, Unstructured, or Huge CSVs
-Fine-tune parser parameters when auto-detection fails:
-
-```sql
-SELECT * FROM read_csv(
-  'dirty_data.csv',
-  header = true,
-  sample_size = 200000,       -- Scan more rows to infer tricky column types
-  ignore_errors = true,       -- Skip malformed rows without crashing query
-  null_padding = true,        -- Pad missing trailing columns with NULL
-  all_varchar = false         -- Keep type inference enabled
-);
-```
-
-### E. Attaching External SQLite / PostgreSQL Databases
-Query external database files alongside local Parquet/CSV files:
-
-```sql
--- Attach SQLite database
-ATTACH 'app.db' AS sqlite_db (TYPE SQLITE);
-
--- Join SQLite table with a Parquet file
-SELECT u.email, o.total, o.created_at
-FROM sqlite_db.users u
-JOIN 'orders.parquet' o ON u.id = o.user_id;
-```
-
-### F. High-Performance Exports
-Export transformed datasets into compressed Parquet or CSV files:
-
-```sql
--- Export to Parquet with ZSTD compression
-COPY (
-  SELECT user_id, date_trunc('day', timestamp) AS day, COUNT(*) AS events
-  FROM 'raw_logs/*.parquet'
-  GROUP BY 1, 2
-) TO 'aggregated_events.parquet' (FORMAT PARQUET, COMPRESSION ZSTD);
-
--- Export to CSV with headers
-COPY (SELECT * FROM 'sales.parquet' WHERE status = 'COMPLETED') 
-TO 'completed_sales.csv' (HEADER, DELIMITER ',');
-
--- Partitioned directory export
-COPY (SELECT * FROM 'large_dataset.parquet')
-TO 'partitioned_output' (FORMAT PARQUET, PARTITION_BY (year, month), OVERWRITE_OR_IGNORE);
+SELECT url, title, visit_count, last_visit_time
+FROM history.urls
+ORDER BY last_visit_time DESC
+LIMIT 25;
 ```
 
 ---
 
-## 5. Performance & Resource Tuning
+## 6. High-Performance Exports & Resource Tuning
 
-For memory-constrained environments or massive datasets:
-
+### Clean Exports
 ```sql
--- Limit memory usage and thread concurrency
-SET max_memory = '4GB';
-SET threads = 4;
+-- Export filtered query results to compressed Parquet
+COPY (
+  SELECT * FROM 'raw_logs/*.jsonl' WHERE status = 'ERROR'
+) TO 'error_logs.parquet' (FORMAT PARQUET, COMPRESSION ZSTD);
 
--- Optimize memory by disabling strict order preservation on large GROUP BY / aggregates
-SET preserve_insertion_order = false;
-
--- Configure temporary spill directory for out-of-core operations
-SET temp_directory = './duckdb_spill';
+-- Export to CSV with headers
+COPY (SELECT * FROM 'events.parquet' LIMIT 1000) 
+TO 'sample_events.csv' (HEADER, DELIMITER ',');
 ```
 
-Example CLI invocation with performance pragmas:
+### Resource Tuning Pragmas (Memory-Constrained Environments)
 ```bash
-duckdb -c "SET max_memory='4GB'; SET threads=4; COPY (SELECT * FROM 'huge_dataset.parquet' WHERE valid = true) TO 'filtered.parquet' (FORMAT PARQUET);"
+# Cap memory usage and threads to prevent host starvation
+duckdb -bail -c "
+  SET max_memory = '4GB';
+  SET threads = 4;
+  SET preserve_insertion_order = false;
+  COPY (SELECT * FROM 'huge_data.parquet' WHERE valid = true) TO 'output.parquet' (FORMAT PARQUET);
+"
 ```

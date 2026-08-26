@@ -106,7 +106,7 @@ $$\text{Edit Prompt} = [\text{Target Action Verb}] + [\text{Specific Subject/Reg
 
 ### Example 1: Precision Wardrobe & Tactile Fabric Swap (K2 Turbo Fast Path)
 
-**📝 Edit Instruction Prompt (Copy-Paste Ready)**
+**📝 Edit Instruction Prompt**
 ```text
 Change the subject's casual grey cotton hoodie into a heavy olive-drab waxed-canvas artisan apron with distressed brass rivets, cross-back chestnut bridle leather straps, and double-needle pocket stitching over a cream waffle-knit thermal shirt. Preserve his facial bone structure, trimmed beard, dark curly hair, and the warm 3200K tungsten workshop lighting streaming from the left. Seamlessly integrate tactile canvas creasing, natural fabric drape, and realistic contact shadows across the chest and waist.
 ```
@@ -135,7 +135,7 @@ Change the subject's casual grey cotton hoodie into a heavy olive-drab waxed-can
 
 ### Example 2: Salient Object Removal & Seamless Inpainting (K2 RAW Guided Path)
 
-**📝 Edit Instruction Prompt (Copy-Paste Ready)**
+**📝 Edit Instruction Prompt**
 ```text
 Completely remove the modern clear plastic water bottle and black smartphone resting on the antique oak study desk beside the open atlas. In their place, seamlessly inpaint continuous polished dark oak wood grain with natural amber varnish highlights, authentic surface patina, and the unoccluded deckled parchment edges of the open atlas. Maintain consistent warm 2800K brass desk lamp illumination, casting natural soft-edged contact shadows across the restored desktop and paper margins.
 ```
@@ -164,7 +164,7 @@ Completely remove the modern clear plastic water bottle and black smartphone res
 
 ### Example 3: Multi-Reference Character-into-Scene Composition (Dual-Image / Ostris & Krea2Edit)
 
-**📝 Edit Instruction Prompt (Copy-Paste Ready)**
+**📝 Edit Instruction Prompt**
 ```text
 Place the subject from reference image2 into the ancient sunlit Victorian greenhouse from reference image1. Extract only the subject from image2, preserving their facial bone structure, hairstyle, and khaki canvas botanist field wardrobe; do not retain the background or original lighting from image2. Inherit the vaulted ironwork glass architecture, terracotta planters, and lush tropical ferns directly from image1. The subject stands in a natural three-quarter posture along the central aisle, resting their left hand upon the ornate wrought-iron planter table. Relight the subject seamlessly with the warm 5500K sunlight streaming through the conservatory glass panes, casting realistic contact shadows onto the flagstone floor and matching the f/2.8 optical depth of field with soft bokeh across the background foliage.
 ```
@@ -194,7 +194,7 @@ Place the subject from reference image2 into the ancient sunlit Victorian greenh
 
 ### Example 4: Environmental Restyling & Complex Relighting (Overcast Park to Sunset Cabin Veranda)
 
-**📝 Edit Instruction Prompt (Copy-Paste Ready)**
+**📝 Edit Instruction Prompt**
 ```text
 Restyle the background and environmental lighting around the seated subject from the overcast city park into a rustic cedar cabin veranda overlooking autumn mountains at sunset. Replace the flat daylight with low-angle golden hour sunlight and a warm 2600K brass lantern glow, casting directional amber specular rim highlights across the subject's hair, cheekbones, and jacket contours. Scatter softly drifting golden maple leaves across the cedar plank floor and render gentle background bokeh. Strictly preserve the subject's facial likeness, seated posture, eye gaze, and clothing silhouette.
 ```

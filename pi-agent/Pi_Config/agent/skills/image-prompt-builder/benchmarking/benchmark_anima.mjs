@@ -263,6 +263,9 @@ async function main() {
   const stage1Duration = ((Date.now() - stage1Start) / 1000).toFixed(1);
   console.log(`[+] Stage 1 Complete in ${stage1Duration}s!\n`);
 
+  // Save intermediate results JSON with generated prompts immediately
+  fs.writeFileSync(RESULTS_JSON, JSON.stringify(results, null, 2), 'utf-8');
+
   // STAGE 2: 60-Second GPU Cooldown
   console.log(`>>> [STAGE 2/3] Mandatory 60-Second GPU Cooldown & VRAM Unload Break...`);
   for (let c = 60; c > 0; c -= 10) {
@@ -272,13 +275,22 @@ async function main() {
   console.log(`    ✅ Cooldown finished! GPU ready for Anima Turbo rendering.\n`);
 
   // STAGE 3: SwarmUI Image Generation
-  console.log(`>>> [STAGE 3/3] Submitting 10 Prompts to SwarmUI (${SWARM_URL})...`);
+  console.log(`>>> [STAGE 3/3] Submitting ${results.length} Prompts to SwarmUI (${SWARM_URL})...`);
   const stage3Start = Date.now();
-  const sessionId = await getSwarmSession();
+  let sessionId = null;
+
+  try {
+    sessionId = await getSwarmSession();
+  } catch (err) {
+    console.log(`\n⚠️ SwarmUI offline or unreachable at ${SWARM_URL} (${err.message}).`);
+    console.log(`Skipping Stage 3 image rendering. All generated prompts successfully saved to:`);
+    console.log(`  📁 ${RESULTS_JSON}`);
+    return;
+  }
 
   for (let i = 0; i < results.length; i++) {
     const item = results[i];
-    process.stdout.write(`  [${i + 1}/10] Rendering ${item.id}... `);
+    process.stdout.write(`  [${i + 1}/${results.length}] Rendering ${item.id}... `);
 
     const renderStart = Date.now();
     const payload = {

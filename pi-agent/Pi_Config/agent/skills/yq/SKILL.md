@@ -1,6 +1,6 @@
 ---
 name: yq
-description: Query, mutate, and convert YAML, TOML, XML, CSV, and JSON files while preserving comments and anchors (Mike Farah Go version). Use 'yq -i ".field = \"val\"" config.yml' for in-place edits or 'yq ".spec" k8s.yml'.
+description: Query, mutate, and convert YAML, TOML, XML, and JSON while preserving comments. Run 'yq -i .field = "val" config.yml' or 'yq .spec k8s.yml'.
 ---
 
 # `yq` (Mike Farah Go) Skill

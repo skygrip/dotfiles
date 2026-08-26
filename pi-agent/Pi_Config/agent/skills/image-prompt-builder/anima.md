@@ -6,6 +6,8 @@
 
 ---
 
+**Maximum Explicitness Rule:** In hardcore NSFW production, prioritize explicit description over poetic euphemism.
+
 ## 1. Technical Architecture & Text Encoder Mechanics
 
 ### Dual Text Conditioning Pipeline

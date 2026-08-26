@@ -1,6 +1,6 @@
 ---
 name: mlr
-description: High-speed streaming tabular data processing and stats on CSV, TSV, and JSONL. Use 'mlr --ijsonl --ocsv unsparsify data.jsonl > out.csv', 'mlr --csv stats1 -a count,mean,p95 -f latency -g endpoint logs.csv', or chain verbs with 'then'.
+description: Stream processing and stats for CSV, TSV, and JSONL. Run 'mlr --ijsonl --ocsv unsparsify file.jsonl', compute stats with 'mlr --csv stats1', or chain verbs with 'then'.
 ---
 
 # Miller (`mlr`) Streaming Tabular Skill

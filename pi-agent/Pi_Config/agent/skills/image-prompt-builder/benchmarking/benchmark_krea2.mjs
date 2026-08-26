@@ -160,6 +160,45 @@ const SCENARIOS = [
     name: 'Hangar Multi-Role Maintenance Crew',
     testCriteria: '3 distinct roles across 3 depth planes (stepladder mechanic in foreground, avionics tech at terminal in midground, supervisor in background), word budget 120-150 words.',
     userPrompt: 'Generate a Krea 2 prompt of a busy aircraft maintenance hangar with 3 people: a mechanic on a low ladder tightening a turbine bolt in foreground, an avionics technician typing at a diagnostic console in midground, and a flight officer reviewing a tablet in background.'
+  },
+  {
+    id: 'K2-11-Kinematic-Clearance',
+    component: 'Kinematic Trajectory & Spatial Clearance',
+    model: 'Krea2/krea2_turbo_int8_convrot',
+    width: 1216,
+    height: 832,
+    steps: 10,
+    cfgscale: 1.0,
+    sampler: 'euler',
+    name: 'Cliff Diver Outward Leap & Trajectory',
+    testCriteria: 'Outward horizontal clearance away from cliff face, unobstructed drop zone over deep ocean water, side-profile action framing, zero collision hazard beneath flight path.',
+    userPrompt: 'Generate a Krea 2 prompt of a cliff diver executing a backflip leap off a sea cliff into the ocean with late afternoon sunlight.'
+  },
+  {
+    id: 'K2-12-LivedIn-MicroProps',
+    component: 'Lived-In Environmental Staging & Micro-Narrative Props',
+    model: 'Krea2/krea2_turbo_int8_convrot',
+    width: 1216,
+    height: 832,
+    steps: 10,
+    cfgscale: 1.0,
+    sampler: 'euler',
+    name: 'Late-Night Manga Studio',
+    testCriteria: '1-2 resonant lived-in props with active placement verbs (tumbling/snaking), zero abstract room labels ("messy"/"cozy"), dual Kelvin lighting (2700K vs 7000K).',
+    userPrompt: 'Generate a Krea 2 prompt of a sleep-deprived manga artist working late at night in a small, lived-in Tokyo apartment room.'
+  },
+  {
+    id: 'K2-13-Candid-DirectFlash',
+    component: 'Candid Direct-Flash Optics & FACS Duchenne Laughter',
+    model: 'Krea2/krea2_turbo_int8_convrot',
+    width: 1216,
+    height: 832,
+    steps: 10,
+    cfgscale: 1.0,
+    sampler: 'euler',
+    name: 'Diner Booth Laughter Snapshot',
+    testCriteria: 'On-axis harsh camera flash, hard drop shadow on vinyl wall, genuine Duchenne facial laughter (AU6+AU12 described in natural English), melting milkshake condensation.',
+    userPrompt: 'Generate a Krea 2 prompt of a candid direct-flash snapshot of two close friends laughing mid-conversation in a vintage diner booth over milkshakes.'
   }
 ];
 
@@ -195,7 +234,7 @@ async function getSwarmSession() {
 
 async function main() {
   console.log(`\n===============================================================`);
-  console.log(`   KREA 2 BENCHMARK RUNNER: 10 COMPONENT TEST CASES            `);
+  console.log(`   KREA 2 BENCHMARK RUNNER: ${SCENARIOS.length} COMPONENT TEST CASES            `);
   console.log(`===============================================================`);
   console.log(`LLM Provider:    ${MODEL_NAME} (${LLAMA_SWAP_URL})`);
   console.log(`Image Engine:    SwarmUI (${SWARM_URL})`);
@@ -208,12 +247,12 @@ async function main() {
   const results = [];
 
   // STAGE 1: LLM Prompt Generation
-  console.log(`>>> [STAGE 1/3] Generating 10 Krea 2 Prompts via ${MODEL_NAME}...`);
+  console.log(`>>> [STAGE 1/3] Generating ${SCENARIOS.length} Krea 2 Prompts via ${MODEL_NAME}...`);
   const stage1Start = Date.now();
 
   for (let i = 0; i < SCENARIOS.length; i++) {
     const s = SCENARIOS[i];
-    process.stdout.write(`  [${i + 1}/10] ${s.id} (${s.component})... `);
+    process.stdout.write(`  [${i + 1}/${SCENARIOS.length}] ${s.id} (${s.component})... `);
 
     const promptStartTime = Date.now();
 
@@ -257,6 +296,9 @@ async function main() {
   const stage1Duration = ((Date.now() - stage1Start) / 1000).toFixed(1);
   console.log(`[+] Stage 1 Complete in ${stage1Duration}s!\n`);
 
+  // Save intermediate results JSON with generated prompts immediately
+  fs.writeFileSync(RESULTS_JSON, JSON.stringify(results, null, 2), 'utf-8');
+
   // STAGE 2: 60-Second GPU Cooldown
   console.log(`>>> [STAGE 2/3] Mandatory 60-Second GPU Cooldown & VRAM Unload Break...`);
   for (let c = 60; c > 0; c -= 10) {
@@ -266,13 +308,22 @@ async function main() {
   console.log(`    ✅ Cooldown finished! GPU ready for Krea 2 Turbo rendering.\n`);
 
   // STAGE 3: SwarmUI Image Generation
-  console.log(`>>> [STAGE 3/3] Submitting 10 Prompts to SwarmUI (${SWARM_URL})...`);
+  console.log(`>>> [STAGE 3/3] Submitting ${results.length} Prompts to SwarmUI (${SWARM_URL})...`);
   const stage3Start = Date.now();
-  const sessionId = await getSwarmSession();
+  let sessionId = null;
+
+  try {
+    sessionId = await getSwarmSession();
+  } catch (err) {
+    console.log(`\n⚠️ SwarmUI offline or unreachable at ${SWARM_URL} (${err.message}).`);
+    console.log(`Skipping Stage 3 image rendering. All generated prompts successfully saved to:`);
+    console.log(`  📁 ${RESULTS_JSON}`);
+    return;
+  }
 
   for (let i = 0; i < results.length; i++) {
     const item = results[i];
-    process.stdout.write(`  [${i + 1}/10] Rendering ${item.id}... `);
+    process.stdout.write(`  [${i + 1}/${results.length}] Rendering ${item.id}... `);
 
     const renderStart = Date.now();
     const payload = {
