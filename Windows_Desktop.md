@@ -159,6 +159,7 @@ Configure the following Host settings in the Parsec app:
 
 | Application                                | Winget ID / Install Command          |
 | ------------------------------------------ | ------------------------------------ |
+| [Bun](https://bun.sh/)                     | winget install -e --id Oven-sh.Bun   |
 | [Git](https://git-scm.com/downloads)       | winget install -e -i --id Git.Git    |
 | [Node.js (npm / npx)](https://nodejs.org/) | winget install -e --id OpenJS.NodeJS |
 | [uv](https://astral.sh/uv/)                | winget install -e --id astral-sh.uv  |
@@ -174,6 +175,8 @@ Configure the following Host settings in the Parsec app:
 | [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox         |
 | [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC |
 | [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                |
+| [Kobo Desktop](https://www.kobo.com/desktop)                  | winget install -e --id Rakuten.Kobo            |
+| [Libation](https://github.com/rmcrackan/Libation)             | winget install -e --id rmcrackan.Libation      |
 | [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio    |
 | [Obsidian](https://obsidian.md/)                              | winget install -e --id Obsidian.Obsidian       |
 | [PowerToys](https://github.com/microsoft/PowerToys)           | winget install -e --id Microsoft.PowerToys     |
@@ -205,6 +208,7 @@ Configure the following Host settings in the Parsec app:
 | [Microsoft Onedrive](https://www.microsoft.com/en-us/microsoft-365/onedrive/download) | winget install -e --id Microsoft.OneDrive                |
 | [Microsoft Teams](https://teams.microsoft.com/downloads)                              | winget install -e --id Microsoft.Teams --scope user      |
 | [MiKTeX](https://miktex.org/download)                                                 | winget install -e --id MiKTeX.MiKTeX                     |
+| [Proton Drive](https://proton.me/drive)                                               | winget install -e --id Proton.ProtonDrive                |
 | [Tex Live](https://tug.org/texlive.html)                                              | winget install -e --id TeXLive.TexLive                   |
 | [Thunderbird](https://www.thunderbird.net/en-US/)                                     | winget install -e --id Mozilla.Thunderbird               |
 
@@ -214,6 +218,7 @@ Configure the following Host settings in the Parsec app:
 | ------------------------------------------------------- | ------------------------------------------------------------ |
 | [Discord](https://discordapp.com/)                      | winget install -e --id Discord.Discord --scope user          |
 | [Gpg4win](https://www.gpg4win.org/)                     | winget install -e --id GnuPG.Gpg4win                         |
+| [Signal](https://signal.org/download/)                  | winget install -e --id OpenWhisperSystems.Signal             |
 | [Slack](https://slack.com/intl/en-au/downloads/windows) | winget install -e --id SlackTechnologies.Slack               |
 | [Telegram](https://desktop.telegram.org/)               | winget install -e --id Telegram.TelegramDesktop --scope user |
 | [WhatsApp](https://www.whatsapp.com/download/?lang=en)  | winget install -e --id WhatsApp.WhatsApp --scope user        |
@@ -242,7 +247,7 @@ Configure the following Host settings in the Parsec app:
 | Application                                                                                      | Winget ID                                   |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
 | [Bambu Studio](https://bambulab.com/en/download/studio)                                          | winget install -e --id Bambulab.Bambustudio |
-| [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                            |                                             |
+| [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                            | winget install -e --id Creality.CrealityScan.4 |
 | [Laser GRBL](https://github.com/arkypita/LaserGRBL)                                              |                                             |
 | [Lychee Slicer](https://lychee.mango3d.io/)                                                      |                                             |
 | [Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)    |                                             |
@@ -295,10 +300,13 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)                               | winget install -e --id Google.PlatformTools                    |
 | [ast-grep (sg)](https://ast-grep.github.io/)                                                                           | winget install -e --id ast-grep.ast-grep                       |
 | [AWS CLI](https://awscli.amazonaws.com/AWSCLIV2.msi)                                                                    | winget install -e --id Amazon.AWSCLI                           |
+| [AzCopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10)                                 | winget install -e --id Microsoft.Azure.AZCopy.10                |
+| [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows)                                    | winget install -e --id Microsoft.AzureCLI                      |
 | [ck (seek)](https://github.com/BeaconBay/ck)                                                                            | npm install -g @beaconbay/ck-search                            |
 | [CMake](https://cmake.org/)                                                                                             | winget install -e --id Kitware.CMake                           |
 | [DuckDB CLI](https://duckdb.org/)                                                                                       | winget install -e --id DuckDB.cli                              |
 | [fd](https://github.com/sharkdp/fd)                                                                                     | winget install -e --id sharkdp.fd                              |
+| [FFmpeg](https://ffmpeg.org/)                                                                           | winget install -e --id Gyan.FFmpeg                             |
 | [GitHub CLI](https://cli.github.com/)                                                                                   | winget install -e --id GitHub.cli                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                                           | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                                            | winget install -e --id Google.CloudSDK                         |
@@ -306,11 +314,14 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [jq](https://jqlang.github.io/jq/)                                                                                      | winget install -e --id jqlang.jq                               |
 | [lnav (Log Navigator)](https://lnav.org/)                                                                                | winget install -e --id tstack.lnav                             |
 | [Miller (mlr)](https://miller.readthedocs.io/)                                                                          | winget install -e --id Miller.Miller                           |
+| [mutool (MuPDF)](https://mupdf.com/)                                                                                   | winget install -e --id ArtifexSoftware.mutool                  |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                                  | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools       |
+| [Pandoc](https://pandoc.org/)                                                                                           | winget install -e --id JohnMacFarlane.Pandoc                   |
 | [Podman](https://github.com/containers/podman/)                                                                         | winget install -e --id RedHat.Podman                           |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                                         | winget install -e --id Microsoft.PowerBI                       |
 | [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                                 | winget install -e --id PuTTY.PuTTY                             |
+| [qrtool](https://github.com/sorairolake/qrtool)                                                                        | winget install -e --id sorairolake.qrtool                      |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                                            | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [ripgrep](https://github.com/BurntSushi/ripgrep)                                                                        | winget install -e --id BurntSushi.ripgrep.MSVC                 |
 | [Rufus](https://github.com/pbatard/rufus)                                                                               | winget install -e --id Rufus.Rufus                             |
@@ -318,6 +329,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
 | [Semgrep](https://semgrep.dev/)                                                                                         | uv tool install semgrep                                        |
 | [Snyk CLI](https://snyk.io/)                                                                                            | npm install -g snyk                                            |
+| [TigerVNC](https://tigervnc.org/)                                                                                       | winget install -e --id TigerVNC.TigerVNC                       |
 | [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
 | [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
 | [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
@@ -335,18 +347,23 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 | Application                                                                                       | Winget ID                                                    |
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)                                      |                                                              |
+| [capa](https://github.com/mandiant/capa)                                                          | uv tool install flare-capa                                   |
 | [DB Browser for SQLite](https://sqlitebrowser.org/dl/)                                            | winget install -e --id DBBrowserForSQLite.DBBrowserForSQLite |
+| [Detect It Easy (diec)](https://github.com/horsicq/Detect-It-Easy)                                | winget install -e --id horsicq.DIE-engine                     |
+| [FLOSS](https://github.com/mandiant/flare-floss)                                                  | winget install -e --id Mandiant.FLOSS                         |
 | [Foremost](http://foremost.sourceforge.net/)                                                      |                                                              |
 | [FTK Imager](https://accessdata.com/product-download/)                                            |                                                              |
+| [Ghidra](https://github.com/NationalSecurityAgency/ghidra/releases)                               |                                                              |
 | [GSMARTControl](https://gsmartcontrol.sourceforge.io/home/index.php/Downloads)                    | winget install -e --id GSmartControl.GSmartControl           |
 | [ImHex](https://imhex.werwolv.net/)                                                               | winget install -e --id WerWolv.ImHex                         |
 | [KAPE](https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape) |                                                              |
 | [Maltego](https://www.maltego.com/downloads/)                                                     |                                                              |
 | [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)                                              |                                                              |
 | [Plaso](https://github.com/log2timeline/plaso)                                                    |                                                              |
+| [QPDF](https://github.com/qpdf/qpdf)                                                              | winget install -e --id QPDF.QPDF                             |
 | [RegRipper](https://github.com/keydet89/RegRipper3.0)                                             |                                                              |
 | [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)                                    |                                                              |
-| [VirusTotal CLI](https://github.com/VirusTotal/vt-cli)                                            | winget install -e --id VirusTotal.vt                         |
+| [VirusTotal CLI](https://github.com/VirusTotal/vt-cli)                                            | winget install -e --id VirusTotal.vt-cli                     |
 | [Volatility](https://github.com/volatilityfoundation/volatility3)                                 |                                                              |
 | [YARA](https://github.com/VirusTotal/yara)                                                        | winget install -e --id VirusTotal.YARA                       |
 | [Zimmerman Tools](https://ericzimmerman.github.io/)                                               |                                                              |
@@ -361,7 +378,7 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 | [Postman](https://www.getpostman.com/downloads/)                       | winget install -e --id Postman.Postman --scope user    |
 | [Snort](https://www.snort.org/)                                        |                                                        |
 | [Wireshark](https://www.wireshark.org/)                                | winget install -e --id WiresharkFoundation.Wireshark   |
-| [ZAProxy](https://github.com/zaproxy/zaproxy)                          | winget install -e --id OWASP.ZAP                       |
+| [ZAProxy](https://github.com/zaproxy/zaproxy)                          | winget install -e --id ZAP.ZAP                         |
 | [Zeek](https://www.zeek.org/)                                          |                                                        |
 
 ### Video Game Launchers
@@ -656,6 +673,27 @@ Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
 mv net6/* .
 ```
 
+## Ghidra
+
+Install OpenJDK 21 and configure Ghidra for reverse engineering and headless analysis:
+
+```powershell
+# Install JDK 21
+winget install -e --id Microsoft.OpenJDK.21
+
+# Download and extract Ghidra into Build folder
+New-Item -Path $HOME\Build\Ghidra -ItemType directory -Force
+cd $HOME\Build\Ghidra
+$url = (Invoke-RestMethod "https://api.github.com/repos/NationalSecurityAgency/ghidra/releases/latest").assets | Where-Object name -like "ghidra_*_PUBLIC_*.zip" | Select-Object -ExpandProperty browser_download_url
+Invoke-WebRequest -Uri $url -OutFile ghidra.zip
+Expand-Archive -Path ghidra.zip -DestinationPath $HOME\Build\Ghidra -Force
+Remove-Item ghidra.zip
+$extractedDir = Get-ChildItem -Directory -Path "$HOME\Build\Ghidra\ghidra_*" | Select-Object -First 1
+
+# Set persistent GHIDRA_INSTALL_DIR environment variable
+[Environment]::SetEnvironmentVariable("GHIDRA_INSTALL_DIR", $extractedDir.FullName, "User")
+```
+
 ## OpenSSH client on Windows
 
 Consider installing SSH Preview as Microsoft ships years old OpenSSH builds by default
@@ -763,7 +801,7 @@ uv python install 3.13 --default
 Pre-install global essential libraries for AI agents & general scripts:
 
 ```powershell
-uv pip install --python 3.13 --system --break-system-packages -U requests httpx beautifulsoup4 lxml pandas numpy pillow pyyaml python-dotenv pydantic tqdm openpyxl duckdb orjson rich loguru
+uv pip install --python 3.13 --system --break-system-packages -U requests httpx beautifulsoup4 lxml pandas numpy pillow pyyaml python-dotenv pydantic tqdm openpyxl duckdb orjson rich loguru pefile scikit-learn fastembed msoffcrypto-tool
 ```
 
 Install global CLI tools to PATH:
@@ -777,6 +815,8 @@ uv tool install semgrep
 uv tool install jupytext
 uv tool install hf
 uv tool install oletools
+uv tool install xlmmacrodeobfuscator
+uv tool install flare-capa
 uv tool install pdfx
 uv tool install apprise
 uv tool install docling
