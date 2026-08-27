@@ -100,8 +100,14 @@ export async function runAskQuestionTests() {
   assert.ok(askTool, "ask_question tool must be registered");
 
   // ----------------------------------------------------
-  // Section 1: Argument Normalizer & Enum Aliases
+  // Section 1: Schema & Parameter Validation
   // ----------------------------------------------------
+  test("Schema: timeoutMs is not exposed in tool parameter schema", () => {
+    assert.equal(askTool.parameters?.properties?.timeoutMs, undefined, "timeoutMs must not be in tool schema");
+    assert.equal(mod.AskQuestionSchema?.properties?.timeoutMs, undefined, "AskQuestionSchema must not have timeoutMs");
+    assert.ok(typeof mod.DEFAULT_TIMEOUT_MS === "number" && mod.DEFAULT_TIMEOUT_MS > 0, "DEFAULT_TIMEOUT_MS must be a positive number");
+  });
+
   test("Argument Normalizer: resolves type aliases (boolean, yes_no -> confirm)", () => {
     const fn = askTool.prepareArguments;
     assert.equal(fn({ type: "boolean" }).type, "confirm");
@@ -260,7 +266,7 @@ export async function runAskQuestionTests() {
   });
 
   // ----------------------------------------------------
-  // Section 5: AbortSignal Cancellation
+  // Section 5: Timeout & AbortSignal Handling
   // ----------------------------------------------------
   await asyncTest("Cancellation: handles AbortSignal correctly", async () => {
     const controller = new AbortController();
@@ -281,6 +287,28 @@ export async function runAskQuestionTests() {
       mockCtx
     );
     assert.ok(res.details?.cancelled || res.content?.[0]?.text?.includes("DefaultOnAbort"));
+  });
+
+  await asyncTest("Timeout Handling: falls back gracefully on prompt timeout", async () => {
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async input() {
+          throw new Error("Prompt timed out after 60000ms");
+        }
+      }
+    };
+
+    const res = await askTool.execute(
+      "call_timeout",
+      { question: "Provide feedback", type: "input", defaultValue: "AutoFallback" },
+      undefined,
+      undefined,
+      mockCtx
+    );
+    assert.equal(res.details?.timedOut, true);
+    assert.equal(res.details?.answer, "AutoFallback");
+    assert.ok(res.content?.[0]?.text?.includes("[Prompt Timed Out]"));
   });
 
   return results;

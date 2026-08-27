@@ -4,6 +4,12 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import { Text } from "@earendil-works/pi-tui";
 
 /**
+ * Default timeout for interactive UI dialogs in milliseconds (60 seconds).
+ * Overridable via environment variable PI_ASK_QUESTION_TIMEOUT_MS or PI_ASK_TIMEOUT_MS.
+ */
+export const DEFAULT_TIMEOUT_MS = Number(process.env.PI_ASK_QUESTION_TIMEOUT_MS || process.env.PI_ASK_TIMEOUT_MS) || 60000;
+
+/**
  * TypeBox Schema definition for `ask_question` tool parameters.
  * Designed with a required question and clear constraints.
  */
@@ -16,9 +22,6 @@ export const AskQuestionSchema = Type.Object({
   }),
   choices: Type.Optional(Type.Array(Type.String(), {
     description: "List of options for the user to choose from (required when type is 'select')."
-  })),
-  timeoutMs: Type.Optional(Type.Integer({
-    description: "Optional timeout in milliseconds. If omitted, waits indefinitely for user response."
   })),
   defaultValue: Type.Optional(Type.String({
     description: "Optional fallback value returned if prompt times out, is cancelled, or runs in headless mode."
@@ -74,11 +77,11 @@ function normalizeChoices(rawChoices: unknown): string[] {
 }
 
 /**
- * Wraps a UI promise with an optional timeout and AbortSignal listener.
+ * Wraps a UI promise with a timeout and AbortSignal listener.
  */
 function withTimeoutAndSignal<T>(
   promise: Promise<T>,
-  timeoutMs?: number,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
   signal?: AbortSignal
 ): Promise<T> {
   if (signal?.aborted) {
@@ -185,7 +188,7 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
-      const dialogOptions = params.timeoutMs ? { timeout: params.timeoutMs } : {};
+      const dialogOptions = { timeout: DEFAULT_TIMEOUT_MS };
 
       // ----------------------------------------------------
       // 2. Interactive TUI Modes
@@ -195,7 +198,7 @@ export default function (pi: ExtensionAPI) {
         if (promptType === "confirm") {
           const confirmed = await withTimeoutAndSignal(
             ctx.ui.confirm("Confirmation", question, dialogOptions),
-            params.timeoutMs,
+            DEFAULT_TIMEOUT_MS,
             signal
           );
           const answer = confirmed ? "Yes" : "No";
@@ -211,7 +214,7 @@ export default function (pi: ExtensionAPI) {
             // Gracefully degrade to text input if model failed to provide choice items
             const textResponse = await withTimeoutAndSignal(
               ctx.ui.input(`${question} (Type your choice):`, "", dialogOptions),
-              params.timeoutMs,
+              DEFAULT_TIMEOUT_MS,
               signal
             );
             if (textResponse === undefined) {
@@ -230,7 +233,7 @@ export default function (pi: ExtensionAPI) {
 
           const selection = await withTimeoutAndSignal(
             ctx.ui.select(question, choices, dialogOptions),
-            params.timeoutMs,
+            DEFAULT_TIMEOUT_MS,
             signal
           );
 
@@ -252,7 +255,7 @@ export default function (pi: ExtensionAPI) {
         // Mode: TextInput (Freeform keyboard text entry)
         const response = await withTimeoutAndSignal(
           ctx.ui.input(question, "", dialogOptions),
-          params.timeoutMs,
+          DEFAULT_TIMEOUT_MS,
           signal
         );
 
@@ -309,10 +312,6 @@ export default function (pi: ExtensionAPI) {
 
       let text = theme.fg("toolTitle", theme.bold("ask_question")) +
         theme.fg("dim", ` (mode: ❓ ${type})`);
-
-      if (args?.timeoutMs && args.timeoutMs > 0) {
-        text += theme.fg("dim", ` [timeout: ${Math.round(args.timeoutMs / 1000)}s]`);
-      }
 
       if (truncatedQ) {
         text += theme.fg("muted", `\n  "${truncatedQ}"`);
