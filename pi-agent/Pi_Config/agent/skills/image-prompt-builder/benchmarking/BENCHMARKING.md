@@ -80,7 +80,7 @@ node "$HOME\.pi\agent\skills\image-prompt-builder\benchmarking\swarm_generate.mj
 node "$HOME\.pi\agent\skills\image-prompt-builder\benchmarking\swarm_generate.mjs" `
   --model "Anima/anima_turboV10" `
   --width 1216 --height 688 --steps 10 --cfg 1.0 `
-  --prompt "masterpiece, best quality, score_7, safe, 1girl, solo, flight suit, giant robot hand, mecha, desert, ruined hangar, cel shading, anime screencap, 2d, clean lineart, @yamashita ikuto, @imaishi hiroyuki, She rests her weight in heavy contrapposto against the rusted iron palm as 4500K desert sunlight slices through dust motes."
+  --prompt "1girl, solo, flight suit, giant robot hand, mecha, desert, ruined hangar, cel shading, anime screencap, 2d, clean lineart, @yamashita ikuto, @imaishi hiroyuki, She rests her weight in heavy contrapposto against the rusted iron palm as 4500K desert sunlight slices through dust motes."
 ```
 
 ---

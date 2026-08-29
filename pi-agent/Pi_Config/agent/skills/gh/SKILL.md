@@ -3,194 +3,95 @@ name: gh
 description: GitHub CLI for PRs, issues, Actions CI workflows, releases, and raw GraphQL/REST queries. Use 'gh pr diff', 'gh run view --log-failed', 'gh issue list --json', or 'gh api'.
 ---
 
-# GitHub CLI (`gh`) Skill
+# GitHub CLI (`gh`) Capabilities Reference
 
-This skill guides the agent on using `gh` to inspect repositories, review pull requests, triage failed CI workflows, manage issues, and query the GitHub REST/GraphQL APIs non-interactively in automated and headless environments.
-
----
-
-## Headless Execution & Safety Rules
-
-1. **Always supply all required arguments**: Never trigger interactive prompts (e.g. always provide `--title`, `--body` or `--fill` for PR/issue creation).
-2. **Check authentication status**: Run `gh auth status` before executing authenticated tasks.
-3. **Explicit target repository**: When working outside a repository root or across multiple repos, pass `-R <owner>/<repo>` (or `--repo <owner>/<repo>`).
-4. **Disable prompts**: If necessary in scripts, set environment variables `GH_PROMPT_DISABLED=1` and `NO_COLOR=1`.
-
-```bash
-# Check authentication status and active scopes
-gh auth status
-
-# Specify target repo explicitly when not inside a git checkout
-gh pr list -R cli/cli --state open --limit 5
-```
+Non-interactive GitHub CLI for inspecting repositories, reviewing pull requests, triaging failed CI workflows, managing issues, and querying REST/GraphQL APIs headlessly.
 
 ---
 
-## Common Workflows
+## 1. Programs Used
 
-### 1. CI / GitHub Actions Triage (High Priority)
-
-Diagnose build, test, and lint failures from workflow runs:
-
-```bash
-# List recent workflow runs for the current repository
-gh run list --limit 10
-
-# Filter runs by workflow name or branch
-gh run list --workflow=ci.yml --branch=main --limit 5
-
-# View summary of a specific run (shows failing jobs and steps)
-gh run view <RUN_ID>
-
-# CRITICAL: View only the failed step logs to quickly diagnose root cause
-gh run view <RUN_ID> --log-failed
-
-# View full log for a specific job ID within a run
-gh run view --job <JOB_ID> --log
-
-# Watch a currently running workflow until completion
-gh run watch <RUN_ID>
-
-# Rerun only the failed jobs in a workflow run
-gh run rerun <RUN_ID> --failed
-```
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`gh`** | Official GitHub command-line interface for GitHub REST/GraphQL and resource operations |
 
 ---
 
-### 2. Pull Request Inspection & Review
+## 2. Negative Guardrails & Headless Execution Safety
 
-Inspect PR diffs, check statuses, and manage PR branches:
+Small models frequently trigger interactive prompts or fail on ambiguous repos:
 
-```bash
-# View PR summary, status, and latest discussion comments
-gh pr view <PR_NUMBER> --comments
-
-# View unified git diff of a PR without checking it out
-gh pr diff <PR_NUMBER>
-
-# Check PR CI status checks and their outcomes
-gh pr checks <PR_NUMBER>
-
-# Check out PR branch locally for manual reproduction/editing
-gh pr checkout <PR_NUMBER>
-
-# List open PRs targeting main
-gh pr list --state open --base main --limit 10
-
-# Create a PR non-interactively
-gh pr create --title "feat: add batch processing" --body "Resolves #123" --base main --head my-feature-branch
-
-# Add a comment to an existing PR
-gh pr comment <PR_NUMBER> --body "LGTM: verified test coverage passes locally."
-
-# Submit a review on a PR
-gh pr review <PR_NUMBER> --approve --body "Looks good to merge!"
-# Or request changes:
-gh pr review <PR_NUMBER> --request-changes --body "Please fix the failing test in parser_test.go"
-
-# Merge a PR once approved and checks pass
-gh pr merge <PR_NUMBER> --squash --delete-branch --auto
-```
+| Hallucination / Mistake | Why It Fails | Correct Syntax |
+| :--- | :--- | :--- |
+| `gh pr create` without args | Triggers interactive TUI prompt (hangs subshell) | Always pass `--title "..." --body "..."` or `--fill` |
+| `gh run view` on failing job | Dumps massive thousands-line logs | Use `gh run view <ID> --log-failed` for root-cause lines |
+| Running outside repo root | Cannot detect git origin | Explicitly pass `-R <owner>/<repo>` or `--repo <owner>/<repo>` |
+| Unbounded list queries | Floods agent context window | Always append `--limit 10` or `--limit 25` |
+| `gh auth login` in script | Hangs on interactive OAuth browser flow | Require pre-existing auth; check with `gh auth status` |
 
 ---
 
-### 3. Issue Management
+## 3. Core Resource & Command Capabilities Matrix
 
-Search, view, create, and update GitHub issues:
-
-```bash
-# List open issues filtered by label and assignee
-gh issue list --state open --label "bug" --assignee "@me" --limit 10
-
-# Search issues matching query syntax
-gh issue list --search "memory leak in:title,body" --state open
-
-# View full issue body and all comments
-gh issue view <ISSUE_NUMBER> --comments
-
-# Create an issue non-interactively with labels and assignees
-gh issue create --title "bug: segfault on empty input" --body "Observed panic when input array is empty." --label "bug,triage"
-
-# Add a comment to an issue
-gh issue comment <ISSUE_NUMBER> --body "Reproduced on Linux x86_64. Fix incoming."
-
-# Close an issue as completed or not planned
-gh issue close <ISSUE_NUMBER> --reason "completed"
-```
-
----
-
-### 4. Repository & Release Management
-
-Inspect repository metadata, releases, and release assets:
-
-```bash
-# View repository overview
-gh repo view <owner>/<repo>
-
-# List recent releases
-gh release list --limit 5
-
-# View release notes and metadata for a specific tag
-gh release view <TAG>
-
-# Download release assets non-interactively
-gh release download <TAG> --pattern "*.tar.gz" --dir ./dist
-```
+| Resource | Operation / Subcommand | Key Flags & Parameters | Capabilities & Behavior |
+| :--- | :--- | :--- | :--- |
+| **CI Actions** | `gh run list` | `--workflow=ci.yml`, `--branch=main`, `--status=failure` | Lists CI workflow runs with status indicators. |
+| | `gh run view <ID>` | `--log-failed`, `--job=<JOB_ID>`, `--log` | Inspects failed step logs or specific job output. |
+| | `gh run rerun <ID>` | `--failed` | Reruns only the failed jobs in a workflow run. |
+| | `gh run watch <ID>` | `--exit-status` | Streams live CI status until completion. |
+| **Pull Requests** | `gh pr view <NUM>` | `--comments`, `--web` | Displays PR description, status checks, and discussions. |
+| | `gh pr diff <NUM>` | `--name-only`, `--patch` | Returns unified git diff without checking out branch. |
+| | `gh pr checks <NUM>` | `--watch`, `--required` | Checks CI status check outcomes per commit. |
+| | `gh pr checkout <NUM>` | `--recurse-submodules` | Clones and checks out PR branch locally. |
+| | `gh pr review <NUM>` | `--approve`, `--request-changes`, `--body "..."` | Submits PR code review verdict non-interactively. |
+| | `gh pr merge <NUM>` | `--squash`, `--auto`, `--delete-branch` | Automatically merges PR once checks pass. |
+| **Issues** | `gh issue list` | `--label="bug"`, `--assignee="@me"`, `--search="..."` | Searches and filters issues. |
+| | `gh issue create` | `--title "..."`, `--body "..."`, `--label="bug,p1"` | Creates issues headlessly. |
+| | `gh issue close <NUM>`| `--reason="completed" \| "not_planned"` | Closes issue with resolution status. |
+| **Search & Caches**| `gh search <code\|repos\|issues>` | `"query" --language=ts --limit 10` | Unified multi-resource GitHub global search. |
+| | `gh cache list` / `delete` | `--key <KEY>`, `--all` | Manages CI Action build caches and cache keys. |
+| | `gh variable set` / `list` | `--body "val" --env <ENV>` | Manages Actions workflow configuration variables. |
+| **Security & Attest**| `gh attestation verify` | `<file> --owner <ORG>` | Cryptographic SLSA artifact provenance verification. |
+| | `gh ruleset list` / `view` | `--parents` | Inspects repository branch protection rulesets. |
+| **Releases** | `gh release list` | `--limit 5` | Lists release tags and publication dates. |
+| | `gh release download` | `<TAG> --pattern="*.tar.gz" --dir=./dist` | Downloads release binary assets non-interactively. |
+| **Raw API** | `gh api <endpoint>` | `-X POST`, `-f key=val`, `--paginate`, `--jq` | Executes authenticated REST API requests. |
+| | `gh api graphql` | `-f query='...'`, `-F var='val'` | Executes GraphQL queries with variable bindings. |
 
 ---
 
-### 5. Structured JSON Output & JQ Filtering
+## 4. Structured Output & JQ Filtering Flags
 
-Most `gh` commands support `--json` and `--jq` (or `-q`) to extract structured data without external `jq` dependencies:
+`gh` commands support built-in JSON extraction without requiring external `jq` binaries:
 
-```bash
-# Extract list of open PR numbers, titles, and branches as JSON
-gh pr list --state open --json number,title,headRefName
-
-# Extract specific fields using built-in jq filter
-gh pr list --json number,title --jq '.[] | "#\(.number): \(.title)"'
-
-# Get the run ID of the latest failed workflow run
-gh run list --status failure --json databaseId,workflowName --jq '.[0].databaseId'
-
-# Inspect available JSON fields for any command
-gh pr view --json help
-gh run view --json help
-gh issue view --json help
-```
+| Flag | Purpose | Syntax Pattern |
+| :--- | :--- | :--- |
+| `--json <fields>` | Returns structured JSON with specified fields | `gh pr list --json number,title,headRefName` |
+| `--jq <filter>` | Applies built-in jq filter expression | `gh pr list --json number,title --jq '.[] \| "#\(.number): \(.title)"'` |
+| `--template <tmpl>` | Go text template formatting | `gh issue list --template '{{range .}}{{.title}}{{"\n"}}{{end}}'` |
+| `--json help` | Discovers all available JSON fields for any command | `gh pr view --json help`, `gh run view --json help` |
 
 ---
 
-### 6. Raw API Queries (REST & GraphQL)
+## 5. High-Leverage Composite Examples
 
-Use `gh api` to access GitHub REST and GraphQL APIs using the active authenticated session:
-
-#### REST API
 ```bash
-# Get modified file list for a PR
-gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/files --jq '.[].filename'
+# 1. Diagnose latest failed CI workflow: find run ID and view failed step log
+FAILED_RUN=$(gh run list --status failure --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run view "$FAILED_RUN" --log-failed
 
-# Handle paginated REST endpoints automatically
-gh api --paginate repos/{owner}/{repo}/issues --jq '.[].title'
+# 2. Non-interactive PR review & check inspection
+gh pr checks 142
+gh pr diff 142
+gh pr review 142 --approve --body "Verified changes pass test suite locally."
 
-# POST request to create an issue comment
-gh api -X POST repos/{owner}/{repo}/issues/<ISSUE_NUMBER>/comments -f body="Automated triage comment"
-```
-
-#### GraphQL API
-```bash
-# Execute GraphQL query with variables
+# 3. Raw GraphQL query to fetch open PRs with draft status
 gh api graphql -f query='
   query($owner: String!, $repo: String!) {
     repository(owner: $owner, name: $repo) {
       pullRequests(first: 5, states: OPEN) {
-        nodes {
-          number
-          title
-          isDraft
-        }
+        nodes { number, title, isDraft }
       }
     }
-  }' -F owner='owner_name' -F repo='repo_name'
+  }' -F owner='cli' -F repo='cli' --jq '.data.repository.pullRequests.nodes[]'
 ```

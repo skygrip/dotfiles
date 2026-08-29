@@ -92,14 +92,12 @@ Krea 2 excels at continuous physical prose describing spatial relationships, wei
 
 Unlike legacy diffusion architectures where the text encoder only processes strings of text tokens, **Krea 2 natively supports image prompting directly inside the CLIP/Text conditioning pipeline** via its integrated **Qwen3-VL-4B** vision-language encoder (`type: krea2`).
 
-```
-                                      ┌─────────────────────────────────────┐
-  Reference Image ───────────────────►│ Qwen3-VL Vision Tower (ViT)         │
-                                      │ Encodes <|vision_start|> image tokens│
-                                      └──────────────────┬──────────────────┘
-                                                         ▼
-  Text Prompt ───────────────────────► [Joint Multimodal ChatML Embedding] ──► KSampler.positive
-                                       (12 Layer Taps: L2 to L35)
+```mermaid
+flowchart TD
+    IMG["Reference Image(s)"] --> VIT["<b>Qwen3-VL Vision Tower (ViT)</b><br/>Encodes vision tokens"]
+    TXT["Text Prompt"] --> CHATML["<b>Joint Multimodal ChatML Embedding</b><br/>12 Layer Taps: L2 to L35"]
+    VIT --> CHATML
+    CHATML --> OUT["KSampler.positive<br/>(Cross-Modal Conditioning)"]
 ```
 
 ### The Native Multi-Image Template & `Picture N:` Syntax
@@ -200,13 +198,14 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 **📝 Primary Positive Prompt:**
 ```text
-85mm f/1.8 macro lens with shallow depth of field. A 2700K tungsten lamp casts warm raking light over a wooden workbench. An elderly watchmaker wears a canvas apron and a monocle loupe. Tiny brass escapement gears and ruby bearings rest across the oak table. His inner brow pinches tight (AU1+AU4) as his lower eyelids narrow (AU7). Loose gray hair brushes his temple. He leans forward in seated contrapposto. His fingertips squeeze precision tweezers and seat a gear against spring resistance. Foreground: blurred steel screwdrivers. Background: soft circular bokeh discs. 35mm film still with natural skin texture.
+85mm f/1.8 macro lens, shallow depth of field. A 2700K tungsten task lamp illuminates the workbench against cool 6000K shadow fill. A 68-year-old master watchmaker wearing a canvas apron and brass monocle loupe leans forward over an antique escapement gear. Pinched brow and taut lower eyelids focus with an iris catchlight. His thumb and forefinger apply downward tactile grip pressure on micro-tweezers, seating the gear against ruby bearings. Kodak Portra 400 35mm film still with unretouched micro-pores.
 ```
 
 **🔄 Iteration Pathway:**
-1. Lighting Shift: Switch to 5500K daylight. Cool morning light filters through a workshop window and casts soft diffuse shadows across the workbench.
-2. Perspective Shift: Lower the camera to tabletop macro level. Align the lens flush with the tweezers as the escapement tooth locks into the ruby pallet jewel.
-3. Interaction Shift: The watchmaker rotates the loupe away from his eye. He exhales softly and inspects the spinning balance wheel.
+1. **Optics & Tabletop Macro Shift:** Lower the vantage point flush with the oak bench: *"Extreme macro 105mm f/2.8 shot at tabletop level; escapement wheel teeth and pallet jewels fill the razor-thin focal plane in tack-sharp focus while the watchmaker's monocled eye blurs softly in the upper background."*
+2. **Kelvin & Lighting Ratio Shift:** Deepen shadow drama: *"Shift key lighting to a single raking 2200K kerosene lamp from the left with deep 7500K twilight ambience filling the workshop background, heightening specular highlights on brass components."*
+3. **Kinetic & FACS Action Shift:** Transition from assembly to inspection: *"The watchmaker tilts his head 15° upward, easing tweezer tension while his lips part slightly in soft exhalation as he watches the balance wheel oscillate."*
+4. **Medium & Shutter Texture Shift:** Render as vintage photojournalism: *"Ilford HP5 Plus 400 black-and-white 35mm film still with high-acutance silver halide grain, deep shadow contrast, and visible metallic luster."*
 
 ---
 
@@ -216,13 +215,14 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 **📝 Primary Positive Prompt:**
 ```text
-70-200mm f/2.8 telephoto lens with a 1/2000s shutter. Direct 5500K midday sunlight rakes the turf and casts sharp contact shadows. An equestrian rider in a navy jacket guides a bay warmblood over a timber water hurdle. She furrows her brow (AU4) and clenches her jaw (AU31) with a direct forward gaze. Water droplets and turf clumps freeze in mid-air. She folds into a bent-knee contrapposto; gloved hands grip taut leather reins as the horse tucks its forelegs over the rail. Foreground: out-of-focus water spray. Background: arena grandstands dissolve into creamy circular bokeh. Unretouched 35mm sports film still.
+70-200mm f/2.8 telephoto lens, 1/2000s shutter freeze. Direct 5500K midday sunlight rakes turf and water hurdle. A 32-year-old equestrian rider in a navy wool show jacket guides a bay warmblood over timber rails. Furrowed brow, clenched jaw, and direct forward gaze. Airborne water droplets freeze mid-splash. Folded in bent-knee contrapposto, gloved hands maintain taut grip tension along leather reins as background grandstands dissolve into creamy circular bokeh. Kodak Portra 400 film.
 ```
 
 **🔄 Iteration Pathway:**
-1. Lighting Shift: Shift lighting to 3200K low-angle golden hour sunlight. Warm directional light casts long amber shadows across the water obstacle.
-2. Perspective Shift: Drop the camera to a low ground-level angle beneath the timber rail. Frame the horse's tucked hooves directly against the sky.
-3. Interaction Shift: The rider turns her head 15 degrees toward the next course turn. Her left hand eases rein tension while her heels press the horse's flank.
+1. **Lighting / Atmosphere Shift:** Switch to 3200K low-angle golden hour sunlight raking horizontally across the water obstacle, casting long amber rim-light flares across the rider's wool jacket and horse's mane.
+2. **Optics / POV Shift:** Lower the camera angle to ground level beneath the timber hurdle with a 24mm wide-angle lens at f/4.0, framing the hooves and suspended water droplets dynamically against the open sky.
+3. **Kinetic / FACS Shift:** Rider tilts chin 10° rightward toward the landing line with an intense analytical squint and unilateral lower lip tuck, left wrist flexing to redirect the bit.
+4. **Medium / Substrate Shift:** Switch film stock to high-contrast Kodak Tri-X 400 black-and-white 35mm film with authentic silver halide grain, deep shadow crush, and specular splash highlights.
 
 ---
 
@@ -232,13 +232,14 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 **📝 Primary Positive Prompt:**
 ```text
-35mm f/2.8 lens with cinematic depth. Warm 5200K dawn light rays cut through cool mountain mist. A botanist in a weathered canvas jacket kneels on a high mountain summit ridge. Deep contact shadows anchor her boots to damp rock. Her inner eyebrows arch in gentle wonder (AU1+AU2) as a soft smile curves her cheeks (AU12). Morning breeze ruffles her dark hair. Her left fingertips steady a brass magnifying lens over rare flora while her right hand presses an open field journal. Foreground: dew-covered alpine petals. Background: jagged granite peaks dissolve into soft haze. 35mm film still.
+35mm f/2.8 lens, cinematic depth of field. Directional 5200K dawn light shafts cut through cool mountain fog. A 34-year-old botanist in a weathered canvas field jacket kneels on an alpine summit ridge, contact shadows anchoring her boots to damp granite. Arched eyebrows in gentle focus and a subtle smile curve her cheeks. Fingertips steady a brass magnifying lens over rare flora as her hand presses an open field journal. Distant granite peaks dissolve into soft mist. 35mm film still.
 ```
 
 **🔄 Iteration Pathway:**
-1. Lighting Shift: Shift the sun angle to 6000K overcast morning. Diffuse light flattens harsh rock highlights and deepens mist opacity across the valley.
-2. Perspective Shift: Drop the camera to ground level. Frame the alpine blossoms in sharp foreground focus while the botanist kneels softly in the midground.
-3. Interaction Shift: Subject sketches a botanical specimen into the journal with a graphite pencil. Her gaze focuses downward onto the page.
+1. **Lighting / Atmosphere Shift:** Shift sun angle to 6000K overcast dawn; diffuse light flattens harsh rock highlights and deepens mist opacity across the mountain saddle.
+2. **Optics / POV Shift:** Drop camera to ground level macro perspective (f/1.8); place dew-covered alpine petals in sharp foreground focus while the botanist kneels softly in the midground.
+3. **Kinetic / FACS Shift:** Botanist tilts head 15° downward in analytical concentration, brows pinched and lower eyelids slightly narrowed, sketching botanical anatomy into the journal with a graphite pencil.
+4. **Weather / Substrate Shift:** Add raking 4800K cross-light catching crystalline frost flecks on the canvas jacket and granite shelf; Kodak Vision3 250D 35mm motion picture film still.
 
 ---
 
@@ -248,10 +249,12 @@ Picture 1 is a character turnaround reference sheet. Render a single unified cin
 
 **📝 Primary Positive Prompt:**
 ```text
-85mm f/1.4 portrait lens with shallow depth of field. Diffuse 5000K overcast daylight filters through paned glass as a 2800K warm brass desk lamp illuminates the workspace. An architect in a charcoal turtleneck reviews structural blueprints across an oak drafting table. Her inner brows pinch in analytical focus (AU1+AU4) and lower eyelids tighten (AU7). Foreground: out-of-focus rain streaks on the window frame the edge. Her left palm presses flat against the heavy paper while curled right fingers grip a matte black technical pen. Background: geometric pavilion beams dissolve into soft circular bokeh discs. 35mm film still with natural skin texture.
+85mm f/1.4 prime lens, shallow depth of field. Diffuse 5000K window daylight fills shadows against a 2800K brass lamp key illuminating an oak drafting table. A 48-year-old architect in a charcoal turtleneck leans forward over structural blueprints. Pinched brows in analytical focus and tightened lower eyelids catch a warm iris glint. Her flat left palm presses downward onto the blueprint while right fingers grip a black technical pen. Kodak Portra 400 35mm film still with unretouched skin micro-pores.
 ```
 
 **🔄 Iteration Pathway:**
-1. Lighting Shift: Switch to 3000K late afternoon golden hour. Warm sunlight rakes across the drafting table and casts long diagonal shadows over the blueprints.
-2. Perspective Shift: Lower the camera to tabletop level. Frame the technical pen and curled fingers in sharp close-up while the architect's focused eyes soften in the background.
-3. Interaction Shift: The architect lifts the brass ruler with her left hand and aligns the metal edge against a blueprint grid line.
+1. **Lighting & Atmosphere Shift (Twilight Chiaroscuro):** Shift window fill to cool 7000K blue hour dusk while increasing the 2800K brass desk lamp intensity to cast deep, warm raking shadows across the drafting vellum.
+2. **Optics & Vantage Shift (Macro Low-Angle Detail):** Switch to a 50mm f/2.0 tabletop-level perspective aligned flush with the drafting paper; frame the black technical pen nib drawing a section line in sharp focus while the architect's eyes softly defocus in the upper midground.
+3. **Kinetic & FACS Shift (Structural Realization / Skepticism):** Transition facial mechanics to unilateral skepticism (left eyebrow arched, one mouth corner slightly tightened) as she lifts a brass scale ruler with her left hand, measuring cantilever clearance.
+4. **Substrate & Medium Shift (Monochrome Silver Gelatin):** Switch the film emulsion from Portra 400 to Ilford HP5 Plus 400 pushed +1 stop, yielding deep high-contrast silver halide grain and crisp black-and-white tonal graduation across the charcoal knitwear.
+

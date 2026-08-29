@@ -1,181 +1,107 @@
 ---
 name: ast-grep
-description: Structural AST-based code search and rewrites using ast-grep (sg). Use 'sg run -p "..." -l <lang>' to match syntax trees ignoring whitespace, or 'sg run -p "..." -r "..." -U' for safe AST rewrites.
+description: Structural AST-based code search and rewrites using ast-grep. Use 'ast-grep run -p "..." -l <lang>' to match syntax trees ignoring whitespace, or 'ast-grep run -p "..." -r "..." -U' for safe AST rewrites.
 ---
 
-# ast-grep (`sg`) Skill
+# `ast-grep` Structural AST Capabilities Reference
 
-`ast-grep` (`sg`) is a fast, syntax-aware tool for structural code search and AST rewrites across TypeScript, JavaScript, Python, Rust, Go, C/C++, Java, and more. It matches code by syntax tree structure rather than raw text or regex, automatically ignoring formatting, comments, and whitespace differences.
+Fast, syntax-aware tool for structural code search, AST linting, codebase outline inspection, and in-place code rewrites across TypeScript, JavaScript, Python, Rust, Go, C/C++, Java, and more. Matches syntax trees regardless of whitespace, formatting, or comments.
 
 ---
 
-## Core CLI Usage
+## 1. Programs Used
 
-`ast-grep` is invoked via `ast-grep` or its alias `sg`.
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`ast-grep`** (`sg`) | Canonical multi-language AST search and structural rewrite CLI |
 
-```bash
-# Basic structural search
-sg run -p '<PATTERN>' -l <LANG> [PATH]
+---
 
-# In-place code rewrite across files
-sg run -p '<PATTERN>' -r '<REWRITE>' -l <LANG> -U [PATH]
+## 2. CLI Execution Flags & Output Matrix
 
-# Interactive rewrite review (prompt per match)
-sg run -p '<PATTERN>' -r '<REWRITE>' -l <LANG> -i [PATH]
-```
+| Flag / Option | Shorthand | Purpose | Syntax Pattern |
+| :--- | :--- | :--- | :--- |
+| `--pattern <PAT>` | `-p` | Structural AST pattern to search for | `ast-grep run -p 'foo($$$ARGS)' -l ts` |
+| `--rewrite <REW>` | `-r` | AST replacement template for code transformation | `ast-grep run -p 'a && a.b()' -r 'a?.b()' -l ts -U` |
+| `--update-all` | `-U` | Apply rewrites directly in-place across all files | `ast-grep run -p '...' -r '...' -l py -U src/` |
+| `--interactive` | `-i` | Interactive review (accept/reject per match) | `ast-grep run -p '...' -r '...' -l go -i` |
+| `--lang <LANG>` | `-l` | Target language identifier (e.g. `ts`, `py`, `rs`, `go`) | `ast-grep run -p '...' -l rust` |
+| `--globs <GLOB>` | `-g` | Include or exclude files (`-g '!tests/**'`) | `ast-grep run -p '...' -l ts -g 'src/**'` |
+| `--kind <KIND>` | `-k` | Filter matches to specific AST node kinds | `ast-grep run -p '...' -k call_expression` |
+| `--strictness` | | Mode: `smart` (default), `signature`, `template`, `relaxed`, `ast`, `cst` | `ast-grep run -p '...' --strictness signature` |
+| `--debug-query` | | Prints Tree-sitter AST/CST pattern structure | `ast-grep run -p '$A.foo()' --debug-query=ast` |
+| `--inline-rules` | | Execute complex multi-condition YAML rules on CLI | `ast-grep run --inline-rules 'rule: { ... }'` |
+| `--json[=MODE]` | | Structured output: `stream` (JSONL), `compact`, `pretty` | `ast-grep run -p '...' -l ts --json=stream` |
+| `outline` | | Subcommand: inspect symbols, imports, and classes | `ast-grep outline src/index.ts` |
 
-### Essential CLI Flags
+---
 
-| Flag | Shorthand | Description |
+## 3. Meta-Variable Syntax & Matching Matrix
+
+| Syntax Token | AST Matching Capability | Behavioral Rule |
 | :--- | :--- | :--- |
-| `--pattern <PATTERN>` | `-p` | AST pattern template to search for |
-| `--rewrite <REWRITE>` | `-r` | AST replacement template |
-| `--lang <LANG>` | `-l` | Target language (`ts`, `tsx`, `js`, `jsx`, `python`, `rust`, `go`, etc.) |
-| `--update-all` | `-U` | Apply rewrites directly to files in-place without prompting |
-| `--interactive` | `-i` | Interactively inspect and accept/reject each rewrite |
-| `--strictness <LEVEL>` | | Matching strictness: `smart` (default), `cst`, `ast`, `relaxed` |
-| `--selector <KIND>` | | Target a specific AST node kind (e.g. `call_expression`, `decorator`) |
-| `--inline-rules <YAML>`| | Define complex rule constraints (YAML string) on the CLI |
-| `--json[=MODE]` | | Output JSON structure (`compact`, `pretty`, `stream`) |
-| `--globs <GLOB>` | `-g` | Include/exclude specific files or directories |
+| **`$VAR`** | Single named AST node | Matches exactly **one** AST node (identifier, expression, argument, literal). |
+| **`$A == $A`** | Enforced equality constraint | Repeated identical meta-variables enforce AST subtree equality. |
+| **`$$$ARGS` / `$$$`** | Multi-node wildcard | Matches **zero or more** comma-delimited nodes (arguments, statements, parameters). |
+| **`$$VAR`** | Unnamed token / punctuation | Captures unnamed punctuation or structural delimiters when required. |
+| **`$_` / `$_NAME`** | Non-capturing wildcard | Matches AST nodes without storing captures in memory (higher performance). |
 
 ---
 
-## Pattern Syntax Cheat Sheet
+## 4. Relational Rules & Logical Operators Matrix
 
-* **Single Meta-Variable (`$VAR`)**: Matches exactly **one** named AST node (identifier, expression, argument, literal).
-  * Repeated identical meta-variables enforce equality: `sg run -p '$A == $A' -l ts` matches self-comparisons.
-* **Multi Meta-Variable (`$$$ARGS` or `$$$`)**: Matches **zero or more** AST nodes (arguments, statements, parameters, elements).
-* **Unnamed Node Meta-Variable (`$$VAR`)**: Captures unnamed tokens or punctuation when necessary.
-* **Non-Capturing Wildcard (`$_` or `$_NAME`)**: Matches nodes without storing captures (faster execution).
+Used in `--inline-rules` YAML strings or rule configurations:
 
----
-
-## Practical Search Workflows by Language
-
-### 1. TypeScript & JavaScript
-```bash
-# Match React useState hooks with any initializer
-sg run -p 'const [$VAL, $SET] = useState($$$INIT)' -l ts ./src/
-
-# Find async functions with specific signatures
-sg run -p 'async function $NAME($$$PARAMS): Promise<$RET> { $$$BODY }' -l ts
-
-# Match all named imports from a package
-sg run -p 'import { $$$IMPORTS } from "$PKG"' -l ts
-
-# Find dynamic object property access
-sg run -p '$OBJ[$KEY]($$$ARGS)' -l js
-```
-
-### 2. Python
-```bash
-# Find functions decorated with specific decorator
-sg run -p '@$DECORATOR\ndef $FUNC($$$ARGS):\n    $$$BODY' -l python ./app/
-
-# Find specific context manager usage
-sg run -p 'with open($$$ARGS) as $F:\n    $$$BODY' -l python
-
-# Find exception handling blocks targeting specific error types
-sg run -p 'except $ERR as $E:\n    $$$BODY' -l python
-```
-
-### 3. Rust
-```bash
-# Find unchecked unwrap calls
-sg run -p '$EXPR.unwrap()' -l rust ./src/
-
-# Find trait implementations
-sg run -p 'impl $TRAIT for $TYPE { $$$ITEMS }' -l rust
-
-# Find match expressions handling Result or Option
-sg run -p 'match $VAL { Ok($V) => $RES, Err($E) => $$$ }' -l rust
-```
-
-### 4. Go
-```bash
-# Find standard Go error checks
-sg run -p 'if err != nil { return $$$RET }' -l go ./
-
-# Find HTTP handler functions
-sg run -p 'func $NAME(w http.ResponseWriter, r *http.Request) { $$$BODY }' -l go
-```
-
----
-
-## AST Rewriting Workflows (`-p`, `-r`, `-U`)
-
-Rewrites replace matched syntax nodes while preserving untouched code structures and parameters safely.
-
-```bash
-# API Migration: rename function and wrap arguments in options object
-sg run -p 'oldApi($ARG1, $ARG2)' -r 'newApi($ARG2, { legacy: $ARG1 })' -l ts -U ./src/
-
-# Modernize null-checks to optional chaining
-sg run -p '$A && $A.$B()' -r '$A?.$B()' -l ts -U ./src/
-
-# Update Python logging calls
-sg run -p 'logger.warn($MSG)' -r 'logger.warning($MSG)' -l python -U ./app/
-
-# Clean up console debug statements
-sg run -p 'console.log($$$ARGS)' -r '' -l js -U ./src/
-```
-
----
-
-## Advanced Relational Rules (`--inline-rules`)
-
-For multi-condition checks, pass inline YAML rules with relational operators (`inside`, `has`, `not`, `follows`, `precedes`):
-
-```bash
-# Find raw SQL queries not using sanitizers inside async functions
-sg run --inline-rules '
-id: no-raw-queries
-language: typescript
-rule:
-  pattern: db.query($SQL)
-  inside:
-    pattern: async function $FUNC($$$) { $$$ }
-  not:
-    has:
-      pattern: sanitize($$$)
-' ./src/
-```
-
----
-
-## JSON Output & Tool Pipelines
-
-Pipe structured AST results into tools like `jq` for analysis or reporting:
-
-```bash
-# Extract classes and names into JSON
-sg run -p 'class $NAME($$$PARENTS): $$$BODY' -l python --json=compact ./app/ | \
-  jq '.[] | {file: .file, class: .metaVariables.singleCapture.NAME.text, line: .range.start.line}'
-
-# Stream matching lines for large codebases
-sg run -p 'TODO($$$)' -l rust --json=stream
-```
-
----
-
-## Strictness Modes (`--strictness`)
-
-| Mode | Behavior | Best Used When |
+| Relational Operator | Purpose | Behavioral Rule |
 | :--- | :--- | :--- |
-| `smart` *(default)* | Matches all pattern nodes, automatically skipping unnamed trivia in target | General-purpose search & refactoring |
-| `relaxed` | Matches named AST nodes; ignores all comments and unnamed tokens | Matching logic irrespective of comments/formatting |
-| `ast` | Matches only named AST nodes across both pattern and target | Broad structural matching |
-| `cst` | Exact matching of every node in Concrete Syntax Tree (no skipping) | Precise token/syntax matching |
+| **`inside`** | Enclosing parent constraint | Target pattern must reside inside specified ancestor AST node (e.g. `inside: { pattern: 'class $C { $$$ }' }`). |
+| **`has`** | Descendant child constraint | Target pattern must contain specified child node anywhere in its subtree. |
+| **`precedes`** | Sibling order constraint | Target pattern must appear before specified sibling node in execution flow. |
+| **`follows`** | Sibling order constraint | Target pattern must appear after specified sibling node. |
+| **`not`** | Inverted predicate | Target node must **not** match specified sub-rule. |
+| **`all` / `any`** | Logical AND / OR | All sub-rules must match (`all`) or at least one must match (`any`). |
+| **`stopBy`** | Traversal boundary | Limits traversal depth for `inside` or `has` searches (e.g. `stopBy: end_of_function`). |
 
 ---
 
-## Language Identifiers (`-l` / `--lang`)
+## 5. Strictness Modes & Language Identifiers Matrix
 
-| Language | Identifier | Language | Identifier |
+| Strictness Mode | Match Behavior |
+| :--- | :--- |
+| **`smart`** *(Default)* | Matches all pattern nodes, skipping unnamed trivia and formatting differences. |
+| **`signature`** | Matches AST nodes except comments, ignoring exact text contents. |
+| **`template`** | Matches text only, ignoring AST node kind distinctions. |
+| **`relaxed`** | Matches named AST nodes; ignores all comments, types, and punctuation. |
+| **`ast`** | Matches only named AST nodes across both pattern and target. |
+| **`cst`** | Exact match of every node in Concrete Syntax Tree (including trivia/punctuation). |
+
+| Language | Identifier (`-l`) | Language | Identifier (`-l`) |
 | :--- | :--- | :--- | :--- |
 | TypeScript / TSX | `ts`, `tsx` | Python | `python`, `py` |
 | JavaScript / JSX | `js`, `jsx` | Rust | `rust`, `rs` |
 | Go | `go` | C / C++ | `c`, `cpp` |
 | Java | `java` | C# | `csharp`, `cs` |
 | HTML / CSS / JSON | `html`, `css`, `json` | YAML / Bash | `yaml`, `bash` |
+
+---
+
+## 6. High-Leverage Composite Examples
+
+```bash
+# 1. In-place AST refactor: Modernize deprecated API with argument restructuring
+ast-grep run -p 'oldFetch($URL, $CB, $OPTS)' -r 'newFetch($URL, { callback: $CB, ...$OPTS })' -l ts -U src/
+
+# 2. Relational search: find dangerous SQL queries inside unauthenticated handlers
+ast-grep run --inline-rules '
+rule:
+  pattern: db.query($SQL)
+  inside:
+    pattern: function $HANDLER($REQ, $RES) { $$$ }
+    not:
+      has:
+        pattern: authMiddleware($$$)
+' -l ts --json=stream
+
+# 3. Structural outline inspection of symbols and members in a file
+ast-grep outline src/services/AuthService.ts
+```

@@ -241,7 +241,7 @@ async function main() {
   console.log(`Target Model:    Krea 2 Turbo (CFG 1.0, Euler, 10 steps)\n`);
 
   const skillMd = fs.readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf-8');
-  const krea2Md = fs.readFileSync(path.join(SKILL_DIR, 'krea2.md'), 'utf-8');
+  const krea2Md = fs.readFileSync(path.join(SKILL_DIR, 'references/krea2.md'), 'utf-8');
   const docContext = `=== SKILL GUIDELINES ===\n${skillMd}\n\n=== KREA 2 ENGINE SPEC ===\n${krea2Md}`;
 
   const results = [];

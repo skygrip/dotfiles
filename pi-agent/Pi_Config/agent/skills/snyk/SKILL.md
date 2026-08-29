@@ -3,173 +3,76 @@ name: snyk
 description: Scan projects for security vulnerabilities, licenses, and SAST code flaws. Use 'snyk test' for dependency CVEs, 'snyk code test' for SAST, 'snyk container test <image>', or 'snyk iac test'.
 ---
 
-# Snyk CLI Skill
+# Snyk Security CLI Capabilities Reference
 
-This skill guides the agent on how to use Snyk CLI (`snyk`) to detect, monitor, and remediate vulnerabilities in code, open-source dependencies, containers, and Infrastructure-as-Code (IaC) configurations.
-
-> [!IMPORTANT]
-> **Headless Authentication & Configuration:**
-> - In headless/agent environments, set the `SNYK_TOKEN` environment variable.
-> - Alternatively, authenticate non-interactively via `snyk auth <TOKEN>` or `snyk config set api=<TOKEN>`. **Never** run `snyk auth` without arguments, as it launches an interactive browser and hangs.
-> - For EU/AU/Custom tenants, set `SNYK_API="https://api.eu.snyk.io"`.
-> - Disable telemetry in automated environments: `export SNYK_DISABLE_ANALYTICS=1`.
+Enterprise security scanner for Open Source dependencies (SCA), Static Code Analysis (SAST), Container images, and Infrastructure-as-Code (IaC) misconfigurations.
 
 ---
 
-## Commands and Workflows
+## 1. Programs Used
 
-### 1. Testing Open Source Dependencies (SCA) & Continuous Monitoring
-Scans package manifests (`package.json`, `requirements.txt`, `pom.xml`, `Cargo.toml`, etc.) for known CVEs and license issues:
-```bash
-snyk test [PATH] [OPTIONS]
-```
-* **Continuous Monitoring**: Snapshot dependency trees to the Snyk Web UI:
-  ```bash
-  snyk monitor [PATH] [OPTIONS]
-  ```
-* **Common Options:**
-  - `--severity-threshold=<low|medium|high|critical>`: Only report issues at or above the specified level.
-  - `--all-projects`: Auto-detect and scan all projects recursively in subdirectories.
-  - `--all-sub-projects`: Scan all sub-projects in Gradle and Maven workspaces.
-  - `--prune-repeated-subdependencies`: Prune duplicate sub-dependency trees to prevent Node/CLI Out-Of-Memory (OOM) errors in large monorepos.
-  - `--org=<ORG_ID|ORG_SLUG>`: Specify the Snyk Organization to use for the scan.
-  - `--file=<FILE>`: Specify a custom manifest file (e.g., `--file=requirements.txt`, `--file=pyproject.toml`).
-  - `--licenses`: Check dependencies for license compliance against org policies.
-  - `--dev` / `--prod`: Include or exclude development dependencies.
-  - `--strict-out-of-sync=false`: Tolerate minor drift between manifests and lockfiles.
-  - `--json-file-output=<path>`: Save raw JSON scan results directly to a file without flooding stdout.
-  - `--sarif-file-output=<path>`: Save SARIF report for GitHub Security / IDE triage.
-
-**Targeted Manifest & Monorepo Examples:**
-```bash
-# Python: scan requirements or pyproject.toml
-snyk test --file=requirements.txt --package-manager=pip
-snyk test --file=pyproject.toml
-
-# Node / Monorepo: scan all packages with memory pruning
-snyk test --all-projects --prune-repeated-subdependencies --severity-threshold=high
-
-# Large Gradle / Maven multi-module monorepo:
-snyk test --all-sub-projects --sarif-file-output=snyk.sarif
-```
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`snyk`** | Multi-engine security CLI for vulnerability detection, license compliance, and remediation |
 
 ---
 
-### 2. Static Application Security Testing (SAST / Snyk Code)
-Scans source code for security issues and vulnerability patterns (e.g., SQL injection, XSS, insecure cryptography).
-```bash
-snyk code test [PATH] [OPTIONS]
-```
-* **Prerequisite**: Snyk Code must be enabled in Snyk Organization settings.
-* **Common Options:**
-  - `--severity-threshold=<low|medium|high>`: Filter issues (Snyk Code supports low/medium/high).
-  - `--org=<ORG_ID|ORG_SLUG>`: Specify the Snyk Organization.
-  - `--sarif-file-output=<path>`: Save results in SARIF format for IDEs or static analysis reports.
-  - `--json-file-output=<path>`: Save detailed AST vulnerability data.
+## 2. Negative Guardrails & Headless Execution Safety
 
----
-
-### 3. Infrastructure as Code (IaC) Scanning
-Checks cloud configuration files (Terraform, Kubernetes, CloudFormation, ARM, Helm) for security misconfigurations.
-```bash
-snyk iac test [PATH] [OPTIONS]
-```
-* **Terraform Plan Scanning (Evaluated Attributes)**:
-  ```bash
-  terraform plan -out=tfplan.binary
-  terraform show -json tfplan.binary > tfplan.json
-  snyk iac test tfplan.json --scan=planned-values
-  ```
-* **Common Options:**
-  - `--severity-threshold=<low|medium|high|critical>`: Filter issues by severity.
-  - `--report`: Share results and snapshot configurations with the Snyk Web UI.
-  - `--sarif-file-output=<path>`
-
----
-
-### 4. Container Image Scanning
-Scans container images and Dockerfiles for OS packages and layer vulnerabilities.
-```bash
-snyk container test [IMAGE] [OPTIONS]
-snyk container monitor [IMAGE] [OPTIONS]
-```
-* **Base Image Remediation**: Include `--file=Dockerfile` to get automated upgrade recommendations for less vulnerable base image tags:
-  ```bash
-  snyk container test myapp:latest --file=Dockerfile
-  ```
-* **Common Options:**
-  - `--severity-threshold=<low|medium|high|critical>`: Filter issues by severity.
-  - `--exclude-base-image-vulns`: Highlight only vulnerabilities introduced in application layers.
-
----
-
-### 5. Automated Dependency Fixing (`snyk fix`)
-Snyk can attempt to automatically upgrade vulnerable dependencies in supported manifest files (`npm`, `yarn`, `pip`, `poetry`, `pipenv`).
-```bash
-snyk fix [OPTIONS]
-```
-> [!NOTE]
-> - Ensure dependencies/lockfiles are installed (`npm install`, `pip install`) before running `snyk fix`.
-> - For unsupported package managers (Maven, Go, Rust), apply recommended versions manually from `snyk test` output.
-> - Always review git diffs and run test suites before committing automated fixes.
-
----
-
-### 6. Ignoring Vulnerabilities
-When a vulnerability is a known false positive or has no immediate fix, it can be ignored. This generates or updates a `.snyk` policy file in the project root.
-```bash
-snyk ignore --id=<VULNERABILITY_ID> [OPTIONS]
-```
-**Common Options:**
-- `--expiry=<YYYY-MM-DD|duration>`: Set an expiration date or duration (e.g., `30d` for 30 days).
-- `--reason=<REASON>`: A description of why this vulnerability is being ignored.
-- `--path=<PATH>`: Restrict the ignore rule to a specific dependency path.
-
----
-
-## Exit Codes & Shell Handling
-
-| Exit Code | Meaning | Agent Shell Handling |
+| Hallucination / Mistake | Why It Fails | Correct Protocol / Syntax |
 | :--- | :--- | :--- |
-| **`0`** | Success: Scan complete, **no vulnerabilities** found. | Standard execution. |
-| **`1`** | Action Required: Scan complete, **vulnerabilities found**. | **Do not treat as script failure.** Parse output or report findings. |
-| **`2`** | Fatal Error: Misconfiguration, network error, or invalid auth. | Run with `-d` for debug logs. |
-| **`3`** | Project Detection Failure: No supported manifests found. | Verify paths and file arguments. |
-
-**Shell Safeguard for Agents:**
-Prevent subshells from terminating under `set -e`:
-```bash
-snyk test --json-file-output=snyk-report.json || [ $? -eq 1 ]
-```
+| `snyk auth` without token | Spawns interactive browser session (hangs headless shell) | Pass token explicitly: `export SNYK_TOKEN="<TOKEN>"` or `snyk auth <TOKEN>` |
+| Subshell failure on Exit 1 | Exit code `1` means **vulnerabilities found**, not tool error | Handle exit code: `snyk test --json ... || [ $? -eq 1 ]` |
+| Monorepo Node OOM | Unbounded deep dependency trees exhaust CLI memory | Add `--prune-repeated-subdependencies` and `--all-projects` |
+| Raw CLI stdout flooding | Detailed CLI terminal trees overwhelm context window | Export directly to file: `--json-file-output=snyk.json` or `--sarif-file-output=snyk.sarif` |
+| Telemetry in automated runs | Sends analytical pingbacks | Disable telemetry: `export SNYK_DISABLE_ANALYTICS=1` |
 
 ---
 
-## JSON Triage Recipes (Prevent Context Flooding)
+## 3. Core Scan Engines & Capabilities Matrix
 
-Always triage large repositories with `jq` queries against exported JSON files:
+| Security Domain | CLI Command | Key Flags & Parameters | Target Artifacts / Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Open Source (SCA)** | `snyk test` | `--all-projects`, `--prune-repeated-subdependencies`, `--licenses`, `--dev/--prod`, `--unmanaged` | Scans manifests (`package.json`, `requirements.txt`, `pom.xml`) or unmanaged C/C++ binaries for CVEs. |
+| **Continuous Monitor** | `snyk monitor` | `--org=<ORG>`, `--file=<MANIFEST>` | Snapshots project dependency tree to Snyk Web UI for continuous alerts. |
+| **Code SAST** | `snyk code test` | `--severity-threshold=high`, `--sarif-file-output=out.sarif` | Scans source code for OWASP Top 10 flaws, SQLi, and cryptographic vulnerabilities. |
+| **AI-BOM / Model Scan**| `snyk aibom test` | `--org=<ORG>` | Discovers and scans AI models, training datasets, and HuggingFace pipelines. |
+| **SBOM Generation** | `snyk sbom` | `--format=cyclonedx1.5+json \| spdx2.3+json` | Generates CycloneDX / SPDX Software Bill of Materials for target project. |
+| **Secrets Detection** | `snyk secrets test` | `--org=<ORG>` | Static scan for hardcoded tokens, passwords, and private keys. |
+| **Infra-as-Code (IaC)** | `snyk iac test` | `path/to/tf`, `--scan=planned-values` | Scans Terraform, Kubernetes, Helm, CloudFormation for misconfigurations. |
+| **Containers** | `snyk container test` | `<image>`, `--file=Dockerfile`, `--exclude-base-image-vulns` | Scans base images and container layers; suggests minimal CVE base image upgrades. |
+| **Auto-Remediation** | `snyk fix` | `--package-manager=pip \| npm` | Automatically bumps vulnerable direct dependencies to secure patch versions. |
+| **Ignore Policy** | `snyk ignore` | `--id=<VULN_ID> --expiry=30d --reason="..."` | Updates `.snyk` policy file to suppress false positives with expiration dates. |
 
-### 1. Robust SCA Vulnerability Summary (Handles single project & `--all-projects` arrays):
+---
+
+## 4. Exit Codes & Output Formatting Matrix
+
+| Flag / Exit Code | Value / Type | Purpose / Behavior |
+| :--- | :--- | :--- |
+| **Exit Code `0`** | Success | Clean scan: **no vulnerabilities** detected. |
+| **Exit Code `1`** | Action Required | Scan complete: **vulnerabilities found** above threshold. |
+| **Exit Code `2`** | Fatal Error | Network failure, invalid token, or syntax error. |
+| **Exit Code `3`** | Missing Manifest | No supported package managers or project files discovered. |
+| `--severity-threshold` | `low|medium|high|critical` | Filters reported vulnerabilities to specified minimum severity level. |
+| `--json-file-output` | `<file.json>` | Emits complete AST and dependency vulnerability data directly to disk. |
+| `--sarif-file-output`| `<file.sarif>` | Emits standard SARIF format for IDE and GitHub Security ingestion. |
+
+---
+
+## 5. High-Leverage Composite Examples
+
 ```bash
-snyk test --json | jq -r '
+# 1. Monorepo SCA scan with memory pruning and structured tabular JQ triage
+snyk test --all-projects --prune-repeated-subdependencies --severity-threshold=high --json | jq -r '
   (if type == "array" then .[] else . end)
   | .vulnerabilities[]?
   | "\(.severity | ascii_upcase)\t\(.packageName)@\(.version)\t\(.title)\t(Fixed in: \((.fixedIn // ["None"]) | join(", ")))\t\(.id)"
 ' | sort -u
-```
 
-### 2. SAST (Snyk Code) SARIF Summary:
-```bash
-snyk code test --sarif | jq -r '
-  .runs[0].results[]?
-  | "\(.level | ascii_upcase)\t\(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)\t\(.ruleId)\t\(.message.text)"
-'
-```
+# 2. Snyk Code SAST scan generating SARIF report without failing shell on findings
+snyk code test --severity-threshold=medium --sarif-file-output=snyk-sast.sarif || [ $? -eq 1 ]
 
-### 3. IaC Misconfiguration Summary:
-```bash
-snyk iac test --json | jq -r '
-  (if type == "array" then .[] else . end)
-  | .infrastructureAsCodeIssues[]?
-  | "\(.severity | ascii_upcase)\t\(.targetFile):\(.lineNumber // 0)\t\(.title)\t\(.resolve)"
-'
+# 3. Container scan with Dockerfile base-image upgrade recommendations
+snyk container test myapp:latest --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns
 ```

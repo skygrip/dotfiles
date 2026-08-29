@@ -5,360 +5,300 @@ description: "Construct high-grade prompts with FACS facial mechanics and optica
 
 # Universal AI Image Prompt Builder
 
-You are a **Universal AI Image Prompt Builder** — a specialist in translating visual concepts into high-grade generation prompts optimized for modern foundation models (including Krea 2, Krea 2 Edit, and CircleStone Labs ANIMA). You bridge the gap between rich natural language prose, semantic economy (latent prior leverage), physical kinematics, FACS micro-facial mechanics, Kelvin lighting physics, 3-plane optical staging, lived-in environmental storytelling, crisp active verbs, and engine-specific conditioning architectures.
+A high-density directive for translating visual concepts into production-grade generation prompts across modern foundation models (Krea 2 RAW/Turbo/Edit, CircleStone Labs ANIMA, FLUX.1 Dev/Schnell, SD 3.5, and Midjourney v6). Enforces physical photonics, FACS micro-facial mechanics, Kelvin color science, 3-plane optical staging, kinetic contrapposto, and engine-specific conditioning architectures.
 
 ---
 
-## Engine Selection Directive
+## Resources & Engine References Index
 
-Select the target engine based on the concept and user instructions:
-1. **Default (General / Photorealistic / Cinematic):** Use **Krea 2** (see [`krea2.md`](krea2.md)).
-2. **Anime / Stylized 2D / Manga / Cel:** Use **CircleStone Labs ANIMA** (see [`anima.md`](anima.md)).
-3. **Instruction-Based Image Editing / Inpainting / Composition:** Use **Krea 2 Edit** (see [`krea2-edit.md`](krea2-edit.md)).
+| Resource / Reference | Target Engine & Architecture | Playbook Contents |
+| :--- | :--- | :--- |
+| **[`references/krea2.md`](references/krea2.md)** | **Krea 2 (RAW / Turbo)** | Qwen3-VL 12-layer fusion bands (`txtfusion`), KGW rebalancing, 8-block prose sequence, and Kodak Vision3/Portra film stock matrices. |
+| **[`references/krea2-edit.md`](references/krea2-edit.md)** | **Krea 2 Edit / Inpainting** | Dual In-Context 3D-RoPE conditioning (`krea2_identity_edit_v1_2`), `ref_boost`, `grounding_px`, slot indexing, and regional restyling. |
+| **[`references/anima.md`](references/anima.md)** | **CircleStone Labs ANIMA** | Cosmos-Predict2 DiT + Qwen3 anime engine, Danbooru tag hygiene, `@artist` surname-first indexing, score rules, and 2.5D anti-realism shields. |
 
 ---
 
-## 📐 Modern Aspect Ratio & Resolution Grid
+## 1. Intake Routing, Engine Selection & Modern Aspect Ratio Grid
 
-Modern diffusion and flow-matching foundation models (Krea 2, Flux.1, SDXL, ANIMA) are trained on bucketed aspect ratio latents around ~1 megapixel (1,048,576 pixels). Use these native standard pixel dimensions to prevent composition cropping, duplicate limbs, and distortion:
+### A. Multimodal Input Routing Matrix
+Assistants may receive varied input modalities:
+* **Mode 1: Image Input Only (Visual Reverse-Engineering):** Deconstruct the image's lighting physics (Kelvin), lens optics (focal length/DoF), material textures, adult age (21+), FACS muscle tensions, and composition into a reproduction 8-block prompt package.
+* **Mode 2: Base Text Prompt Only (Creative Expansion):** Expand the user's concept through the 8-block canonical sequence, demographic/adult age grounding, and two-tone lighting.
+* **Mode 3: Image(s) + Concept (Generation / Non-Edit via `Picture N:`):** Use Krea 2's multimodal Qwen3-VL vision tower to pass reference images for Style (SREF), Character Likeness (CREF), Composition Staging, or Turnaround Sheets while rendering a completely new generation.
+* **Mode 4: Image(s) + Inpainting/Mask (Regional Edit / Dual RoPE):** Use Krea 2 Edit (`krea2_identity_edit_v1_2`) for regional inpainting, object swaps, and background replacement.
 
-| Aspect Ratio | Standard Resolution | Native Latent Dimensions | Primary Use Case |
+### B. Engine Architecture Selection
+| Target Concept / Style | Recommended Engine | Conditioning Paradigm & Syntax Model |
+| :--- | :--- | :--- |
+| **Photorealism / Cinematic Stills** | **Krea 2 RAW** or **FLUX.1 Dev** | 8-Block Natural Language Prose (Qwen3-VL / T5-XXL Relational Clauses) |
+| **2D Anime / Key Animation / Cel** | **CircleStone Labs ANIMA** | Danbooru Tag Prefix + Kinetic Narrative Prose (Cosmos 2B + Qwen3) |
+| **Fast Iteration / Distilled (CFG 1.0)** | **Krea 2 Turbo** or **FLUX.1 Schnell** | Positive-Only Natural Prose (Negative Prompt Inert / Ignored) |
+| **Image Editing / Regional Inpainting** | **Krea 2 Edit** | Dual In-Context 3D-RoPE Binding (`krea2_identity_edit_v1_2.safetensors`) |
+| **Commercial / Stylized Concepts** | **Midjourney v6.1** | Natural Language + Parameters (`--style raw --v 6.1 --ar 16:9 --s 250`) |
+
+### C. Native 1-Megapixel Bucketed Resolution Grid
+Diffusion Transformers (DiT / Flow-Matching) are trained on bucketed 1-megapixel latents ($1,048,576\text{ px}$). Always specify native bucket dimensions to prevent distortion, limb cloning, and cropping:
+
+| Aspect Ratio | Standard Resolution | Native Latent Dimensions | Primary Production Use Case |
 | :--- | :--- | :--- | :--- |
-| **`1:1`** | **`1024 × 1024`** | Square $(1.0\text{ MP})$ | Avatars, social profile icons, product packaging, centered close-ups. |
-| **`4:5`** | **`896 × 1152`** | Vertical Portrait | Instagram feed portrait, character concept sheets, card illustrations. |
-| **`3:4`** | **`896 × 1216`** | Vertical Standard | Editorial photography, comic panels, full-body character portraits. |
-| **`2:3`** | **`832 × 1248`** | Vertical Classic | Traditional 35mm portrait photography, poster prints, book covers. |
+| **`1:1`** | **`1024 × 1024`** | Square $(1.05\text{ MP})$ | Avatars, social profile icons, centered close-up portraits. |
+| **`4:5`** | **`896 × 1152`** | Vertical Portrait | Instagram feed portraits, character concept sheets, tarot cards. |
+| **`3:4`** | **`896 × 1216`** | Vertical Standard | Editorial photography, comic panels, full-body portraits. |
+| **`2:3`** | **`832 × 1248`** | Vertical Classic | 35mm portrait photography, poster prints, book covers. |
 | **`9:16`** | **`768 × 1344`** | Vertical Ultra-Tall | Mobile wallpapers, TikTok/Reels stories, smartphone full-screen UI. |
 | **`5:4`** | **`1152 × 896`** | Horizontal Wide | Desktop banners, environmental landscapes, wide portraits. |
-| **`4:3`** | **`1216 × 896`** | Horizontal Standard | Classic cinematic photography, gallery painting canvas, UI hero blocks. |
-| **`3:2`** | **`1248 × 832`** | Horizontal Classic | 35mm film landscape, cinematic stills, double-page spreads. |
-| **`16:9`** | **`1344 × 768`** | Widescreen Cinematic | YouTube thumbnails, 1080p/4K display backgrounds, cinematic film stills. |
-| **`21:9`** | **`1536 × 640`** | Ultrawide Anamorphic | Anamorphic movie aspect, ultrawide monitor wallpapers, panoramic concepts. |
+| **`4:3`** | **`1216 × 896`** | Horizontal Standard | Classic cinematic photography, gallery painting canvas. |
+| **`3:2`** | **`1248 × 832`** | Horizontal Classic | 35mm film landscape stills, double-page editorial spreads. |
+| **`16:9`** | **`1344 × 768`** | Widescreen Cinematic | YouTube thumbnails, 1080p/4K display backgrounds, film stills. |
+| **`21:9`** | **`1536 × 640`** | Ultrawide Anamorphic | Anamorphic cinema aspect, ultrawide monitors, panoramic concepts. |
 
 ---
 
-## Core Pillars of High-Grade Prompt Engineering
+## 2. Core Physical Pillars & Optical Staging
 
-### 1. Emotional Context & FACS Micro-Facial Mechanics
-Modern multimodal vision-language text encoders collapse when given abstract emotional labels (*"she looks sad"*, *"radiating joy"*, *"furious"*). Always construct emotion using **physical muscle mechanics, eye geometry, and surface optics**:
-- **Ocular Mechanics & Catchlights:** Describe corneal reflections (*"a single 3200K tungsten pin-light reflects in the upper crescent of her dark iris"*), pupil state (*dilated*, *constricted*, *blank*), and gaze vector (*"gaze breaks 15° off-camera toward pavement"*).
-- **FACS Action Units:** Brow compression (AU1+AU4 inner brow lift/pinch), jaw tension (AU31 jaw clench), eyelid tension (AU7 lower lid tightening), and mouth corner depression (AU15).
-- **Facial Asymmetry:** Introduce natural asymmetry (*"left eyebrow lifts slightly higher than right"*, *"unilateral smirk pulls the right corner of her mouth"*).
+### A. 3-Plane Optical Depth Staging & Lens Physics
+Compose scenes across three distinct spatial planes to eliminate flat 2D collapse:
+$$\text{[Camera Lens]} \longrightarrow \text{[Foreground (15–30\% Defocus Blur)]} \longrightarrow \text{[Midground (Tack-Sharp Subject)]} \longrightarrow \text{[Background (Atmospheric Falloff \& Bokeh)]}$$
 
-#### Natural Language Body Vocabulary (Colloquial vs. Overly Clinical Jargon)
-Text encoders in diffusion models are trained on natural photo captions and screenplays rather than medical textbooks. **Avoid overly clinical Latin/medical jargon** and use crisp, natural language descriptions:
+* **Lens Focal Length & Aperture Matrix:**
+  - **85mm / 105mm Prime ($f/1.2–f/1.8$):** Ultra-shallow DoF, creamy circular bokeh discs, razor-thin focal plane (Portraits).
+  - **35mm / 50mm Prime ($f/2.8–f/4.0$):** Natural narrative cinematic DoF, contextual environmental room clarity.
+  - **24mm / 28mm Wide ($f/8–f/11$):** Deep DoF, edge-to-edge sharpness across foreground crags to distant horizons.
+* **Obstructed / Found Vantage Points:** Peer through an ajar door frame occluding 35% of the foreground left in shadow; shoot through rain-streaked automotive side mirrors; or use high-angle corner security CCTV barrel distortion.
+* **Contrastive Relational Phrasing (Anti-Misfocus Rule):**
+  Never use bare, isolated tags (`depth of field`, `bokeh`, `blurry`) when multiple subjects or props are present. Use **longer contrastive sentence fragments** to explicitly bind DoF and focus to the correct plane:
+  - ❌ *Ambiguous tags:* `1girl, robot, ruined city, depth of field, blurry background` *(causes cross-attention bleed, misfocusing the character or whole scene).*
+  - ✅ *Contrastive fragment:* `"Foreground: an out-of-focus metal rack of spanners frames the lower edge, while the youth in the midground remains in tack-sharp crisp focus as distant grandstands dissolve into soft circular bokeh discs."`
 
-| Avoid Overly Clinical Jargon | Use Natural Language & Colloquial Equivalents |
-|---|---|
-| ❌ "lacrimal meniscus" | ✅ "thin film of moisture on the lower lid", "watery" |
-| ❌ "distal knuckles / phalanges" | ✅ "fingertips", "knuckles whitening with pressure" |
-| ❌ "palmar torque" | ✅ "white-knuckled grip", "firm palm pressure" |
-| ❌ "forearm flexors" | ✅ "taut forearm muscles", "strained arm tendons" |
-| ❌ "temporalis veins" | ✅ "visible veins along the temple" |
-| ❌ "corneal catchlight" | ✅ "pinpoint light reflection in the iris / eye" |
-| ❌ "radial artery relief" | ✅ "wrist tendon lines", "taut wrist" |
-| ❌ "zygomatic pull" | ✅ "smile that lifts the cheeks", "faint smirk" |
-| ❌ "masseter clench" | ✅ "jaw clenched tight", "firm jawline" |
+### B. Kelvin Lighting Physics & Two-Tone Color Contrast
+Define exact Correlated Color Temperature (CCT) in Kelvin:
+* `2000K–2700K` (Candlelight, warm tungsten key) $\vert$ `3200K` (Golden hour sun) $\vert$ `5500K` (Direct neutral daylight) $\vert$ `6500K–8000K` (Overcast / deep twilight shadow fill).
+* **Two-Tone Lighting Blueprint:** Combine opposing Kelvin sources: *"A 2800K warm tungsten desk lamp illuminates the workbench from the left while cool 6500K overcast twilight fills shadow contours from the right."*
 
-#### Epidermal Micro-Topography & Natural Skin Physics (Anti-Plasticity Rule)
-Diffusion models default to waxy, airbrushed mannequin skin unless anchored with physical epidermal micro-textures. In photorealistic modes, specify tangible dermal mechanics:
-- **Micro-Pores & Follicular Relief:** Visible, unretouched micro-pores along the T-zone and nose bridge (*"matte skin with distinct micro-pores across the cheeks and nose bridge, completely unretouched without digital smoothing"*).
-- **Vellus Hair (Peach Fuzz):** Fine translucent vellus hair along the jawline, cheeks, and temples catching raking rim light (*"fine golden vellus hair along the jawline catches raking light"*).
-- **Sebum & Perspiration Sheen:** Subtle natural oil sheen on the forehead, bridge of nose, and upper lip versus flat powdery matte (*"subtle natural sebum sheen along the forehead and bridge of nose"*).
-- **Subsurface Scattering & Capillary Erythema:** Translucent earlobes, capillary flush on cheekbones and nose tip, natural blood flow warmth (*"subsurface scattering gives a warm reddish translucency to the ears and fingertips"*).
-- **Natural Micro-Imperfections:** Fine expression lines, subtle crow's feet, freckles, and natural facial asymmetry (*"subtle smile creases beside mouth and faint sun freckles across nose"*).
+### C. Immediate Demographic, Adult Age (21+) & Skeletal Build Anchoring
+* **Strict Adult Age Policy (21+ Years):**
+  All human subject generations must be comfortably adult (e.g., `24-year-old`, `38-year-old`, `62-year-old`). When in doubt or unspecified, default strictly to adult ages.
+* **Immediate Demographic Anchoring:**
+  Diffusion models carry strong "average dataset priors" (defaulting to generic mid-20s Caucasian faces if unspecified). State ethnicity and age immediately in Block 3 (Subject Anchor) to lock facial latent tensors before secondary attributes are applied:
+  - ❌ *Vague:* `"An architect reviews blueprints..."` $\rightarrow$ defaults to generic 25yo AI face.
+  - ✅ *Grounded:* `"A 58-year-old Japanese architectural engineer..."` or `"A 34-year-old West African botanist..."`
+* **Skeletal Frame & Body Proportions Matrix:**
+  Anchor physical frame and build to eliminate cookie-cutter body shapes:
+  - `slender athletic runner's build`, `broad-shouldered heavyweight frame`, `tall long-limbed silhouette`, `compact stocky build`, `delicate angular collarbones`.
 
----
+### D. FACS Facial Mechanics & Anti-Plasticity Dermal Topography
+Never use abstract emotion words (*"she looks sad"*, *"he is furious"*). Describe physical muscle contractions in plain English (**never output raw `AU` code strings in final prompt text**):
 
-### 2. Kinetic Posing Mechanics & Anti-Stiffness
-To eliminate the stiff "mannequin effect" inherent to statistical diffusion baselines:
-- **Classical Contrapposto:** Always break parallel shoulders and hips: *"She rests her full weight onto her right heel, tilting her right hip upward while her left shoulder dips in compensation."*
-- **Spinal Torsion:** Rotate the upper torso relative to the pelvis: *"Her hips face 45 degrees camera-left while her shoulders twist back toward the lens."*
-- **Silhouette & Proportional Typing (Characters, Creatures & Mecha):**
-  - Always specify the anatomical archetype to avoid generic boxy defaults:
-    - *Slender / Biomechanical:* `"slender frame, elongated limbs, organic humanoid contours, athletic runner physique"`.
-    - *Heavy Industrial / Juggernaut:* `"heavy reinforced chassis, broad angular shoulders, low center of gravity, hydraulic bulk"`.
-    - *Delicate / Flowing:* `"fine bone structure, tapered fingers, light graceful silhouette"`.
-  - Pair with targeted anti-silhouette negative descriptions or tags when generating slender forms.
-- **Spatial Grounding:**
-  - **Ambient Occlusion (Contact Shadows):** *"Hard, deep contact shadows anchor the soles of her heavy boots to the cracked asphalt."*
-  - **Surface Compression:** *"Her hip compresses the velvet cushion of the vintage armchair, wrinkling the fabric outward in radial stress lines."*
-  - **Clothing Tension Vectors:** *"Diagonal tension creases pull tightly across the back of her tailored woolen blazer from shoulder blade to hip."*
-- **Kinematic Trajectory & Spatial Clearance (Anti-Collision Rule):**
-  When generating airborne, leaping, diving, or high-velocity subjects (e.g. cliff divers, parkour runners, skateboarders clearing gaps, stunt vehicles, soaring aircraft):
-  - **Outward Trajectory Vector:** Explicitly define the horizontal flight path away from the launch surface into open negative space (*"leaps far outward into open air, completely clear of the rock ledge"* / *"soars forward past the staircase landing"*).
-  - **Unobstructed Drop & Landing Zones:** Keep the space directly beneath the subject's flight path free of collision obstacles. If using foreground framing barriers, anchor them to the **side perimeter** (*"sheer cliff face on the far left"* / *"defocused rail on the near edge"*) rather than directly underneath the jumper's landing trajectory.
-  - **Side-Profile or 3/4 Action Framing:** Prefer profile or orthogonal angles that visually expose the open air gap between the takeoff platform and the mid-air subject.
+| Emotion / State | FACS Action Units | Natural English Prompt Phrasing |
+| :--- | :--- | :--- |
+| **Analytical Focus** | AU1 + AU4 + AU7 | Inner brows pinched tight, lower eyelids narrowed and taut, pinpoint catchlight in upper iris. |
+| **Playful Shock / "Oops"** | AU1 + AU2 + AU26 | Eyebrows arched high, eyes widened in playful surprise, mouth parted in a soft 'O' shape, glancing back over shoulder. |
+| **Playful Wink / Coyness** | AU46 + AU12 + AU14 | Left eye winking playfully with raised cheek, unilateral smile pulling lip corner, subtle dimple. |
+| **Suppressed Grief** | AU1 + AU2 + AU15 | Inner brows arched softly upward, mouth corners pulled slightly downward, watery lower eyelid film. |
+| **Defiant Intensity** | AU4 + AU7 + AU31 | Brow furrowed hard, jaw clenched with taut masseter tension, direct piercing gaze into the lens. |
+| **Subtle Skepticism** | Unilateral AU12 + AU14 | One mouth corner lifted in an asymmetric smirk, single raised eyebrow, eyes slightly narrowed. |
 
----
+* **🚫 Banned Quality Buzzwords (Zero Tolerance):** `photorealistic`, `hyperrealistic`, `8K`, `4K`, `UHD`, `masterpiece` *(except anime tag prefixes)*, `trending on artstation`, `flawless skin`, `smooth skin`, `airbrushed`, `stunning`, `award winning`.
+* **✅ Physical Dermal Anchors:**
+  - **Micro-Pores & Follicular Relief:** Unretouched micro-pores visible across the T-zone and nose bridge (no digital smoothing).
+  - **Translucent Vellus Hair:** Fine peach fuzz along the jawline catching raking rim light.
+  - **Natural Sebum & Capillary Flush:** Subtle natural sebum sheen on the forehead/bridge of nose; subsurface scattering (SSS) yielding warm capillary redness through the ears and fingertips.
+  - **Corneal Catchlights:** Single directional pinpoint reflection in the upper iris (*"a single 3200K tungsten pin-light reflects in the upper iris crescent; gaze deflected 15° off-camera"*).
+  - **Lo-Fi Anti-Perfection Toolkit:** Direct on-axis camera flash, raw high-ISO luminance noise in shadows, and 24mm wide-angle barrel distortion immediately shatter synthetic AI artifacts.
 
-### 3. Physical Actions & Tactile Object Interactions
-Diffusion models generate "ghost hands" and floating objects when interactions lack explicit tactile physics. Always define the **mechanical points of contact, grip geometry, and material deformation**:
-
-| Interaction Type | Tactile Mechanics | Example Phrasing |
-|---|---|---|
-| **Hand-to-Object Grip** | Fingertip pressure, knuckle whitening, thumb lock, condensation smears, leather indentation | *"Her fingertips press into the frosted glass, wiping clear tracks through moisture."* |
-| **Load-Bearing Contact** | Weight transfer, surface depression, fabric drag | *"The heavy leather shoulder strap digs into her coat, bunching the fabric at the seam."* |
-| **Character-to-Character** | Mutual pressure, clothing creases, shared items | *"They sit shoulder-to-shoulder with upper arms pressed, sharing a looped earphone."* |
-
-- **Character-to-Object Interaction Rules:**
-  - Specify which fingers apply force: *"Her index finger extends straight along the weapon frame while three fingers curl tightly around the handle."*
-  - Describe physical resistance: *"She pulls the heavy iron latch downward against stiff mechanical resistance."*
-  - **High-Velocity Kinetic Impacts (Anti-Floating Object Rule):** To prevent fast-moving balls, struck props, or weapons from floating detached, describe **surface deformation and joint flexion**: *"Her open palm smashes flush against the leather volleyball, visibly flattening the top curve on impact while her wrist flexes downward under strike resistance."*
-- **Character-to-Character Interaction Rules:**
-  - Connect their physical boundaries: *"His hand grips her upper forearm firmly, creating tight diagonal fold lines across her silk sleeve."*
-  - Align directional gazes: *"She looks up 30 degrees to meet his downward gaze."*
+### E. Biomechanical Kinematics, Tactile Friction & Garment Architecture
+* **Classical Contrapposto & Lumbar Arching:** Break parallel lines: *"Rests full weight onto the ball of her right foot, arching the lower spine in deep lumbar S-curve while left knee bends inward and right hip tilts upward."*
+* **Torso Torsion & Look-Back Angles:** Rotate upper body relative to hips (*"hips angled 45° camera-left while shoulders and head twist back toward the lens over the shoulder"*).
+* **Tactile Grip Dynamics:** Specify knuckle whitening, thumb lock, downward palm pressure, and material deformation (*"fingertips press firmly into frosted glass, wiping clear streaks through condensation"*).
+* **Garment Tailoring Fit & 3-Layer Hierarchy:**
+  Define explicit garment fit (`loose oversized boxy fit`, `tailored slim taper`, `draped unlined linen`, `structured heavy wool`) and order layered garments sequentially (`[Inner Base Layer] -> [Structured Mid-Layer] -> [Heavy Outer Shell]`) to prevent textile texture bleed:
+  - *Example:* *"A crisp white cotton base shirt under a fitted charcoal wool vest, beneath an unbuttoned heavy canvas trench coat."*
+* **The 3-Part Anchor for Displaced / Non-Conventional Clothing (Breaking Default Priors):**
+  When rendering slipping, unbuttoned, tied, or asymmetrical garments (which fight strong $P(\text{worn normally})$ baseline priors):
+  1. **The Physical Snag Point:** State where gravity caught the fabric (❌ *"jacket slipping"* $\rightarrow$ ✅ *"her oversized cardigan has slid completely off her left shoulder, hanging caught in the crook of her left elbow while remaining draped over her right collarbone"*).
+  2. **Exposed Dermal Negative Space:** Describe the exposed anatomy to force skin pixels (*"...exposing her bare left collarbone, neck, and shoulder to the cool daylight"*).
+  3. **Fabric Tension Vectors:** Describe diagonal drag folds pulling toward the displacement (*"heavy diagonal tension lines stretch from her right shoulder toward the bunched fabric at her left waist"*).
+  4. *Anime/Danbooru Tags:* `off-shoulder`, `jacket off shoulder`, `jacket around waist`, `partially unbuttoned`, `shirt pull`, `straps down`, `untied`, `collarbone`.
 
 ---
 
-### 4. The 3-Plane Cinematic Depth Staging Framework
-Flat images occur when all elements share identical focus and tonal contrast. Construct a **3-plane optical depth transition**:
+## 3. Strict Rules, Grammar Constraints & Multi-Actor Staging
 
-```
-[CAMERA LENS] ──► [PLANE 1: FOREGROUND] ──► [PLANE 2: MIDGROUND] ──► [PLANE 3: BACKGROUND]
-                  (15-30% defocus blur)     (Tack-sharp subject)      (Atmospheric fall-off & bokeh)
-```
-
-> 💡 **Organic Depth Integration (No Literal Labels):** Weave depth transitions smoothly into continuous prose (e.g. write *"A defocused ink bottle in the foreground frames the scene as distant pilings dissolve into soft fog"*). **Never insert literal section label prefixes like `"Foreground:"` or `"Background:"` into the prompt text.**
-
-#### Optical Depth of Field (DoF) Phrasing Matrix
-
-| Depth Profile | Recommended Aperture & Lens | High-Impact Phrasing |
-|---|---|---|
-| **1. Shallow DoF**<br>*(Subject Isolation)* | 85mm or 105mm<br>f/1.2 – f/1.8 | *"Shallow depth of field with creamy circular bokeh, sharp ocular plane, and rapid background fall-off."* |
-| **2. Moderate / Cinematic**<br>*(Environmental Story)* | 35mm or 50mm<br>f/2.8 – f/4.0 | *"Natural cinematic depth of field with contextual environmental clarity and subtle background blur."* |
-| **3. Deep DoF**<br>*(Vistas & Wide)* | 24mm or 28mm<br>f/8.0 – f/11.0 | *"Deep depth of field with edge-to-edge clarity from foreground basalt crags to distant horizon peaks."* |
-
-#### Obstructed, Voyeuristic & Found Staging Framework
-Clean studio framing often feels artificial. Use physical occlusions and found vantage points to introduce tension, intimacy, and narrative realism:
-- **Occluded & Slit Framing (Physical Foreground Barriers):**
-  - *Door Gaps & Frames:* Shoot past an ajar door (*"foreground wooden door frame occludes 40% of the frame on the left with deep shadow; camera peers through the narrow gap into the brightly lit room"*).
-  - *Architectural Obstructions:* Shoot through slatted venetian blinds, chain-link fence lattice, car window pillars, or dense foreground leaves with soft defocus blur.
-- **Reflective & Indirect Vantage Points:**
-  - *Mirrors & Glass:* Stage through a steamy bathroom vanity mirror with condensation droplets and hand-wiped clear patches (*"shot in the reflection of a steamy mirror with water streaks and condensation droplets across the glass surface"*).
-  - *Automotive & Urban Reflections:* Frame through a rain-flecked car sideview mirror, or catch the subject in the double-exposure reflection of a dark shop window pane.
-- **Unposed & Caught-Off-Guard Kinetic Mechanics:**
-  - *Unaware Subject:* Subject remains engaged in activity without facing the lens (*"subject faces away at a 60° angle, completely unaware of the camera"*).
-  - *Startled / Glance Interruption:* Subject glances up abruptly (*"head snaps 30° toward the lens with startled eye widening (AU1+AU2), caught in mid-motion"*).
-  - *Snapshot Composition:* Casual, uncentered framing, slight Dutch angle tilt, or subjects partially cropped at the edge of the frame.
-- **Surveillance & Device Vantage Points:**
-  - *CCTV / Security POV:* High-angle wall-mount looking down with wide-angle barrel distortion and harsh ceiling fluorescents (*"high-angle overhead security camera perspective from corner wall mount, wide barrel distortion"*).
-  - *Smartphone Video Call / Selfie POV:* Low/eye-level front-camera wide-angle lens with subtle perspective distortion and casual hand-held arm framing.
-
----
-
-### 5. Art Medium, Physical Substrates & Rendering Taxonomy
-
-> 💡 **Default Style Policy (LoRA-Ready & Iteration-Friendly):**  
-> **Do NOT bake an arbitrary artistic style, medium, or artist name into the primary baseline prompt by default.** Keep primary prompts **style-neutral and clean** (focusing on kinematics, tactile physics, Kelvin lighting, and 3-plane depth) so the engine's native aesthetic shines through and the prompt remains 100% ready for LoRA style overwrites.  
-> **Suggesting Styles in Iteration:** While keeping the primary prompt clean, **proactively recommend 1–2 tailored artist tags, physical substrates, or medium shifts in the Iteration Pathway** to give the user immediate creative exploration pathways.  
-> **When the user explicitly requests a specific style, medium, or aesthetic**, apply the physical substrate and rendering rules below instead of lazy labels:
-
-| Target Style Family | High-Impact Physical Medium & Substrate Phrasing |
-|---|---|
-| **1. Realistic / Photographic**<br>*(Never use "photorealistic")* | • *"35mm color film still on Kodak Vision3 500T with organic silver halide grain and subtle halation."*<br>• *"Medium-format editorial photograph on 85mm f/1.4 with unretouched matte skin micro-pores."*<br>• *"Candid smartphone photograph on iPhone 24mm wide lens with direct flash, raw sensor noise, natural skin texture, and casual snapshot framing."* |
-| **2. Pencil / Sketch / Line Art**<br>*(Never use "a sketch of")* | • *"Graphite pencil drawing on 300gsm cold-press cotton paper with fine cross-hatching and stump blending."*<br>• *"Technical drafting ink illustration with crisp 0.2mm Micron pen cross-hatching and stippling."*<br>• *"Loose charcoal gesture drawing with raw paper tooth and deep carbon black smudges."* |
-| **3. Painterly / Fine Art / Mixed**<br>*(Never use "an oil painting of")* | • *"Impasto oil on linen canvas with thick wet-on-wet palette knife ridges and matte varnish sheen."*<br>• *"Botanical watercolor and gouache with soft pigment bleeding along wet deckled paper edges."* |
-| **4. 2D Anime / Key Animation**<br>*(Never use generic "anime style")* | • *"2D anime key animation with clean tapered ink lines, multi-tone cel shading, and translucent hair bloom."* |
-
-#### Smartphone Optics, Direct Flash & Lo-Fi Sensor Flaws (Anti-Perfection Toolkit)
-When generating raw snapshot realism, home-video aesthetic, or contemporary candid scenes, deliberately prompt optical imperfections to shatter the synthetic "AI airbrushed" look:
-- **Direct On-Axis Flash:** Forward camera flash that blows out specular highlights on the forehead, nose tip, and cheeks while casting a crisp, dark drop shadow immediately behind the subject onto the rear wall (*"harsh on-axis camera flash with direct frontal specular highlights on skin and sharp hard drop shadow against the wall behind"*).
-- **High ISO Sensor Noise & Dark Clipping:** Visible luminance and chroma grain in underexposed shadow areas, limited dynamic range, and slight digital compression (*"high ISO digital sensor grain in the shadows, crushed dark tones, raw uncompressed smartphone snapshot aesthetic"*).
-- **Motion Blur & Shutter Drag:** Slight hand-tremor or fast gesture motion blur (*"slight motion blur across the moving hand from low shutter speed while the face remains in partial focus"*).
-- **Optical Lens Aberrations & Smudges:** 24mm wide-angle barrel distortion near the corners, greasy fingerprint streaks radiating from bright point lights (*"vertical lens flare streak from smudged glass on a 24mm smartphone camera lens, slight edge barrel distortion"*).
-- **Autofocus Misses (Selective Subtlety):** Shifting critical focus away from the eyes (*"autofocus slightly locks onto the textured woolen collar, leaving facial features in soft organic focus"*).
-
-#### Mitigating "Domain Leakage" (Real-World Gear & Medium Bleed)
-When generating technical equipment, tactical gear, vehicles, or modern props that predominantly exist in photographic training data (e.g. `scuba gear`, `diving regulator`, `spacesuit`, `tactical armor`, `firefighter gear`, `medical equipment`) inside **any non-photographic medium** (2D anime, watercolor, impasto oil, pencil sketch, stylized illustration):
-* **The Failure Mode:** Photographic priors attached to the equipment leak into surrounding subjects, skin texture, and lighting, corrupting the target artistic medium into an awkward hybrid (e.g. unintended 2.5D semi-realism, plastic CGI sheen, or photorealistic skin patches on stylized characters).
-* **The Universal Double-Shield Mitigation:**
-  1. **Positive Substrate & Medium Reinforcement:** Continually anchor the target medium's physical rendering characteristics (e.g. clean 2D cel lines, deckled watercolor edges, palette knife impasto, visible graphite hatching) directly across both the equipment and the subject.
-  2. **Medium-Appropriate Negative Steering:**
-     - **For Tag-Conditioned & Negative-Enabled Engines (e.g. ANIMA):** Append explicit anti-realism negative tokens (`semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, airbrush`; see [`anima.md`](anima.md) for engine formulas).
-     - **For Flow-Matching & Natural Language Engines (e.g. Krea 2):** Reinforce medium constraints in natural prose (*"the tactical vest is rendered in thick impasto oil strokes with visible canvas tooth, strictly matching the painted illustration aesthetic without photographic textures"*).
-
----
-
-### 6. Environmental Storytelling & "Lived-In" Staging (Tangible Clutter vs. Lazy Labels)
-
-Diffusion models default to sterile, catalog-showroom interiors when given abstract qualitative labels like *"messy room"*, *"cozy bedroom"*, *"cluttered workshop"*, or *"lived-in apartment"*.
-
-#### The Micro-Narrative Props Rule (1–2 Evocative Props over Clutter Lists)
-Never describe the abstract state of a space. Instead, anchor the scene with **1–2 resonant, character-revealing physical props** undergoing active physical arrangement or human trace mechanics. Avoid compiling exhaustive laundry lists of clutter:
-
-| Lazy Abstract Label (Banned) | Tangible "Lived-In" Physical Micro-Narrative (1–2 Resonant Props) |
-|---|---|
-| ❌ "messy cozy bedroom" | ✅ *"Plushies and pastel throw pillows tumble off the unmade duvet onto the carpet, while tangled charging cables snake across the nightstand."* |
-| ❌ "cluttered artist studio" | ✅ *"Dried watercolor streaks stain the desk blotter beside a half-drunk ceramic mug of black tea with soaking brushes."* |
-| ❌ "lived-in cyberpunk room" | ✅ *"Tangled multi-colored Ethernet cables zip-tied along copper conduit frame a glowing holographic diagnostic display."* |
-| ❌ "busy domestic kitchen" | ✅ *"A steaming stainless kettle sits on an induction burner beside a cutting board flecked with chopped rosemary."* |
-| ❌ "weathered outdoor campsite" | ✅ *"A singed cast-iron skillet rests on river stones over dying orange embers beside a mossy log."* |
-
-#### Action & Arrangement Verbs for Environmental Props
-Direct physical entropy with crisp placement verbs: `tumble`, `scatter`, `snake`, `unmake`, `rumple`, `pool`, `prop`, `drape`, `fleck`, `singe`, `rest`, `clasp`, `perch`, `spill`.
-
----
-
-## Strict Rules & Grammar Constraints
-
-### 1. Principle of Semantic Economy & Latent Prior Leverage (The Anti-Tautology Rule)
-Every word in a prompt consumes cross-attention token budget. Modern foundation models (Krea 2, Flux, ANIMA, SDXL) already encode deep baseline priors for standard objects, anatomy, and physical concepts.
-- **Trust the Model's Default Priors:** Never describe what a concept inherently contains by definition. A *"wooden pier"* already contains wooden planks, vertical pilings, and is situated over water. A *"tailored suit"* already contains lapels, sleeves, and trousers. A *"dense forest"* already contains trees, soil, and leaves.
-- **Spend Token Budget ONLY on High-Entropy Deltas:** Direct the token budget strictly toward **deviations from baseline priors**, specific physical actions, Kelvin lighting angles, and optical staging.
+### A. Principle of Semantic Economy & Latent Prior Leverage (The Anti-Tautology Rule)
+Every token consumes cross-attention budget. Modern foundation models already encode deep baseline priors for standard objects.
+* **Trust Baseline Priors:** Never describe what a concept inherently contains by definition. A *"wooden pier"* already contains wooden planks and water. A *"tailored suit"* already contains lapels, sleeves, and trousers. A *"dense forest"* already contains trees and soil.
+* **Spend Budget ONLY on High-Entropy Deltas:** Direct words strictly toward unique physical wear, exact Kelvin lighting angles, FACS muscle tensions, and optical staging.
 
 | Tautological Bloat (❌ BANNED) | High-Signal Precision (✅ REQUIRED) |
 |---|---|
-| ❌ *"A long wooden pier made of rustic wooden planks and timber posts, standing over blue ocean water with waves gently rippling beneath the pier deck..."* | ✅ *"Weathered wooden pier extending into dense ocean fog. Low-angle 24mm wide-shot, f/2.8, 5500K overcast dawn light with fine mist clinging to the timber."* |
-| ❌ *"A business man wearing a formal business suit with jacket, shirt, collar, sleeves, tie, and suit pants stands in a modern office with windows and glass..."* | ✅ *"Executive in a structured charcoal wool blazer leans against a steel mullion. 85mm prime lens, 3200K indoor lamp key with cool 6500K overcast window fill."* |
-| ❌ *"A messy bedroom with clothes, mess, and clutter scattered all around the room on the floor..."* | ✅ *"Plushies and pastel throw pillows tumble off the unmade duvet onto the floor; tangled white charging cables snake across the nightstand."* |
+| ❌ *"A long wooden pier made of rustic wooden planks and timber posts, standing over blue ocean water..."* | ✅ *"Weathered wooden pier extending into dense ocean fog. Low-angle 24mm wide-shot, f/2.8, 5500K overcast dawn light with fine mist clinging to timber."* |
+| ❌ *"A businessman wearing a formal suit with jacket, shirt, collar, sleeves, tie, and trousers stands in an office with windows..."* | ✅ *"Executive in a structured charcoal wool blazer leans against a steel mullion. 85mm prime lens, 3200K indoor lamp key with cool 6500K overcast window fill."* |
 
-### 2. Zero Tolerance for Filler Words, Quality Buzzwords & Lazy Space Labels
-Every filler word consumes cross-attention token budget and drives the latent representation toward generic dataset averages.
+### B. Zero Tolerance for Filler Words & Lazy Spatial Adjectives
+* **🚫 Banned Empty Narrative Tropes:** `"in a world of..."`, `"a sense of wonder"`, `"breathtaking view"`, `"captivating atmosphere"`, `"exuding power"`, `"radiating presence"`, `"a scene depicting"`, `"an image of"`, `"a visually striking composition"`.
+* **🚫 Banned Lazy Room Labels:** `"messy room"`, `"cluttered space"`, `"cozy apartment"`, `"lived-in room"`.
+* **✅ Micro-Narrative Props Rule (1–2 Resonant Props):** Never describe abstract clutter. Anchor spaces with **1–2 resonant physical props** undergoing active physical arrangement or human trace mechanics:
+  - *Example:* Instead of *"messy bedroom"*, write: *"Plushies and pastel throw pillows tumble off the unmade duvet onto the carpet, while tangled charging cables snake across the nightstand."*
+  - *Action Verbs for Props:* `tumble`, `scatter`, `snake`, `unmake`, `rumple`, `pool`, `prop`, `drape`, `fleck`, `singe`, `rest`, `clasp`, `perch`, `spill`.
 
-#### 🚫 Banned Quality Buzzwords (In BOTH Prose AND Anchor Tags)
-Never use these empty descriptors:
-`hyperrealistic`, `photorealistic`, `cinematic quality`, `8K`, `4K`, `UHD`, `ultra-detailed`, `masterpiece` *(except official base score prefixes in tag-conditioned anime engines)*, `best quality` *(except official base score prefixes in tag-conditioned anime engines)*, `high quality`, `stunning`, `beautiful`, `amazing`, `award-winning`, `trending on artstation`, `sharp focus`, `intricate details`, `highly detailed`, `a high-quality image of`, `vivid`, `brilliant`, `exceptional`, `perfectly`, `flawless skin`, `smooth skin`, `perfect skin`, `poreless`, `flawless face`, `airbrushed`.
+### C. Natural Syntax, Direct Framing & Adaptive Word Budget
+* **Pick ONE Definitive Posture:** Never combine contradictory physical positions (❌ `"stands seated"`, `"sits standing"`, `"walks perched"` $\rightarrow$ ✅ `"sits upon the railing"`, `"stands at the edge"`).
+* **Ban Abstract Personification:** Never assign human actions to abstract concepts (❌ `"the atmosphere breathes"`, `"the light sings"` $\rightarrow$ ✅ `"warm 5500K daylight fills the room"`).
+* **🚫 Banned Meta-Observer Phrases:** Never use passive observer framing that signals an image is being viewed (❌ `"can be seen"`, `"is seen"`, `"is depicted"`, `"is located in"`, `"is illuminated by"`, `"being photographed"`, `"there is a [noun]"` $\rightarrow$ ✅ Describe the physical light and subject directly: `"2700K tungsten lamp illuminates the mahogany table"`, `"she stands at the rail"`).
+* **🚫 Banned Inverted Passive Actions:** Always place the acting subject before the action verb (❌ `"The heavy latch is pulled by the engineer"` $\rightarrow$ ✅ `"The engineer pulls the heavy iron latch downward"`).
+* **🚫 Banned Ambiguous Runaway `-ing` Stacks:** Do not chain loose, comma-separated participial verbs where the acting subject becomes ambiguous (❌ `"A warrior battling a beast, swinging a blade, shouting, glowing, falling..."` $\rightarrow$ ✅ `"A warrior swings a broadsword against the beast as glowing embers scatter across the stone"`).
+* **🚫 Banned Helper Verbs & Grammar Padding:** Eliminate filler verbs that bloat token count (❌ `"provides a key light onto"`, `"serves to illuminate"`, `"creates a feeling of"`, `"acts as a backdrop"` $\rightarrow$ ✅ `"casts warm key light across"`, `"illuminates"`, `"against a dark backdrop"`).
+* **✅ Direct Participle & Compound Compaction:** Prefer tight compound descriptions over separate explanatory clauses:
+  - ❌ *Verbose (22 words):* `"Brows are pinched tight and lower eyelids are narrowed in analytical focus while a single warm 2800K pinpoint catchlight reflects in his iris."`
+  - ✅ *Compact (13 words):* `"Pinched brows and taut lower eyelids in analytical focus with a 2800K iris catchlight."`
+* **Drive Main Actions with Active Verbs:** `stands`, `wears`, `grips`, `casts`, `drapes`, `pools`, `rakes`, `tilts`, `glances`, `lashes`, `slices`, `curls`, `sways`, `strikes`, `anchors`, `clasps`, `presses`.
+* **Adaptive Word Budget Matrix:**
+  | Engine Tier & Sampling Mode | Target Word Budget | Density Directive |
+  | :--- | :--- | :--- |
+  | **Turbo / Distilled / Anime (CFG 1.0, 8–10 steps)** | **45–65 words** | Ultra-lean, maximum token signal, zero grammatical filler. |
+  | **RAW / Flow-Matching / Base (CFG 3.5+, 30+ steps)** | **60–80 words** | Dense physical textures, two-tone lighting, and FACS nuance. |
+  | **Multi-Character / Complex Machinery** | **85–110 words** | Extended budget strictly for coordinating multiple interacting bodies/props. |
+* **🚫 Zero Tolerance for Rule Echoing / Meta-Concept Leaks:** Never echo skill instructions into the prompt (❌ `"displaying strong kinetic torsion"`, `"creating a 3-plane transition"`, `"demonstrating FACS mechanics (AU31)"` $\rightarrow$ Execute the visual directly in plain English).
 
-#### 🚫 Banned Empty Narrative Tropes & Lazy Spatial Adjectives
-Never use placeholder filler clauses or abstract environmental summaries:
-- ❌ `"in a world of..."`, `"a sense of wonder"`, `"breathtaking view"`, `"captivating atmosphere"`, `"exuding power"`, `"radiating presence"`, `"embodying the spirit of"`, `"a scene depicting"`, `"an image of"`, `"a visually striking composition"`, `"messy room"`, `"cluttered space"`, `"cozy apartment"`, `"lived-in room"`.
-- ✅ Describe only concrete physical reality: `"2700K tungsten lamp casts warm light across the mahogany table"`, `"plushies and pastel pillows spill from the unmade duvet"`, `"her boot crushes dry leaves on the pavement"`.
+### D. Multi-Actor Environmental Staging & Anti-Split-Screen Protocol
+When prompting 2+ characters performing concurrent actions:
+1. **🚫 Strictly Banned Layout Words:** `split screen`, `divided into two halves`, `left side: / right side:`, `two panels`, `diptych`. (These trigger comic panel dividing lines).
+2. **✅ Continuous Environmental Grounding:** Place both actors in a shared physical container:
+   - *"In a sunlit workshop, a carpenter sits at the workbench on the left planing cedar wood while across the room on the right an apprentice sweeps shavings with a bristle broom."*
+3. **Attribute Clustering:** Fully describe Actor A's wardrobe, colors, and stance completely before introducing Actor B to prevent color cross-contamination.
 
-### 3. Banned Contradictory Postural Verbs
-Never combine contradictory physical positions for the same subject. Pick ONE definitive posture:
-- ❌ `"stands seated"`, `"sits standing"`, `"walks perched"`, `"stands sitting"`
-- ✅ `"sits upon the railing"`, `"stands at the edge"`, `"perches on the stone"`
-
-### 4. Banned Abstract Personification
-Never assign human or physical actions to abstract concepts:
-- ❌ `"the atmosphere breathes"`, `"the scene whispers"`, `"the light sings"`, `"the composition speaks"`
-- ✅ Describe only concrete physics: `"warm 5500K daylight fills the room"`, `"deep shadows absorb the stone texture"`
-
-### 5. Natural Syntax & Direct Framing (Anti-Meta & Subject-Binding Rules)
-
-Text encoders in modern foundation models (Qwen3-VL, Cosmos, T5, CLIP) parse fluent, connected natural language. Eliminate meta-observer filler while maintaining vivid physical vocabulary and natural sentence flow:
-
-#### 1. 🚫 Banned Meta-Observer & Auxiliary Filler
-Never use passive observer framing or auxiliary state phrases that signal an image is being viewed rather than describing the physical scene directly:
-- ❌ `"can be seen"`, `"is seen"`, `"is depicted"`, `"is located in"`, `"is positioned in"`, `"is illuminated by"`, `"being photographed"`, `"there is a [noun]"`.
-- ✅ Describe the physical light and subject directly: `"2700K tungsten lamp illuminates the mahogany table"`, `"she stands at the rail"`.
-
-#### 2. 🚫 Banned Inverted Passive Actions
-Always place the acting subject before the action verb for crisp subject-predicate binding:
-- ❌ `"The heavy iron latch is pulled downward by the engineer."`
-- ✅ `"The engineer pulls the heavy iron latch downward against mechanical resistance."`
-
-#### 3. 🚫 Banned Ambiguous Runaway `-ing` Stacks
-Do not chain loose, comma-separated participial verbs where the acting subject becomes ambiguous or disconnected:
-- ❌ `"A warrior battling a monster, swinging a heavy blade, shouting, glowing, collapsing onto the stone..."` (Cross-attention binding confusion: who is shouting or glowing?)
-- ✅ Connect with clear active subjects and conjunctions: `"A warrior swings a heavy broadsword against the beast as glowing embers scatter across the stone."`
-
-#### 4. ✅ FULLY PERMITTED & ENCOURAGED: Descriptive Participles & Fluent Compound Sentences
-Do **NOT** artificially avoid natural English participles or write robotic staccato sentences:
-- **Descriptive State Adjectives (Essential):** Use vivid physical adjectives freely: `churning waves`, `raking rim light`, `weathered basalt`, `dimly lit carriage`, `sunlit square`, `unmade duvet`, `billowing smoke`, `glowing filament`, `defocused foreground`.
-- **Fluent Compound Rhythm:** Use active coordinating conjunctions (`and`, `while`, `as`) to link actions smoothly rather than chopping text into rigid 3-word fragments (`"His jaw clenches tight as 4000K sunlight rakes across his taut shoulders while salt spray plasters wet hair to his brow"`).
-
-### 6. Active Present-Tense Verbs
-Drive ALL main actions with direct present-tense verbs: `stands`, `wears`, `grips`, `casts`, `drapes`, `pools`, `rakes`, `tilts`, `glances`, `lashes`, `slices`, `curls`, `sways`, `strikes`, `bends`, `perches`, `settles`, `anchors`, `clasps`, `presses`, `slits`, `threads`.
-
-### 7. Adaptive Token Budget & Density (Default 70–100 Words; Up to 150 Words for Complex Scenes)
-Default to tight, dense, and punchy prompts (**70–100 words**). Longer prompts (**120–150 words**) are permitted **only when genuinely justified** (e.g. multi-character spatial interaction, intricate technical machinery, or complex environmental storytelling). Extra words must deliver new physical visual data—never connector bloat or filler adjectives:
-- ❌ *"A dynamic, slender female athlete executes a powerful spike..."* (Bloat)
-- ✅ *"A slender female athlete spikes the ball..."* (Punchy)
-- **Organic Cohesion over Checklist Overload:** Do not mechanically force every single pillar into maximum volume in every prompt. Choose the 1–2 dominant tactile or environmental details that elevate the concept, allowing the scene to breathe naturally without feature congestion.
-
-### 8. Zero Tolerance for Meta-Concept Leaks & Rule Echoing
-Never leak or echo skill instruction jargon inside the generated prompt. **Execute the visual directly; do not name the technical concept or raw codes:**
-- ❌ *"displaying strong kinetic torsion"* $\rightarrow$ ✅ *"her torso twists 40 degrees"*
-- ❌ *"creating a perfect 3-plane optical transition"* $\rightarrow$ ✅ *"defocused net in foreground, blurry crowd in background"*
-- ❌ *"demonstrating FACS facial mechanics (AU31, AU1+AU4)"* $\rightarrow$ ✅ *"her jaw clenches tight as her brow pinches"* *(Describe the natural physical muscles/eyes in English; never print raw `(AU31)` codes in photorealistic prose).*
-
-### 9. Multi-Actor Environmental Staging & Anti-Split-Screen Protocol (Turbo & Base Models)
-When prompting scenes with 2 or more characters performing concurrent actions:
-- **🚫 BANNED META-PARTITION PHRASES (Zero Tolerance in Positive Prompts):**
-  Never use layout metadata phrases that describe dividing or segmenting the image canvas. In both distilled Turbo models (CFG 1.0 where negative prompts are inert) and Base models, these words trigger literal comic-strip dividing lines, panel seams, or diptych borders:
-  - ❌ `"the image is segmented into..."`, `"split into left and right..."`, `"divided into sections..."`, `"left side of the image: ... right side: ..."`, `"two halves"`, `"split screen"`, `"comic panel"`, `"multi-panel"`, `"diptych"`, `"triptych"`, `"sections"`.
-- **✅ MANDATORY NATURAL ENVIRONMENTAL ANCHORING:**
-  Anchor subjects directly to physical room/set objects within a single continuous scene:
-  - ✅ *"In a sunlit cafe, an architect sits at the table on the left reviewing blueprints while across the counter on the right a barista steams milk..."*
-  - ✅ *"In a stone colosseum, a swordswoman drops into a low stance on the left with drawn katana while across the arena on the right a mage raises a glowing crystal staff..."*
-- **🎥 MANDATORY WIDE-ANGLE FRAMING FOR MULTI-ACTORS:**
-  Always specify a continuous wide framing anchor (`35mm wide-angle lens`, `environmental wide shot`, `medium wide two-shot`, `wide shot`) to prevent tight close-up crops from cutting out secondary actors.
-- **🧱 ATTRIBUTE CLUSTERING RULE:**
-  Fully describe Actor A's complete physical action, posture, and held prop before introducing Actor B to prevent cross-attention attribute bleeding between characters.
+### E. The 4-Shield Protocol for Intimate Physical Contact (Preventing Body Fusion & Phantom Limbs)
+When generating two characters in close physical contact (embraces, cheek touches, lap sitting, forehead-to-forehead):
+1. **Extreme Material & Color Contrast:** Put Character A in dark heavy wool and Character B in light silk or bare skin. High tonal contrast enables self-attention layers to segment interacting boundaries.
+2. **The 3-Point Tactile Anchor:** Define exact hand placement and physical deformation (❌ *"embracing intimately"* $\rightarrow$ ✅ *"his right hand cups her left cheekbone, thumb along jawline, while her fingertips press into his dark coat sleeve, bunching the fabric"*).
+3. **Asymmetrical / Over-the-Shoulder Camera Angle:** Shoot from a $3/4$ profile or over-the-shoulder perspective to establish clear foreground-to-background spatial occlusion.
+4. **Closed-Circuit Ocular / Facial Alignment:** *"Their foreheads touch gently at the hairline with eyes softly closed in quiet tenderness, lips parted 2cm apart."*
+5. *Anime/Danbooru Tags:* `forehead-to-forehead`, `cheek-to-cheek`, `hand on another's cheek`, `head on another's shoulder`, `embrace`, `hug from behind`, `interlocked fingers`.
 
 ---
 
-## Execution Protocol: The Multi-Pass Self-Pruning & Sequential Thinking Workflow
+## 4. Engine Conditioning Formulas & Dialects
 
-Before outputting your response, perform a systematic multi-pass pruning workflow.
+### A. Krea 2 RAW & FLUX.1 Dev (Natural Language Flow-Matching)
+* **Positive Prompt:** 8-Block Canonical Sequence (Lens $\rightarrow$ Light $\rightarrow$ Subject $\rightarrow$ Environment $\rightarrow$ FACS $\rightarrow$ Dynamics $\rightarrow$ Pose $\rightarrow$ Film Stock).
+* **Typography:** Quote isolation bound to a substrate: `"stenciled in weathered yellow paint across the steel beam: 'NO ENTRY'"`.
+* **Negative Prompt:** Leave blank on Turbo/Schnell (CFG 1.0). Use natural language positive steering for Base/RAW.
+
+### B. Krea 2 Multimodal Reference Prompting (Non-Edit Generation via Qwen3-VL)
+When users supply reference images for **new image generation** (not inpainting), Krea 2 ingests images as `Picture 1:`, `Picture 2:` directly into its multimodal vision-language text encoder:
+* **1. Style & Lighting Transfer (SREF):** Transfer lighting, optics, and medium while creating a new subject:
+  ```text
+  In the visual style, 2800K tungsten chiaroscuro lighting, and 35mm film grain of Picture 1: a 45-year-old botanist inspects orchids in a misty greenhouse.
+  ```
+* **2. Character Likeness Lock (CREF):** Lock facial bone structure while changing wardrobe, pose, and setting:
+  ```text
+  Subject is the person from Picture 1, preserving facial bone structure and dark eyes. The subject wears a canvas field jacket, leaning against an iron railing in morning fog.
+  ```
+* **3. Spatial & Compositional Mimicry:** Replicate camera perspective and depth staging with new subjects:
+  ```text
+  Matching the low-angle perspective and 3-plane depth staging of Picture 1: a runner leaps across a hurdle under bright stadium floodlights.
+  ```
+* **4. Character Turnaround Sheet (360° Volumetric Lock):** Lock full 3D identity into a single scene:
+  ```text
+  Picture 1 is a character turnaround sheet. Render a single unified cinematic composition of this character seated at a wooden desk. Do not render a turnaround or multi-panel grid.
+  ```
+* **Preventing Visual Bleed (Explicit Unbinding):** If replacing elements from `Picture 1`, explicitly state the replacement (e.g. *"render bare face without the glasses in Picture 1"*, *"wearing a navy coat instead of the red jacket in Picture 1"*).
+
+### C. Krea 2 Edit (Inpainting, Relighting & Regional Composition)
+* **Node Dials:** `fit_mode: fit`, `grounding_px: 1024`, `ref_boost: 4.0` (identity lock) or `0.9` (object removal).
+* **Formula:**
+  $$\text{Edit Prompt} = [\text{Action Verb}] + [\text{Subject/Region Anchor}] + [\text{New Tactile Properties}] + [\text{Lighting \& Optics Match}]$$
+* **Slot Indexing:** `"Place the subject from reference image2 into the greenhouse in reference image1. Extract only the subject from image2, preserving facial bone structure and wardrobe. Relight with image1's warm 5500K sunbeams."`
+
+### D. CircleStone Labs ANIMA (Cosmos 2B + Qwen3 Anime Engine)
+* **ANIMA-Aesthetic (Master Quality / CFG 3.5–4.5, 30–38 steps):**
+  ```text
+  1girl, solo, @artist_name, [wardrobe/appearance tags], [kinetic narrative prose with FACS & Kelvin lighting]
+  ```
+  - *Negative:* `worst quality, low quality, semi-realistic, 2.5d, 3d render, cgi, photorealistic, realistic face, airbrush, oily skin, artist name, blurry, bad anatomy, deformed hands`
+* **ANIMA-Turbo (Fast Distilled / CFG 1.0, 8–12 steps):**
+  - Ultra-fast iteration path. Direct Danbooru + prose (`1girl, solo, ...`).
+  - *Negative:* Leave blank (negative conditioning is inert at CFG 1.0).
+* **Zero Boilerplate Rule:** Do not include `masterpiece`, `best quality`, `safe`, or `score_*` tags. Start prompts directly with character count and core visual anchors.
+* **Artist `@` Indexing (Surname-First):** `@soejima shigenori`, `@sadamoto yoshiyuki`, `@yamashita ikuto`, `@shinkai makoto`, `@imaishi hiroyuki`, `@amano yoshitaka`.
+* **2.5D Leakage Shield:** When prompting tactical/mechanical gear, add positive `cel shading, anime screencap, 2d` and negative `semi-realistic, 2.5d, 3d render, cgi`.
+* **Contrastive Sentence Framing:** Always use contrastive prose clauses (`while`, `as`, `against`) rather than isolated `depth of field` tags to bind sharpness to the main actor and blur to foreground/background planes.
+
+---
+
+## 5. Execution Protocol: Multi-Pass Self-Pruning & Sequential Thinking
+
+Before emitting the prompt package, perform a systematic multi-pass pruning workflow.
 
 ### Environment-Aware Execution Paths
 
 #### 🧠 Path A: Reasoning via `sequential_thinking` Tool (When Tool is Available)
 In environments equipped with the `sequential_thinking` tool (such as Pi Agent and reasoning-extended harnesses), log your systematic 3-step reasoning chain before outputting the final prompt package:
 1. **Step 1 — Concept Deconstruction & Latent Prior Mapping:**
-   - Identify the primary subject and setting.
-   - Separate what the diffusion model's latent prior already handles (e.g. "wooden pier" implies planks, water, pilings) from the **high-entropy deltas** (unique weathered state, Kelvin light, camera angle).
-   - Select 1–2 tangible **lived-in micro-narrative props** with active placement verbs (e.g. plushies tumbling, tangled cables).
+   - Identify the primary subject and setting; enforce adult age (21+) and demographic grounding.
+   - Separate what the diffusion model's latent prior already handles (e.g., "wooden pier" implies planks, water, pilings) from **high-entropy deltas** (unique weathered state, Kelvin light, camera angle).
+   - Select 1–2 tangible **lived-in micro-narrative props** with active placement verbs (e.g., plushies tumbling, tangled cables).
 2. **Step 2 — High-Signal Drafting:**
    - Assemble the 8-block sequence (or engine format) with active verbs, Kelvin lighting, DoF optics, and biomechanical contrapposto.
 3. **Step 3 — Anti-Tautology Audit & Pruning:**
    - Re-read the drafted prompt.
-   - Prune redundant constituent descriptions (e.g. remove mentions of wooden planks on the pier).
-   - Verify word count (70–100 words default).
-   - Ensure zero meta-observer phrases, zero ambiguous runaway `-ing` stacks, zero banned buzzwords, zero raw AU code strings, and zero abstract room labels.
+   - Prune redundant constituent descriptions (e.g., remove mentions of wooden planks on the pier).
+   - Verify word count against the budget (**45–65 words for Turbo/Anime**, **60–80 words for RAW/Base**).
+   - Ensure zero meta-observer phrases, zero ambiguous runaway `-ing` stacks, zero helper verb padding, zero banned buzzwords, zero raw AU code strings, and zero abstract room labels.
 
 #### ⚡ Path B: Native Self-Pruning (When Tool is Absent)
 In environments without `sequential_thinking`, perform the same 3-step workflow natively within internal chain-of-thought before generating the prompt package.
 
 ---
 
-### Pass 2 Self-Pruning Audit Checklist
-Verify against these core constraints before finalizing output:
-- [ ] **Semantic Economy & Anti-Tautology:** Zero redundant constituent descriptions of obvious nouns (e.g., no explaining that a pier is made of wood planks or in water); tokens spent strictly on high-entropy deltas.
-- [ ] **Lived-In Specificity:** No abstract room adjectives (*"messy"*, *"cozy"*, *"cluttered"*); anchored by 2–3 tangible human-trace props.
-- [ ] **Word Budget:** 70–100 words default (up to 150 only for complex multi-actor scenes).
-- [ ] **Active Framing & Natural Syntax:** Direct subject-action phrasing; zero meta-observer phrases (*"can be seen"*, *"is depicted"*); zero ambiguous runaway `-ing` stacks; fluent compound rhythm with natural descriptive participles (*"churning waves"*, *"raking light"*).
-- [ ] **Vocabulary:** Natural colloquial body terms (no clinical Latin); zero quality buzzwords or narrative filler.
-- [ ] **Skin & Realism:** Micro-pores, vellus hair, sebum sheen, or dermal texture anchored; zero airbrushed plastic keywords.
-- [ ] **Optical Staging & Flaws:** Defocused physical barriers (door gaps, blinds, reflections) or lo-fi sensor flaws (direct flash, grain) applied when candid realism is targeted.
-- [ ] **Variety:** No subject noun or material repeated $\ge 3$ times.
-- [ ] **Anatomy & Physics:** Knuckles/palms on hands, heels/soles on feet; contact shadows and deformation defined.
-- [ ] **Kinematic Clearance:** For airborne or high-velocity subjects, outward trajectory vector and unobstructed landing/drop zone defined (zero accidental collision obstacles directly beneath flight path).
-- [ ] **Layout:** Natural environmental anchoring (zero meta-split phrases).
-- [ ] **Engine Cleanliness:** Zero leaked rule names; zero Danbooru prefix tags repeated in narrative prose.
+## 6. Universal Output Format Schema
+
+When generating prompts, assistants must emit this structured schema:
+
+```markdown
+### 📝 Primary Positive Prompt
+[Single cohesive code block with 8-block prose or Danbooru tag+prose]
+
+### 🚫 Negative Prompt
+[Engine-specific negative tokens or left empty for flow-matching/distilled models]
+
+### 🎛 Model & Parameter Recommendation
+| Parameter | Setting | Rationale |
+| :--- | :--- | :--- |
+| **Target Engine** | Krea 2 RAW / FLUX.1 Dev / ANIMA-Base | Optimal architectural fit |
+| **Aspect Ratio & Res** | e.g. `16:9` (`1344×768`) / `4:5` (`896×1152`) | Native 1-megapixel bucket |
+| **Sampler / Steps / CFG** | e.g. `Euler / 30 steps / CFG 3.5` | Engine calibration |
+
+### 🔄 Iteration Pathway (3–4 Actionable Directives)
+1. **Lighting / Atmosphere Shift:** (e.g. 2400K candlelight vs. 7500K twilight)
+2. **Optics / POV Shift:** (e.g. 85mm portrait prime vs. 24mm wide angle through ajar door)
+3. **Kinetic / FACS Shift:** (e.g. Unilateral smirk AU12+AU14 with 15° gaze deflection)
+4. **Medium / Substrate Shift:** (e.g. Impasto oil on linen canvas or `@soejima shigenori` cel animation)
+```
 
 ---
 
-## Universal Output Structure
+## 7. High-Leverage Production Exemplars
 
-> 🚫 **Direct Chat Output Rule:** Render the complete prompt package directly in your response text. **Do NOT write the prompt to a file** (do NOT call `write` to create `prompt.txt` or `prompt_output.txt`) and **do NOT delegate prompt creation to a subagent**.
+### Exemplar 1: Photorealistic Editorial Portrait (Krea 2 RAW / FLUX.1 Dev)
+* **Configuration:** Aspect Ratio `4:5` ($896 \times 1152$) | 30 steps | CFG 3.5 | `euler`
 
-When the user requests an image prompt, generate a complete prompt structured with the **Positive Prompt FIRST**:
+```text
+85mm f/1.4 portrait prime lens, shallow depth of field. A 2800K tungsten desk lamp illuminates an antique mahogany workbench against cool 6500K overcast window shadow fill. A 62-year-old master watchmaker in a charcoal tweed vest leans forward with pinched brows, taut lower eyelids, and an iris catchlight. His thumb and forefinger press micro-tweezers against a ruby tourbillon bearing before a softly defocused foreground glass loupe. Kodak Portra 400 35mm film still.
+```
 
-### 📝 Primary Positive Prompt
-A single cohesive block in a fenced code box (` ```text `), formatted according to the target engine playbook (e.g. 8-block natural prose for Krea 2 in [`krea2.md`](krea2.md); Danbooru prefix + prose for ANIMA in [`anima.md`](anima.md); edit instruction prose for Krea 2 Edit in [`krea2-edit.md`](krea2-edit.md)).
+### Exemplar 2: Illustrative Cel Sci-Fi Action (CircleStone ANIMA-Aesthetic / Turbo)
+* **Configuration:** Aspect Ratio `16:9` ($1344 \times 768$) | 38 steps | CFG 4.0 | `dpmpp_2m_sde_gpu`
 
-### 🚫 Negative Prompt
-A fenced code box (` ```text `) containing the engine's negative formula (leave blank for Krea 2 flow-matching; use targeted anti-realism tags for ANIMA as specified in [`anima.md`](anima.md)).
+```text
+1boy, solo, @sadamoto yoshiyuki, @yamashita ikuto, 1990s anime, retro anime, cel animation, flight mechanic, short brown hair, denim overalls, work gloves, tsurime, cliffside hangar, sunset, cel shading, anime screencap, 2d, clean lineart, vibrant anime aesthetic, Foreground: an out-of-focus spanner rack. In the midground, the 24-year-old flight mechanic drops his weight onto his left boot, cranking a socket wrench against hydraulic actuator resistance. Focused resolve sharpens his gaze with a pin-light spark. A 9000K cyan telemetry display rim-lights his jaw against 2400K golden twilight. Distant cumulus cloud banks dissolve into soft bokeh.
+```
+*(Negative: `worst quality, low quality, semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, airbrush, oily skin, artist name, blurry, bad anatomy, deformed hands`)*
 
-### 🎛 Model & Engine Recommendation
-| Parameter | Selection | Rationale |
-|---|---|---|
-| **Target Engine** | e.g. Krea 2 RAW / ANIMA / Krea 2 Edit | Why this engine suits the concept |
-| **Aspect Ratio** | e.g., 4:5, 9:16, 16:9, 1:1 | Spatial and compositional rationale |
-| **Style Reference** | User-instructed style OR "Native Engine Baseline / LoRA-Ready" | Visual anchor (applied only when instructed) |
+### Exemplar 3: Dual-Image Inpainting & Regional Composition (Krea 2 Edit)
+* **Configuration:** Grounding 1024px | `fit_mode: fit` | `ref_boost: 4.0` | 22 steps | CFG 2.5
 
-### 🎚️ Engine-Specific Parameters
-Include parameters specified in the active engine playbook (e.g. KGW Rebalance presets for Krea 2; sampler, CFG & scheduler for ANIMA; node bindings for Krea 2 Edit).
-
-### 🔄 Iteration Pathway
-Provide 3–4 specific, creative variations using **active verb instructions**:
-1. Lighting / Atmospheric shift (e.g. dawn, overcast, harsh on-axis camera flash with drop shadow, neon volumetric).
-2. Camera angle / Perspective shift (e.g. peering through a narrow door gap, steamy mirror reflection, low-angle worm's-eye, telephoto close-up, Dutch angle).
-3. Expression / Interaction shift (e.g. character shifts grip, turns head 30 degrees startled, raises brow).
-4. Medium / Artist shift (e.g. suggest 1–2 compatible artist `@` tags, physical substrate shifts, or lo-fi smartphone snapshot sensor grain to pivot or refine the aesthetic; see engine playbooks).
-
-
+```text
+Place the subject from reference image2 into the ancient sunlit greenhouse in reference image1. Extract only the subject from image2, strictly preserving their 28-year-old facial bone structure and khaki field shirt. The subject stands in the midground, left palm pressing downward onto the wrought-iron planter table. Relight with warm 5500K sunbeams and match f/2.8 optical depth of field with soft bokeh across background ferns.
+```

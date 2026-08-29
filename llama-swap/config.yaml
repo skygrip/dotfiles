@@ -30,7 +30,7 @@ macros:
   kv_args: "--kv-unified --parallel ${parallel_slots}"
 
   # ============================================================================
-  # PROFILE: Apple Silicon Mac Studio (Unified Memory & Metal) [COMMENTED OUT]
+  # PROFILE: Apple Silicon Mac Studio (Unified Memory & Metal)
   # ============================================================================
   # llama-server: "/opt/homebrew/bin/llama-server --port ${PORT}"
   # threads: 12           # 12 Performance Cores

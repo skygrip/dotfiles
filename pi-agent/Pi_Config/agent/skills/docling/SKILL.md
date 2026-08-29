@@ -3,119 +3,70 @@ name: docling
 description: Convert PDF, DOCX, PPTX, XLSX, HTML, and images to clean Markdown/JSON. Use 'docling <file> --output <dir> --no-ocr --image-export-mode placeholder' for fast document extraction.
 ---
 
-# Docling Document Parsing Skill
+# Docling Document Parsing Capabilities Reference
 
-This skill guides the agent on converting unstructured documents (PDF, DOCX, PPTX, XLSX, AsciiDoc, HTML, CSV, XML, images) into structured, LLM-ready Markdown, JSON, or chunks.
-
-> [!IMPORTANT]
-> **Performance & Timeout Prevention:**
-> Always use `--no-ocr` and `--image-export-mode placeholder` unless OCR is explicitly required. Running bare `docling <file>` downloads multi-GB OCR weights and runs slow CPU models that can easily timeout tool calls.
+Document extraction and layout analysis CLI for converting complex digital and scanned documents (PDF, DOCX, PPTX, XLSX, HTML, AsciiDoc, CSV, XML, images) into clean Markdown, Docling JSON, or context-aware RAG chunks.
 
 ---
 
-## Operational Boundaries
+## 1. Programs Used
 
-### ✅ Use When:
-- Target is a local document file: `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.csv`, `.html`, `.asciidoc`, `.xml`.
-- Downstream task needs clean Markdown text, table schemas, or RAG chunks.
-- You need structured Docling JSON (`--to json`) as ground-truth schema fallback.
-
-### ❌ Do Not Use When:
-- **Remote URLs**: `docling` is strictly a local parser. Download or fetch web pages locally first via `curl` or browser before passing to Docling.
-- **Legacy Binary Office Formats (`.doc`, `.ppt`, `.xls`)**: Docling parses modern OpenXML (`.docx`, `.pptx`, `.xlsx`). Legacy Word 97–2003 `.doc` binary containers are unsupported and will fail. Convert first via `soffice --headless --convert-to docx <file>.doc` or request modern `.docx`/`.pdf`.
-- **Password-Protected / Encrypted Files**: Decrypt or unlock documents before running.
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`docling`** | Document parsing CLI for layout analysis, TableFormer extraction, and format normalization |
 
 ---
 
-## High-Leverage CLI Recipes
+## 2. Negative Guardrails & Context Safety
 
-### 1. Fast Document Conversion (Recommended)
-Converts digital documents preserving headings, reading order, and table layouts without slow OCR or image embedding:
-```bash
-docling <document-path> --output <output-dir> --no-ocr --image-export-mode placeholder
-```
-
-### 2. High-Accuracy Table Extraction
-For complex tables (multi-line cells, merged headers, borderless tables), use accurate table mode:
-```bash
-docling <document-path> --output <output-dir> --no-ocr --table-mode accurate
-```
-
-### 3. Multi-Format & Chunk Export (RAG / Structured Extraction)
-Export directly to Markdown, Docling JSON, or pre-chunked representations:
-```bash
-# Export Markdown and JSON
-docling <document-path> --to md --to json --output <output-dir> --no-ocr
-
-# Export context-aware chunks for RAG
-docling <document-path> --to chunks --output <output-dir> --no-ocr
-```
-
-### 4. Scanned Documents & Images (OCR Required)
-When processing scanned PDFs or image files where native text is unavailable:
-```bash
-docling <document-path> --output <output-dir> --ocr --ocr-engine easyocr --ocr-lang en
-```
-*(Engines: `easyocr`, `tesseract`, `rapidocr`, `ocrmac`)*
-
-### 5. Batch Directory Conversion
-Convert all matching documents in a folder:
-```bash
-docling ./docs --from pdf --output ./extracted_docs --no-ocr --image-export-mode placeholder
-```
-
-### 6. Hardware Acceleration & Threading
-Accelerate processing on multi-core CPUs or dedicated GPUs:
-```bash
-# Multi-threaded CPU
-docling <document-path> --output <output-dir> --threads 4 --device cpu --no-ocr
-
-# CUDA GPU
-docling <document-path> --output <output-dir> --device cuda
-```
-
----
-
-## Image Export Modes & Token Protection
-
-> [!WARNING]
-> **The Base64 Token Disaster:**
-> Default markdown converters often embed images as raw `data:image/png;base64,...` data URIs. A single base64 image string can consume **50,000 to 200,000 tokens** of unparseable text, instantly blowing out the agent's context window. **Never use `embedded` image mode.**
-
-| Mode (`--image-export-mode`) | Behavior | Agent Recommendation |
+| Hallucination / Mistake | Why It Fails | Correct Protocol / Syntax |
 | :--- | :--- | :--- |
-| **`placeholder`** *(Default Choice)* | Replaces images with lightweight markdown placeholders (e.g. `<!-- image -->` or figure captions). | ✅ **Optimal for LLMs.** Zero token waste while preserving figure captions and reading flow. |
-| **`referenced`** | Saves images as external files to disk and links them via relative paths (e.g. `![](artifacts/fig1.png)`). | ✅ Use if the human user or a vision model needs to inspect the extracted image files on disk. |
-| **`embedded`** | Encodes images as inline base64 data URIs inside the Markdown file. | ❌ **Anti-Pattern.** Wastes tens of thousands of tokens on raw binary strings. |
+| `--no-ocr` on scanned PDFs | Bypasses OCR on raster images; produces **empty markdown** output | Use `--ocr` (or bare `docling`) for scanned/paper PDFs; reserve `--no-ocr` for digital PDFs |
+| Bare `docling` on digital PDFs | Triggers unnecessary neural OCR, downloading ~1–2 GB weights | Pass `--no-ocr --image-export-mode placeholder` for digital PDFs |
+| `--image-export-mode embedded` | Inlines raw base64 data URIs (`data:image/png;base64,...`), consuming 50k–200k tokens | Always use `--image-export-mode placeholder` (or `referenced` for external files) |
+| Memory leaks on large batch runs | Unreleased C++ parser buffers exhaust process RAM | Add `--document-timeout 120 --release-native-parser-memory 128` |
+| Remote URLs as input | `docling` is strictly a local file parser | Fetch or curl target locally first before invoking `docling` |
+| Legacy binary formats (`.doc`, `.xls`) | Unsupported Word 97–2003 OLE containers fail to parse | Convert first with `soffice --headless --convert-to docx <file>.doc` |
 
-### Cleanest Recipe for LLM Reading (Zero Image Bloat)
+---
+
+## 3. Supported Input Formats & Target Outputs Matrix
+
+| Input Category | Supported Formats | Target Export Flag (`--to`) | Output Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Portable Docs** | `.pdf` (Digital & Scanned) | `--to md` | Clean GFM Markdown with tables, headings, lists. |
+| **Office OpenXML** | `.docx`, `.pptx`, `.xlsx` | `--to json` | Lossless Docling JSON (bounding boxes, layout nodes, prov). |
+| **Web & Markup** | `.html`, `.asciidoc`, `.csv`, `.xml` | `--to chunks` | Hierarchical `HybridChunker` RAG chunks with parent headers. |
+| **Bitmap Images** | `.png`, `.jpg`, `.tiff`, `.bmp`, `.webp` | `--to html`<br/>`--to doctags`<br/>`--to text` | Clean HTML, token-level layout XML tags, or linearized text. |
+
+---
+
+## 4. Extraction Engines, Memory & Tuning Matrix
+
+| Configuration | Flag / Parameter | Options / Syntax | Purpose / Behavioral Rule |
+| :--- | :--- | :--- | :--- |
+| **OCR Control** | `--ocr` / `--no-ocr` | Boolean toggle (Default: `--ocr`) | `--no-ocr` bypasses visual OCR; `--ocr` extracts scanned pages. |
+| **OCR Engine** | `--ocr-engine` | `easyocr` (default), `rapidocr` (fast ONNX), `tesseract`, `ocrmac` | Selects OCR backend and language: `--ocr-lang en,de,fr`. |
+| **Table Fidelity** | `--table-mode` | `fast` (default) \| `accurate` | `accurate` invokes deep TableFormer for merged cells and borderless tables. |
+| **Image Handling** | `--image-export-mode` | `placeholder` \| `referenced` \| `embedded` | `placeholder` emits `<!-- image -->`; `referenced` saves `.png` files. |
+| **Timeout & Memory**| `--document-timeout` | Seconds (e.g. `120`) | Per-document timeout to prevent hangs on corrupt 500-page files. |
+| | `--page-batch-size` | Integer (default: `4`) | Pages per batch; reduce to `1` or `2` on low-VRAM machines. |
+| | `--release-native-parser-memory` | Integer (default: `128`) | Flushes native C++ parser memory every $N$ pages. |
+| | `--abort-on-error` | Boolean toggle | Controls whether batch directory processing halts on first error. |
+| **Hardware** | `--device` | `auto`, `cpu`, `cuda`, `mps`, `xpu` | Hardware acceleration on NVIDIA GPU, CPU, or Apple Silicon. |
+| **Concurrency** | `--num-threads` | Integer (default: `4`) | Number of worker threads for parallel document parsing. |
+
+---
+
+## 5. High-Leverage Composite Examples
+
 ```bash
-docling <document-path> --output <output-dir> --no-ocr --image-export-mode placeholder
+# 1. Fast digital document conversion (Zero model downloads or token bloat)
+docling manual.pdf --output ./extracted --no-ocr --image-export-mode placeholder
+
+# 2. Scanned paper/fax document (Full neural OCR + TableFormer layout parsing)
+docling scanned_doc.pdf --output ./out --ocr --ocr-engine easyocr --ocr-lang en --table-mode accurate --image-export-mode placeholder
+
+# 3. Large batch directory processing with memory & timeout safeguards
+docling ./contracts --output ./extracted --from pdf --document-timeout 90 --page-batch-size 2 --no-ocr --num-threads 8
 ```
-
----
-
-## Options & Flags Reference
-
-| Flag | Values | Description |
-| :--- | :--- | :--- |
-| `--output <dir>` | Path | Directory where output files will be written. |
-| `--to` | `md`, `json`, `html`, `chunks`, `doctags`, `text` | Target export format (repeatable for multiple formats). |
-| `--from` | `pdf`, `docx`, `pptx`, `xlsx`, `html`, `asciidoc`, `csv`, `xml` | Restrict input format parser. |
-| `--no-ocr` / `--ocr` | Boolean toggle | Disable/enable visual OCR (use `--no-ocr` for digital PDFs). |
-| `--ocr-engine` | `easyocr`, `tesseract`, `rapidocr`, `ocrmac` | OCR engine to use when OCR is enabled. |
-| `--ocr-lang` | `en`, `fr`, `de`, ... | Comma-separated list of OCR languages. |
-| `--table-mode` | `fast`, `accurate` | Table structure extraction fidelity (`fast` default). |
-| `--image-export-mode` | `placeholder`, `embedded`, `referenced` | Image handling (`placeholder` avoids context bloating). |
-| `--threads` | Integer | Number of CPU worker threads. |
-| `--device` | `auto`, `cpu`, `cuda`, `mps` | Compute device for deep-learning layout models. |
-| `--artifacts-path` | Path | Directory for pre-downloaded offline model weights. |
-
----
-
-## Supported Input Formats
-
-- **PDF**: Native digital and scanned documents.
-- **Office**: DOCX, PPTX, XLSX.
-- **Web & Markup**: HTML, AsciiDoc, CSV, XML (USPTO, JATS, DocLang).
-- **Images**: PNG, JPEG, TIFF, BMP, WebP (requires OCR).

@@ -208,7 +208,7 @@ async function main() {
   console.log(`Target Model:    Anima Turbo (CFG 1.0, Euler, 10 steps)\n`);
 
   const skillMd = fs.readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf-8');
-  const animaMd = fs.readFileSync(path.join(SKILL_DIR, 'anima.md'), 'utf-8');
+  const animaMd = fs.readFileSync(path.join(SKILL_DIR, 'references/anima.md'), 'utf-8');
   const docContext = `=== SKILL GUIDELINES ===\n${skillMd}\n\n=== ANIMA ENGINE SPEC ===\n${animaMd}`;
 
   const results = [];

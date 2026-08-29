@@ -3,105 +3,73 @@ name: ck
 description: Fast lexical, hybrid, and semantic code search via ck. Run 'ck "literal"', 'ck --hybrid "query"', or 'ck --sem "concept"'.
 ---
 
-# `ck` (Seek) Codebase Search Skill
+# `ck` (Seek) Codebase Search Capabilities Reference
 
-`ck` (seek) is an AI-native search utility providing local vector semantic search, BM25 lexical search, hybrid Reciprocal Rank Fusion (RRF) retrieval, and grep-compatible regex search across codebases.
-
----
-
-## Global Cache Environment
-
-Set `CK_INDEX_DIR` in your environment to prevent local index files from cluttering working trees:
-
-```powershell
-$env:CK_INDEX_DIR = "$env:LOCALAPPDATA\ck\indexes"
-```
+AI-native local search engine providing semantic vector search (FastEmbed/ONNX), BM25 lexical ranking, Reciprocal Rank Fusion (RRF) hybrid retrieval, Tree-sitter AST section extraction, and fast ripgrep-compatible regex matching.
 
 ---
 
-## Core Search Modes
+## 1. Programs Used
 
-### 1. Semantic Search (`--sem`)
-Searches by conceptual meaning and natural language intent rather than literal strings (auto-indexes on first run; default top 10, similarity threshold $\ge$ 0.6):
-
-```bash
-# Architectural concept or middleware flow
-ck --sem "user authentication and JWT validation middleware" src/
-
-# Error handling and retry logic
-ck --sem "database retry backoff logic on connection loss"
-
-# Code section retrieval (full function/class via tree-sitter AST)
-ck --sem --full-section "rate limiter token bucket implementation"
-```
-
-### 2. Hybrid Search (`--hybrid`)
-Combines BM25 lexical keyword matching and dense vector embeddings using Reciprocal Rank Fusion (RRF) for optimal precision and recall:
-
-```bash
-# Blend exact keywords with conceptual intent
-ck --hybrid "authMiddleware jwt validation"
-
-# Custom threshold and result limits
-ck --hybrid --limit 5 --threshold 0.02 "cache eviction policy"
-```
-
-### 3. Lexical Search (`--lex`)
-BM25 ranked full-text search across multi-word queries:
-
-```bash
-ck --lex "http client connection pool"
-```
-
-### 4. Fast Regex / Grep Search (Default)
-Fast literal and regex matching without indexing requirements:
-
-```bash
-# Literal / regex search
-ck -i "handleRequest" src/
-
-# Word boundary and context lines
-ck -w -C 3 "MAX_RETRIES" .
-```
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`ck`** | Multi-modal local code search utility with AST parsing and streaming JSONL output |
 
 ---
 
-## Agent & Scripting Output Formats
+## 2. Negative Guardrails & Retrieval Safety
 
-| Flag | Purpose | Example |
+| Hallucination / Mistake | Why It Fails | Correct Protocol / Syntax |
 | :--- | :--- | :--- |
-| `--jsonl` | Streaming JSON Lines (recommended for AI pipelines/agents) | `ck --jsonl --sem "auth" src/` |
-| `--no-snippet` | Suppresses code body in JSONL to reduce token usage | `ck --jsonl --no-snippet --sem "config"` |
-| `--json` | Single JSON array output for standard tooling | `ck --json --hybrid "session store"` |
-| `--scores` | Displays cosine/RRF similarity scores alongside matches | `ck --sem --scores "queue worker"` |
+| High threshold on `--hybrid` | RRF scores range from `0.01–0.05`; setting `0.6` returns **zero results** | Use `--threshold 0.60` for `--sem`, but `--threshold 0.02` for `--hybrid` |
+| Bare `--full-section` query | Dumps thousands of tokens for large monolithic classes | Pair `--full-section` with `--limit 3` or inspect first with `--no-snippet --jsonl` |
+| Local `.ck/` repo pollution | Default index writes to repository root | Set `$env:CK_INDEX_DIR = "$env:LOCALAPPDATA\ck\indexes"` (or `~/.cache/ck/indexes`) |
+| Stale branch line drift | Unindexed git branch switching produces stale line offsets | Run `ck --clean-orphans .` or `ck --reindex` to re-sync chunks |
+| Non-code file AST extraction | Unsupported extensions lack Tree-sitter grammars | Fall back to standard grep (`ck "pattern"`) or lexical (`ck --lex`) |
 
 ---
 
-## Filtering and Precision Tuning
+## 3. Retrieval Modes & AST Extraction Matrix
 
-- `--topk <N>` / `--limit <N>`: Limit result count (e.g. `--topk 5`).
-- `--threshold <SCORE>`: Filter by minimum similarity score (`0.0–1.0` for semantic, `0.01–0.05` for hybrid).
-- `--full-section`: Extracts complete enclosing function or class definitions (supports TS, JS, Python, Rust, Go, C#, C/C++, Ruby, etc.).
-- `--rerank`: Activates cross-encoder reranking (`--rerank-model jina|bge|mxbai`).
-- `--exclude <DIR>`: Exclude specific directories matching pattern.
+| Search Mode | CLI Flag | Scoring Engine & Model | Target Use Case & Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Semantic** | `--sem "<query>"` | Dense vector cosine similarity (FastEmbed / BGE) | Conceptual queries, architectural patterns, logic intent without exact keywords. |
+| **Hybrid** | `--hybrid "<query>"` | Reciprocal Rank Fusion (RRF: BM25 + Vector) | Optimal precision: blends exact function/variable identifiers with conceptual meaning. |
+| **Lexical** | `--lex "<query>"` | Ranked BM25 full-text scoring | Multi-word tokenized queries resolving terms regardless of order without regex. |
+| **Regex / Grep** | `ck "<regex>"` | Instant ripgrep-style regex matcher | Zero-index literal/pattern matching: `-i` (case-insensitive), `-w` (word), `-C <N>` (context). |
+| **AST Section** | `--full-section` | Tree-sitter AST node boundary tracing | Extracts complete enclosing function, method, or class declarations rather than line snippets. |
 
 ---
 
-## Index Management & Server Mode
+## 4. Output Formats, Filtering & Index Management Matrix
+
+| Category | Flag / Option | Parameters / Syntax | Purpose / Behavioral Rule |
+| :--- | :--- | :--- | :--- |
+| **Streaming Output**| `--jsonl` | Line-delimited JSON | Low-latency streaming output optimized for agent tool calls. |
+| | `--no-snippet` | Suppresses code bodies | Returns only file path, line numbers, and scores (prevents context window flooding). |
+| | `--json` | Single JSON array | Formatted array for batch script consumption. |
+| | `--scores` | Display scores | Appends raw cosine similarity or RRF scores to standard output. |
+| **Filtering & Scope**| `--threshold` | Float (`0.60` sem \| `0.02` hybrid) | Filters matches below minimum score threshold. |
+| | `--limit` / `--topk` | Integer (default `10`) | Restricts number of candidate matches returned. |
+| | `path/` or `'**/*.rs'`| Positional glob/path | Scopes search to directory or file glob (do not use `-t`). |
+| | `--exclude` | `<dir_pattern>` | Excludes directory paths (`--exclude vendor --exclude tests`). |
+| | `--rerank` | `--rerank-model <jina\|bge>` | Re-scores candidate matches with cross-encoder for higher accuracy. |
+| **Index & Server** | `--status` / `--index` | Positional directory (`.`) | Checks index health stats or pre-builds vector database. |
+| | `--switch-model` | `bge-small`, `nomic-v1.5`, `jina-code` | Switches embedding model and rebuilds index cleanly. |
+| | `--clean-orphans` | Positional directory (`.`) | Prunes deleted file records from index cache. |
+| | `--serve` | MCP Server mode | Launches stdio Model Context Protocol server. |
+
+---
+
+## 5. High-Leverage Composite Examples
 
 ```bash
-# Check index status and chunk stats
-ck --status .
-ck --status-verbose .
+# 1. Concept search returning complete enclosing AST functions as JSONL
+ck --sem --full-section --limit 3 --threshold 0.65 --jsonl "token bucket rate limiter middleware" src/
 
-# Pre-build or force reindex
-ck --index .
-ck --reindex --sem "health check"
+# 2. Hybrid keyword + semantic search with token-conserving summary
+ck --hybrid --threshold 0.02 --limit 5 --no-snippet --scores "authMiddleware jwt validation" src/
 
-# Clean index or orphaned entries
-ck --clean-orphans .
-ck --clean .
-
-# Launch Model Context Protocol (MCP) server
-ck --serve
+# 3. Path-scoped lexical search with cross-encoder reranking
+ck --lex --rerank --limit 10 "connection pool timeout backoff" crates/
 ```

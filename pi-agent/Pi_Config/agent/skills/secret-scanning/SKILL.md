@@ -1,167 +1,73 @@
 ---
 name: secret-scanning
-description: Detect and verify leaked API keys, tokens, and credentials using TruffleHog ('trufflehog filesystem . --only-verified', 'trufflehog git file://.'). Emits structured JSON findings for CI gates and security audits.
+description: Detect and verify leaked API keys, tokens, and credentials using TruffleHog ('trufflehog filesystem . --results=verified', 'trufflehog git file://.'). Emits structured JSON/SARIF findings for CI gates and security audits.
 ---
 
-# Secret & Credential Detection Skill
+# Secret & Credential Scanning Capabilities Reference
 
-This skill guides agents and security auditors on discovering, verifying, and reporting high-entropy credentials, leaked API keys, private certificates, and access tokens across local filesystems, git repositories, GitHub organizations, and cloud storage using **TruffleHog CLI**.
+High-accuracy credential discovery engine for detecting and live-verifying 800+ API key, private token, database credential, and certificate types across local filesystems, git history, GitHub organizations, and S3 buckets using **TruffleHog**.
 
 ---
 
-## 1. Primary Detector: TruffleHog CLI
+## 1. Programs Used
 
-TruffleHog scans files and revision histories for 800+ credential types, performing live verification against provider APIs to differentiate active security threats from inactive strings or test fixtures.
+| Program / Tool | Role / Purpose |
+| :--- | :--- |
+| **`trufflehog`** | Enterprise secret scanning CLI with live active API key verification and SARIF/JSON reporting |
 
-### Essential CLI Flags
+---
 
-| Flag | Description | Audit Purpose |
+## 2. Negative Guardrails & Remediation Protocol
+
+| Hallucination / Mistake | Why It Fails | Correct Protocol / Syntax |
 | :--- | :--- | :--- |
-| `--only-verified` | Reports only confirmed live/active secrets verified against vendor APIs. | Eliminates false positives during triage. |
-| `--no-verification` | Skips live API verification checks. | Fast local/offline scanning and air-gapped environments. |
-| `--json` (`-j`) | Emits findings as newline-delimited JSON objects. | Programmatic ingestion, `jq` parsing, and reporting. |
-| `--exclude-paths=<file>` | Path to a newline-separated file of regex patterns to ignore. | Skips tests, mocks, test fixtures, and vendor directories. |
-| `--fail` | Exits with status code `183` if findings are discovered. | Enforces hard build/PR blockers in CI/CD pipelines. |
+| Unverified string flooding | Unverified scans report hundreds of test fixtures and mock strings | Use `--results=verified` (or legacy `--only-verified`) to report live active keys |
+| Assuming git rebase revokes keys | Rewriting git history does NOT invalidate keys harvested by scrapers | **Rotate the secret immediately** in provider console before rewriting history |
+| Air-gapped / offline scan failures | Live verification attempts HTTP API requests to vendor endpoints | Pass `--no-verification` when scanning in offline/air-gapped environments |
+| Subshell CI failure handling | `--fail` exits with code `183` on secret detection | Handle CI gate: `trufflehog git ... --fail \|\| [ $? -eq 183 ]` |
+| Deep encoded binary strings | Base64/Hex nested inside JSON/protobuf is missed by shallow regex | Add `--max-decode-depth=3` to unwrap nested encoding layers |
 
 ---
 
-## 2. Detection Commands
+## 3. Scan Targets & Verification Capabilities Matrix
 
-### A. Local Workspace Filesystem (`filesystem`)
-```bash
-# Scan current workspace for live, verified credentials (recommended first pass)
-trufflehog filesystem . --only-verified
-
-# Fast offline scan across all files (including unverified high-entropy strings)
-trufflehog filesystem . --no-verification
-
-# Scan with custom ignore list (skip mock/test fixtures)
-trufflehog filesystem . --exclude-paths=.trufflehogignore
-
-# Scan specific directory or build output
-trufflehog filesystem ./var/logs/ --only-verified
-```
-
-### B. Git Repository History & PR Forensics (`git`)
-```bash
-# Scan full repository commit history for active leaked secrets
-trufflehog git file://. --only-verified
-
-# Scan PR changes between base branch and current HEAD (CI pull request gate)
-trufflehog git file://. --since-commit main --branch HEAD --fail
-
-# Scan the last 50 commits
-trufflehog git file://. --since-commit HEAD~50
-
-# Scan a remote git repository without cloning locally beforehand
-trufflehog git https://github.com/org/repo.git --only-verified
-```
-
-### C. GitHub Repositories & Organizations (`github`)
-```bash
-# Scan a specific GitHub repository with access token (bypasses rate limits & accesses private repos)
-trufflehog github --repo https://github.com/my-org/my-repo --token "$GITHUB_TOKEN" --only-verified
-
-# Scan all repositories across an entire organization (excluding archived repos)
-trufflehog github --org=my-org --token="$GITHUB_TOKEN" --exclude-archived --only-verified
-```
-
-### D. AWS S3 Buckets (`s3`)
-```bash
-# Scan a specific AWS S3 bucket using local AWS credentials
-trufflehog s3 --bucket my-app-backups --only-verified
-
-# Scan an S3 bucket using an assumed IAM role ARN
-trufflehog s3 --bucket my-app-backups --role-arn arn:aws:iam::123456789012:role/SecurityAuditor
-```
+| Target Scope | CLI Subcommand | Key Flags & Options | Capabilities & Scan Depth |
+| :--- | :--- | :--- | :--- |
+| **Local Filesystem** | `trufflehog filesystem <PATH>` | `--results=verified`, `--exclude-paths=.ignore` | Scans working tree, configuration files, and logs for active secrets. |
+| **Git Repository** | `trufflehog git file://<PATH>` | `--since-commit HEAD~50`, `--branch=main` | Full commit history forensics across all branches and diffs. |
+| **GitHub Org** | `trufflehog github --org=<ORG>` | `--token=$GITHUB_TOKEN --exclude-archived` | Scans all public and private repositories across an entire organization. |
+| **S3 Buckets** | `trufflehog s3 --bucket=<NAME>` | `--role-arn=<ARN>` | Audits AWS S3 bucket objects for leaked credentials. |
+| **Docker Images** | `trufflehog docker --image=<IMG>` | `--results=verified` | Extracts and scans container layers and environment variables. |
+| **Key Analysis** | `trufflehog analyze` | `--token="<RAW_KEY>"` | Interrogates vendor APIs to determine exact permissions and owner for a key. |
 
 ---
 
-## 3. Structured JSON & Triage Reporting
+## 4. Output Formats, Filtering & CI Flags Matrix
 
-Emit JSON Lines to extract structured metadata with `jq` for reporting:
-
-```bash
-# Extract detector name, verification status, file path, and raw secret snippet
-trufflehog filesystem . --json \
-  | jq -r '[.DetectorName, .Verified, .SourceMetadata.Data.Filesystem.file // .SourceMetadata.Data.Git.file, .Raw] | @tsv'
-
-# Filter strictly for verified findings and format as audit table
-trufflehog filesystem . --json \
-  | jq -c 'select(.Verified == true) | {detector: .DetectorName, file: .SourceMetadata.Data.Filesystem.file, line: .SourceMetadata.Data.Filesystem.line}'
-```
-
----
-
-## 4. Git Metadata & Author Email Audit
-
-Inspect commit history metadata for leaked personal email addresses, developer identities, or private domains:
-
-```bash
-# List all unique commit authors and emails across entire repository history
-git log --all --format="%an <%ae>" | sort -u
-
-# List all unique committers and emails across entire repository history
-git log --all --format="%cn <%ce>" | sort -u
-
-# Filter for personal email domains committed to corporate repos
-git log --all --format="%an <%ae>" | sort -u | grep -E -i "@(gmail|hotmail|yahoo|outlook|users\.noreply\.github)\.com"
-```
+| Configuration | Flag / Parameter | Values / Syntax | Purpose / Behavioral Rule |
+| :--- | :--- | :--- | :--- |
+| **Verification** | `--results` | `verified`, `unverified`, `unknown` | Granular finding classification (`verified` filters out inactive noise). |
+| | `--no-verification` | Boolean toggle | Disables network API validation for fast offline scans. |
+| **Structured Output**| `--json` (`-j`) | NDJSON format | Emits line-delimited JSON for programmatic `jq` filtering. |
+| | `--sarif` | SARIF format | Standard SARIF output for GitHub Security tab ingestion. |
+| | `--github-actions` | Boolean toggle | Emits inline GitHub Actions workflow annotations on PR lines. |
+| **Entropy Filter** | `--filter-entropy` | Float (e.g. `3.0`) | Filters unverified strings by minimum Shannon entropy threshold. |
+| **CI Gating** | `--fail` | Exit code `183` | Fails build if secrets matching criteria are found. |
+| **Decode Depth** | `--max-decode-depth` | Integer (default: `2`) | Iterative multi-layer decoding (e.g. base64 inside utf16). |
 
 ---
 
-## 5. Operational Audit Workflows
+## 5. High-Leverage Composite Examples
 
-### Workflow 1: Pre-Commit & Staged Files Gate
-Detect secrets before creating a commit:
 ```bash
-# Check unstaged and staged workspace files without touching remotes
-trufflehog filesystem . --only-verified
+# 1. Workspace filesystem scan filtered strictly for verified active credentials
+trufflehog filesystem . --results=verified --json | jq -r '
+  [.DetectorName, .Verified, (.SourceMetadata.Data.Filesystem.file // .SourceMetadata.Data.Git.file), .Raw] | @tsv
+'
 
-# Create .trufflehogignore to exclude mock tests
-cat << 'EOF' > .trufflehogignore
-.*_test\.go$
-tests/fixtures/.*
-.*\.mock\..*
-EOF
-```
+# 2. CI pull-request gate with SARIF export and exit-code 183 handling
+trufflehog git file://. --since-commit main --branch HEAD --results=verified --sarif --fail > trufflehog.sarif || [ $? -eq 183 ]
 
-### Workflow 2: Git History Forensic Audit & Remediation
-When auditing an existing codebase for historic leaks:
-```bash
-# 1. Forensic scan of entire commit history
-trufflehog git file://. --only-verified --json > leaked_secrets.jsonl
-
-# 2. Inspect results
-jq -r '{detector: .DetectorName, commit: .SourceMetadata.Data.Git.commit, file: .SourceMetadata.Data.Git.file}' leaked_secrets.jsonl
-
-# 3. CRITICAL: Rotate exposed credentials immediately via provider consoles.
-# Do NOT assume rewriting git history makes an exposed secret safe.
-
-# 4. Remove secret from history using git-filter-repo (if required)
-git filter-repo --replace-text <(echo "MY_LEAKED_SECRET==>[REMOVED]")
-```
-
-### Workflow 3: CI/CD Pull Request Gate (GitHub Actions)
-Block pull requests containing active credentials:
-
-```yaml
-name: Security Secret Scan
-on: [pull_request]
-
-jobs:
-  trufflehog:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: TruffleHog OSS Scan
-        uses: trufflesecurity/trufflehog@main
-        with:
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --only-verified --fail
+# 3. Fast offline audit with custom entropy threshold and path exclusions
+trufflehog filesystem ./src/ --no-verification --filter-entropy=3.5 --exclude-paths=.trufflehogignore --json
 ```
