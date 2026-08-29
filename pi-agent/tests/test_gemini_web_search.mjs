@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
+import * as fs from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -18,7 +19,9 @@ function loadGeminiModule() {
       "typebox": path.join(localNpmNodeModules, "typebox/build/index.mjs"),
       "@mozilla/readability": path.join(localNpmNodeModules, "@mozilla/readability/index.js"),
       "linkedom": path.join(localNpmNodeModules, "linkedom/cjs/index.js"),
-      "turndown": path.join(localNpmNodeModules, "turndown/lib/turndown.cjs.js")
+      "turndown": path.join(localNpmNodeModules, "turndown/lib/turndown.cjs.js"),
+      "got-scraping": path.join(localNpmNodeModules, "got-scraping/dist/index.js"),
+      "playwright-core": path.join(localNpmNodeModules, "playwright-core/index.js")
     }
   });
 
@@ -67,7 +70,8 @@ export async function runGeminiTests() {
       notify() {},
       setStatus() {},
       theme: {
-        fg: (_color, text) => text
+        fg: (_color, text) => text,
+        bold: (text) => text
       }
     }
   };
@@ -75,10 +79,11 @@ export async function runGeminiTests() {
   extensionFactory(mockPi);
 
   // 1. Tool Registration Verification
-  await test("Registration: web_search and fetch_url tools registered", async () => {
+  await test("Registration: web_search, fetch_url, /web-gate, and /chrome registered", async () => {
     assert.ok(registeredTools.has("web_search"), "web_search must be registered");
     assert.ok(registeredTools.has("fetch_url"), "fetch_url must be registered");
     assert.ok(registeredCommands.has("web-gate"), "web-gate command must be registered");
+    assert.ok(registeredCommands.has("chrome"), "chrome command must be registered");
   });
 
   // 2. SSRF Guard on Private/Localhost IPs
@@ -98,14 +103,198 @@ export async function runGeminiTests() {
     );
   });
 
-  // 3. /web-gate command execution
-  await test("Slash Command: /web-gate status, on, off toggles", async () => {
+  // 3. /web-gate & /chrome commands execution
+  await test("Slash Commands: /web-gate and /chrome handlers", async () => {
     const gateCmd = registeredCommands.get("web-gate");
     assert.ok(gateCmd, "web-gate command handler must exist");
     await gateCmd.handler("status", mockCtx);
     await gateCmd.handler("off", mockCtx);
     await gateCmd.handler("on", mockCtx);
     await gateCmd.handler("toggle", mockCtx);
+
+    const chromeCmd = registeredCommands.get("chrome");
+    assert.ok(chromeCmd, "chrome command handler must exist");
+    await chromeCmd.handler("profile", mockCtx);
+    await chromeCmd.handler("status", mockCtx);
+  });
+
+  // 4. Content Sniffer: 6-Route Category Resolution
+  await test("Sniffer: accurately categorizes HTML, JSON, SVG, Images, Binary, and Text", async () => {
+    const { sniffContentType } = mod;
+    assert.ok(typeof sniffContentType === "function", "sniffContentType must be exported");
+
+    // PNG
+    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    assert.equal(sniffContentType(pngBytes, "").category, "image");
+
+    // JPEG
+    const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    assert.equal(sniffContentType(jpegBytes, "").category, "image");
+
+    // SVG
+    const svgBytes = new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'><circle/></svg>");
+    assert.equal(sniffContentType(svgBytes, "image/svg+xml").category, "svg");
+
+    // JSON
+    const jsonBytes = new TextEncoder().encode('{"status":"ok","count":42}');
+    assert.equal(sniffContentType(jsonBytes, "application/json").category, "json");
+
+    // HTML
+    const htmlBytes = new TextEncoder().encode("<!DOCTYPE html><html><body><h1>Hello</h1></body></html>");
+    assert.equal(sniffContentType(htmlBytes, "text/html").category, "html");
+
+    // Binary with null byte
+    const binBytes = new Uint8Array([0x00, 0x01, 0x02, 0x00, 0x04]);
+    assert.equal(sniffContentType(binBytes, "application/octet-stream").category, "binary");
+  });
+
+  // 5. SSRF Comprehensive Guard
+  await test("SSRF Guard: blocks all reserved IPv4, IPv6, and protocol attacks", async () => {
+    const fetchTool = registeredTools.get("fetch_url");
+    const blockedTargets = [
+      "ftp://github.com",
+      "file:///etc/passwd",
+      "http://10.0.0.1/secrets",
+      "http://172.16.5.1/internal",
+      "http://192.168.1.1/router",
+      "http://169.254.169.254/latest/meta-data",
+      "http://[::1]:8080/admin",
+      "http://localhost:3000/api",
+      "http://sub.localhost/api"
+    ];
+
+    for (const url of blockedTargets) {
+      const res = await fetchTool.execute("ssrf_call", { url }, undefined, undefined, mockCtx);
+      const text = (res.content?.[0]?.text || "").toLowerCase();
+      assert.ok(
+        text.includes("ssrf") || text.includes("blocked") || text.includes("invalid protocol") || text.includes("private") || text.includes("internal"),
+        `Expected blocking for ${url}, got: ${text}`
+      );
+    }
+  });
+
+  // 6. Chrome Profile Directory & Executable Discovery
+  await test("Chrome Automation: resolves executable and agent profile directory", async () => {
+    const profileDir = path.join(os.homedir(), ".pi", "agent", "chrome_profile");
+    assert.ok(fs.existsSync(profileDir), "Agent Chrome profile directory must exist on disk");
+  });
+
+  // 7. Live Fast HTTP Fetch with got-scraping across multiple target URLs
+  await test("Live HTTP: fetches and parses markdown across diverse web targets (raw text, HTML, Google)", async () => {
+    const fetchTool = registeredTools.get("fetch_url");
+    const testTargets = [
+      {
+        url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README",
+        validate: (res) => {
+          assert.ok(res.content?.[0]?.text?.includes("Hello World"), "Must fetch raw README content from GitHub");
+          assert.equal(res.details?.url, "https://raw.githubusercontent.com/octocat/Hello-World/master/README");
+          assert.ok(!res.details?.error, `Unexpected error: ${res.details?.error}`);
+        }
+      },
+      {
+        url: "https://github.com",
+        validate: (res) => {
+          assert.ok(res.content?.[0]?.text && res.content[0].text.length > 0, "Must fetch and parse GitHub HTML content");
+          assert.ok(res.details?.title, "GitHub page should have a title");
+          assert.ok(!res.details?.error, `Unexpected error: ${res.details?.error}`);
+        }
+      },
+      {
+        url: "https://google.com",
+        validate: (res) => {
+          assert.ok(res.content?.[0]?.text && res.content[0].text.length > 0, "Must fetch Google HTML content");
+          assert.ok(!res.details?.error, `Unexpected error: ${res.details?.error}`);
+        }
+      }
+    ];
+
+    for (const { url, validate } of testTargets) {
+      const updates = [];
+      const res = await fetchTool.execute(
+        "call_live_fetch",
+        { url },
+        undefined,
+        (update) => {
+          if (update?.content?.[0]?.text) {
+            updates.push(update.content[0].text);
+          }
+        },
+        mockCtx
+      );
+
+      assert.ok(res, `Result must exist for ${url}`);
+      validate(res);
+      assert.ok(typeof res.details?.durationMs === "number", "durationMs must be recorded");
+    }
+  });
+
+  // 8. Ctrl+O Expansion renders fullContent without truncation
+  await test("Ctrl+O Expansion: renderResult renders fullContent when expanded is true", async () => {
+    const fetchTool = registeredTools.get("fetch_url");
+    const mockResult = {
+      content: [{ type: "text", text: "Short truncated preview" }],
+      details: {
+        url: "https://github.com",
+        fullContent: "Full un-truncated markdown content spanning all lines and tables from GitHub",
+        durationMs: 450,
+        usedBrowser: true,
+        viaCDP: true
+      }
+    };
+
+    // Collapsed view (expanded = false)
+    const collapsed = fetchTool.renderResult(mockResult, { expanded: false }, mockCtx.ui.theme);
+    const collapsedStr = collapsed.text || collapsed.toString?.() || "";
+    assert.ok(collapsedStr.includes("Short truncated preview") || collapsedStr.includes("FETCH COMPLETED"));
+    assert.ok(collapsedStr.includes("[Chrome Live CDP]"), "Header must show [Chrome Live CDP]");
+
+    // Expanded view on Ctrl+O (expanded = true)
+    const expanded = fetchTool.renderResult(mockResult, { expanded: true }, mockCtx.ui.theme);
+    const expandedStr = expanded.text || expanded.toString?.() || "";
+    assert.ok(
+      expandedStr.includes("Full un-truncated markdown content spanning all lines and tables from GitHub"),
+      "Ctrl+O expanded view must contain fullContent"
+    );
+  });
+
+  // 9. Browser Fallback Header Tags in renderResult
+  await test("Browser Tags: renderResult displays [Chrome Live CDP] when viaCDP is true", async () => {
+    const fetchTool = registeredTools.get("fetch_url");
+    const resCDP = fetchTool.renderResult(
+      { content: [{ type: "text", text: "content" }], details: { viaCDP: true, usedBrowser: true } },
+      { expanded: false },
+      mockCtx.ui.theme
+    );
+    assert.ok((resCDP.text || resCDP.toString()).includes("[Chrome Live CDP]"));
+  });
+
+  // 10. Live Chrome Launch & CDP Attachment Fallback
+  await test("Live Chrome CDP Fallback: launches Agent Chrome and fetches page over CDP", async () => {
+    const chromeCmd = registeredCommands.get("chrome");
+    assert.ok(chromeCmd, "chrome command handler must exist");
+    
+    // Launch Chrome window on screen
+    await chromeCmd.handler("start", mockCtx);
+
+    const port = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
+    const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+    assert.ok(res.ok, `Chrome Remote Debugging must be active on port ${port}`);
+
+    // Connect Playwright over CDP to verify live control
+    const playwrightPkg = path.join(os.homedir(), ".pi/agent/npm/node_modules/playwright-core");
+    const { chromium } = require(playwrightPkg);
+    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+    assert.ok(browser, "Must connect Playwright over CDP to active Chrome");
+
+    const contexts = browser.contexts();
+    const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
+    const page = await context.newPage();
+    
+    await page.goto("https://github.com", { waitUntil: "domcontentloaded" });
+    const pageTitle = await page.title();
+    assert.ok(pageTitle.includes("GitHub"), `Page title must include GitHub, got: ${pageTitle}`);
+
+    await page.close();
   });
 
   return results;

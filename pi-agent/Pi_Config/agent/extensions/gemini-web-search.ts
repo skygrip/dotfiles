@@ -5,7 +5,9 @@ import { createRequire } from "node:module";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import * as fsSync from "node:fs";
 import * as net from "node:net";
+import { spawn } from "node:child_process";
 import { lookup as dnsLookup } from "node:dns/promises";
 
 /**
@@ -13,8 +15,9 @@ import { lookup as dnsLookup } from "node:dns/promises";
  *
  * Tools & Commands:
  * - `web_search`: Google Search grounding via Gemini API with parallel citation resolution.
- * - `fetch_url`: Safe HTTP retrieval with SSRF protection, Readability/Turndown parsing, and optional summarization.
+ * - `fetch_url`: Safe HTTP retrieval with got-scraping, SSRF protection, dedicated Chrome CDP browser fallback, Readability/Turndown parsing, and multimodal vision.
  * - `/web-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
+ * - `/chrome`: Slash command to inspect or open Agent Chrome with dedicated persistent profile ([open|start|status|profile]).
  *
  * Configuration & CLI Flags:
  * - Gemini API Key: Resolved securely from Pi Model Registry or ~/.pi/agent/auth.json (google.key).
@@ -22,6 +25,7 @@ import { lookup as dnsLookup } from "node:dns/promises";
  * - `--no-web-gate`: CLI flag to disable confirmation prompts for web search and URL fetch.
  * - `PI_WEB_GATE`: Environment variable override (set to "0" or "false" to disable).
  * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
+ * - `PI_CHROME_CDP_PORT`: Override Chrome Remote Debugging port (default: 9222).
  */
 
 const DEFAULT_MODEL = "gemini-flash-lite-latest";
@@ -112,6 +116,36 @@ function getImageResizer() {
     resizeImage: cachedResizeImage,
     formatDimensionNote: cachedFormatDimensionNote
   };
+}
+
+let cachedGotScraping: any = null;
+
+/**
+ * Lazy loader for got-scraping anti-bot HTTP client.
+ */
+function getGotScraping() {
+  if (!cachedGotScraping) {
+    try {
+      const mod = loadDependency("got-scraping");
+      cachedGotScraping = mod.gotScraping || mod.default || mod;
+    } catch {}
+  }
+  return cachedGotScraping;
+}
+
+let cachedPlaywright: any = null;
+
+/**
+ * Lazy loader for Playwright browser automation engine.
+ */
+function getPlaywright() {
+  if (!cachedPlaywright) {
+    try {
+      const mod = loadDependency("playwright-core");
+      cachedPlaywright = mod.chromium || mod;
+    } catch {}
+  }
+  return cachedPlaywright;
 }
 
 /**
@@ -370,6 +404,10 @@ export interface WebToolDetails {
   width?: number;
   height?: number;
   sizeBytes?: number;
+  usedBrowser?: boolean;
+  viaCDP?: boolean;
+  linkCount?: number;
+  fullContent?: string;
 }
 
 /**
@@ -509,7 +547,24 @@ async function validateRemoteUrl(rawUrl: string | URL): Promise<URL> {
 }
 
 /**
- * Fetches remote URL safely with redirect following (up to 5 hops), 5MB streaming cut, and SSRF validation.
+ * Helper to parse Retry-After header (either seconds or HTTP-Date) into ms, bounded between minMs and maxMs.
+ */
+function parseRetryAfterMs(header: string | null | undefined, defaultMs = 2000, maxMs = 10000): number {
+  if (!header) return defaultMs;
+  const seconds = Number(header);
+  if (!Number.isNaN(seconds)) {
+    return Math.min(Math.max(seconds * 1000, 500), maxMs);
+  }
+  const dateMs = Date.parse(header);
+  if (!Number.isNaN(dateMs)) {
+    const diff = dateMs - Date.now();
+    return Math.min(Math.max(diff, 500), maxMs);
+  }
+  return defaultMs;
+}
+
+/**
+ * Fetches remote URL safely with redirect following (up to 5 hops), 5MB streaming cut, anti-bot handling via got-scraping, and SSRF validation.
  */
 async function fetchSafeRemote(
   rawUrl: string,
@@ -525,82 +580,382 @@ async function fetchSafeRemote(
     ? AbortSignal.any([signal, controller.signal])
     : controller.signal;
 
+  const gotScraping = getGotScraping();
+
   try {
     for (let redirectCount = 0; redirectCount <= 5; redirectCount++) {
-      const response = await fetch(currentUrl, {
-        method: "GET",
-        signal: combinedSignal,
-        redirect: "manual",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,image/*,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache"
-        }
-      });
+      let responseStatus = 0;
+      let responseHeaders: Record<string, string | string[] | undefined> = {};
+      let rawBuffer: Uint8Array | null = null;
+      let locationHeader: string | undefined;
 
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location");
-        if (!location) throw new Error(`Received redirect ${response.status} with no Location header`);
+      // 1. Primary path: got-scraping (browser TLS emulation, HTTP/2, auto-generated browser headers)
+      if (gotScraping) {
+        try {
+          const res = await gotScraping(currentUrl.toString(), {
+            method: "GET",
+            responseType: "buffer",
+            followRedirect: false,
+            throwHttpErrors: false,
+            timeout: { request: timeoutMs },
+            signal: combinedSignal,
+            retry: {
+              limit: 2,
+              methods: ["GET", "HEAD"],
+              statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
+              maxRetryAfter: 10000
+            }
+          });
+
+          responseStatus = res.statusCode;
+          responseHeaders = res.headers || {};
+          rawBuffer = new Uint8Array(res.rawBody || res.body);
+          locationHeader = typeof res.headers.location === "string" ? res.headers.location : undefined;
+        } catch (gotErr: any) {
+          if (gotErr.name === "AbortError" || combinedSignal.aborted) {
+            throw gotErr;
+          }
+          // If got-scraping threw a protocol or connection error, allow fallback to fetch
+          responseStatus = 0;
+        }
+      }
+
+      // 2. Secondary fallback path: Native fetch with full modern browser headers & manual 429 retry
+      if (responseStatus === 0 || rawBuffer === null) {
+        const maxFetchAttempts = 3;
+        for (let attempt = 1; attempt <= maxFetchAttempts; attempt++) {
+          const fetchRes = await fetch(currentUrl, {
+            method: "GET",
+            signal: combinedSignal,
+            redirect: "manual",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9",
+              "Sec-CH-UA": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+              "Sec-CH-UA-Mobile": "?0",
+              "Sec-CH-UA-Platform": '"Windows"',
+              "Sec-Fetch-Dest": "document",
+              "Sec-Fetch-Mode": "navigate",
+              "Sec-Fetch-Site": "none",
+              "Sec-Fetch-User": "?1",
+              "Upgrade-Insecure-Requests": "1"
+            }
+          });
+
+          responseStatus = fetchRes.status;
+          locationHeader = fetchRes.headers.get("location") || undefined;
+          const contentType = fetchRes.headers.get("content-type") || "";
+          responseHeaders["content-type"] = contentType;
+
+          // Handle 429 backoff
+          if (responseStatus === 429 && attempt < maxFetchAttempts && !combinedSignal.aborted) {
+            const retryMs = parseRetryAfterMs(fetchRes.headers.get("retry-after"), Math.pow(2, attempt) * 1000 + Math.random() * 500);
+            await new Promise(resolve => setTimeout(resolve, retryMs));
+            continue;
+          }
+
+          if ([301, 302, 303, 307, 308].includes(responseStatus)) {
+            break;
+          }
+
+          if (!fetchRes.ok) {
+            throw new Error(`HTTP ${fetchRes.status}: ${fetchRes.statusText || "Request failed"}`);
+          }
+
+          const contentLengthHeader = fetchRes.headers.get("content-length");
+          if (contentLengthHeader) {
+            const len = parseInt(contentLengthHeader, 10);
+            if (Number.isFinite(len) && len > MAX_FETCH_BYTES) {
+              throw new Error(`Response size (${Math.round(len / 1024 / 1024)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
+            }
+          }
+
+          const reader = fetchRes.body?.getReader();
+          if (!reader) {
+            const arrayBuf = await fetchRes.arrayBuffer();
+            rawBuffer = new Uint8Array(arrayBuf);
+          } else {
+            const chunks: Uint8Array[] = [];
+            let totalBytes = 0;
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (!value) continue;
+                totalBytes += value.byteLength;
+                if (totalBytes > MAX_FETCH_BYTES) {
+                  await reader.cancel();
+                  throw new Error(`Response exceeded maximum size of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
+                }
+                chunks.push(value);
+              }
+            } finally {
+              reader.releaseLock();
+            }
+            rawBuffer = new Uint8Array(totalBytes);
+            let offset = 0;
+            for (const chunk of chunks) {
+              rawBuffer.set(chunk, offset);
+              offset += chunk.byteLength;
+            }
+          }
+          break;
+        }
+      }
+
+      // 3. Handle redirects (up to 5 hops with SSRF validation)
+      if ([301, 302, 303, 307, 308].includes(responseStatus)) {
+        if (!locationHeader) throw new Error(`Received redirect ${responseStatus} with no Location header`);
         if (redirectCount === 5) throw new Error("Too many redirects (exceeded 5 hops)");
 
-        const nextUrl = new URL(location, currentUrl);
+        const nextUrl = new URL(locationHeader, currentUrl);
         currentUrl = await validateRemoteUrl(nextUrl);
         continue;
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
-      }
-
-      const contentType = response.headers.get("content-type") || "";
-      const contentLengthHeader = response.headers.get("content-length");
-      if (contentLengthHeader) {
-        const len = parseInt(contentLengthHeader, 10);
-        if (Number.isFinite(len) && len > MAX_FETCH_BYTES) {
-          throw new Error(`Response size (${Math.round(len / 1024 / 1024)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
+      if (responseStatus >= 400) {
+        const isVercelChallenge = responseHeaders["x-vercel-mitigated"] === "challenge" || Boolean(responseHeaders["x-vercel-challenge-token"]);
+        const isCloudflareChallenge = responseHeaders["cf-mitigated"] === "challenge";
+        if (isVercelChallenge || isCloudflareChallenge) {
+          throw new Error(`HTTP ${responseStatus}: Blocked by interactive JavaScript Security Checkpoint (${isVercelChallenge ? "Vercel Firewall" : "Cloudflare"}). This website requires a browser with JavaScript execution to access.`);
         }
+        const headerVal = responseHeaders["status-text"];
+        const statusMsg = typeof headerVal === "string" ? headerVal : (responseStatus === 429 ? "Too Many Requests (Rate Limited)" : "Request failed");
+        throw new Error(`HTTP ${responseStatus}: ${statusMsg}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        const arrayBuf = await response.arrayBuffer();
-        const rawBuffer = new Uint8Array(arrayBuf);
-        return { rawBuffer, contentType, finalUrl: currentUrl.toString() };
+      const contentTypeHeader = (Array.isArray(responseHeaders["content-type"])
+        ? responseHeaders["content-type"][0]
+        : responseHeaders["content-type"]) || "";
+
+      if (!rawBuffer) {
+        rawBuffer = new Uint8Array(0);
       }
 
-      const chunks: Uint8Array[] = [];
-      let totalBytes = 0;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (!value) continue;
-          totalBytes += value.byteLength;
-          if (totalBytes > MAX_FETCH_BYTES) {
-            await reader.cancel();
-            throw new Error(`Response exceeded maximum size of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
-          }
-          chunks.push(value);
-        }
-      } finally {
-        reader.releaseLock();
+      if (rawBuffer.length > MAX_FETCH_BYTES) {
+        throw new Error(`Response size (${(rawBuffer.length / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
       }
 
-      const merged = new Uint8Array(totalBytes);
-      let offset = 0;
-      for (const chunk of chunks) {
-        merged.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-
-      return { rawBuffer: merged, contentType, finalUrl: currentUrl.toString() };
+      return { rawBuffer, contentType: contentTypeHeader, finalUrl: currentUrl.toString() };
     }
 
     throw new Error("Too many redirects fetching URL");
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Locates Google Chrome or Edge executable on Windows/macOS/Linux.
+ */
+function findChromeExecutable(): string | null {
+  const candidates = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium"
+  ];
+  for (const p of candidates) {
+    if (fsSync.existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
+ * Returns the dedicated persistent Chrome profile directory for Pi Agent (~/.pi/agent/chrome_profile).
+ */
+function getAgentChromeProfileDir(): string {
+  const dir = path.join(os.homedir(), ".pi", "agent", "chrome_profile");
+  if (!fsSync.existsSync(dir)) {
+    fsSync.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+/**
+ * Checks whether Chrome Remote Debugging (CDP) is currently active and listening on the given port.
+ */
+async function isChromeCDPListening(port: string | number = 9222): Promise<boolean> {
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
+      signal: AbortSignal.timeout(1000)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Launches Google Chrome with a dedicated persistent profile and CDP remote debugging enabled (Burp/ZAP style).
+ */
+async function launchAgentChrome(port: string | number = 9222): Promise<{ success: boolean; error?: string }> {
+  if (await isChromeCDPListening(port)) {
+    return { success: true };
+  }
+
+  const chromePath = findChromeExecutable();
+  if (!chromePath) {
+    return { success: false, error: "Google Chrome / Edge executable not found in standard system locations." };
+  }
+
+  const profileDir = getAgentChromeProfileDir();
+
+  try {
+    const child = spawn(chromePath, [
+      `--remote-debugging-port=${port}`,
+      `--user-data-dir=${profileDir}`,
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-allow-origins=*",
+      "about:blank"
+    ], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false
+    });
+    child.unref();
+
+    // Poll for CDP readiness (up to 5s)
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      if (await isChromeCDPListening(port)) {
+        return { success: true };
+      }
+    }
+
+    return { success: false, error: `Chrome was started, but CDP port ${port} did not become active within 5 seconds.` };
+  } catch (err: any) {
+    return { success: false, error: err?.message || String(err) };
+  }
+}
+
+/**
+ * Browser renderer via Playwright connecting directly to live desktop Chrome via Remote Debugging (CDP port 9222).
+ * Automatically launches Chrome with a dedicated persistent profile (~/.pi/agent/chrome_profile) if not already active.
+ */
+async function fetchViaChromeCDP(
+  rawUrl: string,
+  signal?: AbortSignal,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<{ rawBuffer: Uint8Array; contentType: string; finalUrl: string; pageTitle?: string; links?: Array<{ text: string; href: string }> }> {
+  const chromium = getPlaywright();
+  if (!chromium) {
+    throw new Error("Playwright is not available. Please install playwright-core in ~/.pi/agent/npm/");
+  }
+
+  const validUrl = await validateRemoteUrl(rawUrl);
+
+  const cdpPort = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
+  const cdpUrl = `http://127.0.0.1:${cdpPort}`;
+
+  // Auto-launch Agent Chrome if not already running on port
+  const isListening = await isChromeCDPListening(cdpPort);
+  if (!isListening) {
+    const launched = await launchAgentChrome(cdpPort);
+    if (!launched.success) {
+      throw new Error(`Chrome Remote Debugging is unavailable on port ${cdpPort}: ${launched.error}`);
+    }
+  }
+
+  let browser: any;
+  try {
+    browser = await chromium.connectOverCDP(cdpUrl, { timeout: 3000 });
+  } catch (err: any) {
+    throw new Error(`Failed to attach to Chrome Remote Debugging on ${cdpUrl}: ${err.message}`);
+  }
+
+  let page: any = null;
+
+  try {
+    // In CDP mode, use the default active browser context (contains all user logins, cookies, session state)
+    const contexts = browser.contexts();
+    const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
+    page = await context.newPage();
+
+    if (signal) {
+      signal.addEventListener("abort", () => {
+        page?.close().catch(() => {});
+      }, { once: true });
+    }
+
+    await page.goto(validUrl.toString(), {
+      waitUntil: "domcontentloaded",
+      timeout: timeoutMs
+    });
+
+    // 1. Wait for challenge (Vercel/Cloudflare) to resolve
+    try {
+      await page.waitForFunction(() => {
+        const t = document.title || "";
+        return !t.includes("Security Checkpoint") && !t.includes("Just a moment") && !t.includes("Checking your browser");
+      }, { timeout: 10000 });
+    } catch {}
+
+    // 2. Auto-dismiss common consent / age gate buttons if present
+    let dismissedModal = false;
+    try {
+      dismissedModal = await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit']"));
+        const consentBtn = buttons.find(el => {
+          const txt = (el.textContent || (el as HTMLInputElement).value || "").trim();
+          return /^(accept|accept all|i agree|allow all|yes|confirm|enter|agree|continue|ok|proceed)$/i.test(txt);
+        });
+        if (consentBtn) {
+          (consentBtn as HTMLElement).click();
+          return true;
+        }
+        return false;
+      });
+    } catch {}
+
+    // 3. Wait briefly for network idle
+    try {
+      await page.waitForLoadState("networkidle", { timeout: 4000 });
+    } catch {}
+
+    // 4. Stabilization grace period for SPA hydration and post-consent DOM mounting
+    try {
+      await page.waitForTimeout(dismissedModal ? 1500 : 1000);
+    } catch {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    const pageTitle = await page.title();
+    const finalUrl = page.url();
+    const htmlContent = await page.content();
+
+    const links = await page.evaluate(() => {
+      const result: Array<{ text: string; href: string }> = [];
+      const seen = new Set<string>();
+      const anchors = document.querySelectorAll("a[href]");
+      for (const a of anchors) {
+        const anchor = a as HTMLAnchorElement;
+        const href = anchor.href?.trim();
+        const text = anchor.innerText?.trim() || anchor.title?.trim() || "";
+        if (href && href.startsWith("http") && !seen.has(href)) {
+          seen.add(href);
+          result.push({ text, href });
+        }
+      }
+      return result;
+    });
+
+    const rawBuffer = new TextEncoder().encode(htmlContent);
+    return { rawBuffer, contentType: "text/html; charset=utf-8", finalUrl, pageTitle, links };
+  } finally {
+    // Only close the tab, never shut down user's desktop Chrome
+    try {
+      await page?.close().catch(() => {});
+    } finally {
+      await browser?.disconnect?.().catch(() => {});
+    }
   }
 }
 
@@ -735,7 +1090,54 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ----------------------------------------------------
-  // 2. Tool: web_search
+  // 2. Slash Command: /chrome
+  // ----------------------------------------------------
+  pi.registerCommand("chrome", {
+    description: "Launch or inspect Agent Chrome with persistent profile & remote debugging (usage: /chrome [open|start|status|profile])",
+    handler: async (args, ctx) => {
+      const sub = (args || "").trim().toLowerCase();
+      const port = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
+      const profileDir = getAgentChromeProfileDir();
+
+      if (sub === "profile") {
+        ctx.ui.notify(`Agent Chrome Profile: ${profileDir}`, "info");
+        return;
+      }
+
+      if (sub === "status") {
+        const active = await isChromeCDPListening(port);
+        ctx.ui.notify(`Agent Chrome (port ${port}): ${active ? "ACTIVE & READY" : "NOT RUNNING"}`, active ? "info" : "warning");
+        return;
+      }
+
+      // Default: open / start Chrome
+      const active = await isChromeCDPListening(port);
+      if (active) {
+        try {
+          const chromium = getPlaywright();
+          if (chromium) {
+            const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+            const contexts = browser.contexts();
+            const ctxB = contexts[0] || await browser.newContext();
+            await ctxB.newPage();
+          }
+        } catch {}
+        ctx.ui.notify(`Agent Chrome is already running on port ${port} (opened tab).`, "info");
+        return;
+      }
+
+      ctx.ui.notify(`Launching Agent Chrome with profile at ${profileDir}...`, "info");
+      const res = await launchAgentChrome(port);
+      if (res.success) {
+        ctx.ui.notify(`✓ Agent Chrome launched on your screen! (Profile: ~/.pi/agent/chrome_profile, port: ${port})`, "info");
+      } else {
+        ctx.ui.notify(`✗ Failed to start Agent Chrome: ${res.error}`, "error");
+      }
+    }
+  });
+
+  // ----------------------------------------------------
+  // 3. Tool: web_search
   // ----------------------------------------------------
   pi.registerTool({
     name: "web_search",
@@ -842,7 +1244,17 @@ export default function (pi: ExtensionAPI) {
 
         const data: any = await res.json();
         const candidate = data.candidates?.[0];
-        const answerText = candidate?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n") || "";
+        let answerText = candidate?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n") || "";
+
+        if (!answerText.trim()) {
+          if (data.promptFeedback?.blockReason) {
+            answerText = `[Web Search Blocked]: Search query was blocked by Gemini safety filters (${data.promptFeedback.blockReason}).`;
+          } else if (candidate?.finishReason && candidate.finishReason !== "STOP") {
+            answerText = `[Web Search]: Response ended with status '${candidate.finishReason}'.`;
+          } else {
+            answerText = "Information not found.";
+          }
+        }
 
         const rawChunks = candidate?.groundingMetadata?.groundingChunks || [];
         onUpdate?.({ content: [{ type: "text", text: `Resolving ${rawChunks.length} source citations...` }] });
@@ -884,7 +1296,8 @@ export default function (pi: ExtensionAPI) {
             query,
             model,
             sources: uniqueSources,
-            durationMs
+            durationMs,
+            fullContent: formattedOutput
           } as WebToolDetails,
           usage
         };
@@ -919,7 +1332,10 @@ export default function (pi: ExtensionAPI) {
         return new Text(theme.fg("warning", `✗ SEARCH FAILED: ${details.error}`), 0, 0);
       }
 
-      const content = result.content?.[0]?.type === "text" ? result.content[0].text : "";
+      const content = (options?.expanded && details?.fullContent)
+        ? details.fullContent
+        : (result.content?.[0]?.type === "text" ? result.content[0].text : "");
+
       if (!content) {
         return new Text(theme.fg("dim", "No search results returned."), 0, 0);
       }
@@ -1008,7 +1424,49 @@ export default function (pi: ExtensionAPI) {
       onUpdate?.({ content: [{ type: "text", text: `Fetching ${targetUrl}...` }] });
 
       try {
-        const { rawBuffer, contentType, finalUrl } = await fetchSafeRemote(targetUrl, signal);
+        let rawBuffer: Uint8Array;
+        let contentType = "";
+        let finalUrl = targetUrl;
+        let usedBrowser = false;
+        let viaCDP = false;
+        let pageTitle: string | undefined;
+        let discoveredLinks: Array<{ text: string; href: string }> = [];
+
+        try {
+          const fetched = await fetchSafeRemote(targetUrl, signal);
+          rawBuffer = fetched.rawBuffer;
+          contentType = fetched.contentType;
+          finalUrl = fetched.finalUrl;
+        } catch (directErr: any) {
+          const errMsg = directErr?.message || String(directErr);
+          const isChallengeOrBlocked = errMsg.includes("429") ||
+            errMsg.includes("403") ||
+            errMsg.includes("Security Checkpoint") ||
+            errMsg.includes("Cloudflare") ||
+            errMsg.includes("Vercel") ||
+            errMsg.includes("ECONNRESET") ||
+            errMsg.includes("socket hang up");
+
+          if (isChallengeOrBlocked && getPlaywright() && !signal?.aborted) {
+            onUpdate?.({ content: [{ type: "text", text: `Bot challenge or rate limit encountered on ${targetUrl}. Attempting Chrome Remote Debugging on port 9222...` }] });
+            try {
+              const browserRes = await fetchViaChromeCDP(targetUrl, signal);
+              rawBuffer = browserRes.rawBuffer;
+              contentType = browserRes.contentType;
+              finalUrl = browserRes.finalUrl;
+              pageTitle = browserRes.pageTitle;
+              discoveredLinks = browserRes.links || [];
+              usedBrowser = true;
+              viaCDP = true;
+            } catch (cdpErr: any) {
+              const cdpMsg = cdpErr?.message || String(cdpErr);
+              throw new Error(`${errMsg}\n[Chrome CDP Fallback]: ${cdpMsg}`);
+            }
+          } else {
+            throw directErr;
+          }
+        }
+
         const sniffed = sniffContentType(rawBuffer, contentType);
 
         // ----------------------------------------------------
@@ -1173,16 +1631,26 @@ export default function (pi: ExtensionAPI) {
           rawContent = new TextDecoder("utf-8").decode(rawBuffer);
         }
 
-        let title = finalUrl;
+        let title = pageTitle || finalUrl;
         let markdown = "";
 
         if (sniffed.category === "html") {
           onUpdate?.({ content: [{ type: "text", text: `Parsing markdown from ${finalUrl}...` }] });
           const parsed = htmlToMarkdown(rawContent, finalUrl);
-          title = parsed.title;
+          title = pageTitle || parsed.title;
           markdown = parsed.markdown;
         } else {
           markdown = rawContent.trim();
+        }
+
+        // Append structured navigation links if extracted via browser
+        if (discoveredLinks && discoveredLinks.length > 0) {
+          let linkSection = "\n\n---\n### 🔗 Navigation & Page Links\n";
+          discoveredLinks.forEach((l, idx) => {
+            const label = l.text || "Link";
+            linkSection += `${idx + 1}. [${label}](${l.href})\n`;
+          });
+          markdown += linkSection;
         }
 
         const extractPrompt = params.prompt?.trim();
@@ -1258,7 +1726,11 @@ export default function (pi: ExtensionAPI) {
             url: finalUrl,
             title,
             durationMs,
-            summarized: wasSummarized
+            summarized: wasSummarized,
+            usedBrowser,
+            viaCDP,
+            linkCount: discoveredLinks.length,
+            fullContent: markdown
           } as WebToolDetails,
           usage
         };
@@ -1306,14 +1778,18 @@ export default function (pi: ExtensionAPI) {
         return new Text(`${header}\n\n${caption}`, 0, 0);
       }
 
-      const content = result.content?.[0]?.type === "text" ? result.content[0].text : "";
+      const content = (options?.expanded && details?.fullContent)
+        ? details.fullContent
+        : (result.content?.[0]?.type === "text" ? result.content[0].text : "");
+
       if (!content) {
         return new Text(theme.fg("dim", "No content retrieved."), 0, 0);
       }
 
       const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
       const sumTag = details?.summarized ? " [Summarized]" : "";
-      const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${sumTag}${timeStr}`);
+      const browserTag = details?.viaCDP ? " [Chrome Live CDP]" : "";
+      const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${browserTag}${sumTag}${timeStr}`);
       const formattedBody = formatToolOutput(content, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);
