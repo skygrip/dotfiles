@@ -225,6 +225,7 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
+      ${gemma_template}
       -hf HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
@@ -250,6 +251,7 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
+      ${gemma_template}
       ${ncmoe_gemma26}
       -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
       --spec-type draft-mtp
