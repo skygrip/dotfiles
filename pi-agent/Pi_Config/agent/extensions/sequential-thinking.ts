@@ -37,27 +37,13 @@ export default function initExtension(pi: ExtensionAPI) {
     parameters: SequentialThinkingSchema,
 
     /**
-     * Pre-validation argument normalizer to handle 12B model property aliases.
+     * Pre-validation argument pass-through.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const copy = { ...args };
-
-      if (copy.thought === undefined) {
-        if (typeof copy.reasoning === "string") copy.thought = copy.reasoning;
-        else if (typeof copy.steps === "string") copy.thought = copy.steps;
-        else if (typeof copy.thoughtProcess === "string") copy.thought = copy.thoughtProcess;
-        else if (typeof copy.text === "string") copy.thought = copy.text;
-        else if (typeof copy.content === "string") copy.thought = copy.content;
-      }
-
-      if (copy.thought === undefined || copy.thought === null) {
-        copy.thought = "";
-      } else if (typeof copy.thought !== "string") {
-        copy.thought = String(copy.thought);
-      }
-
-      return copy;
+      return {
+        thought: typeof args.thought === "string" ? args.thought : ""
+      };
     },
 
     /**

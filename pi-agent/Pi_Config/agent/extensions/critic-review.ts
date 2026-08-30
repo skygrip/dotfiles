@@ -172,39 +172,15 @@ export default function (pi: ExtensionAPI) {
     parameters: CriticReviewSchema,
 
     /**
-     * Pre-validation argument normalizer.
-     * Intercepts common 12B model property aliases and maps them to standard fields.
+     * Pre-validation argument pass-through.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const copy = { ...args };
-
-      // 1. Normalize path aliases & forward slashes
-      if (copy.path === undefined) {
-        const altPath = copy.filePath ?? copy.file ?? copy.target ?? copy.filename ?? copy.src;
-        if (typeof altPath === "string") copy.path = altPath;
-      }
-      if (typeof copy.path === "string") {
-        copy.path = copy.path.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "");
-      }
-
-      // 2. Normalize content aliases
-      if (copy.content === undefined) {
-        const altContent = copy.draft ?? copy.code ?? copy.snippet ?? copy.text ?? copy.diff ?? copy.patch ?? copy.plan;
-        if (typeof altContent === "string") copy.content = altContent;
-      }
-
-      // 3. Normalize focus aliases (supporting legacy 'rules', 'rule', 'constraints', 'instruction')
-      if (copy.focus === undefined) {
-        const altFocus = copy.rules ?? copy.rule ?? copy.constraints ?? copy.invariants ?? copy.guidelines ?? copy.instruction ?? copy.prompt;
-        if (Array.isArray(altFocus)) {
-          copy.focus = altFocus.map((r: any) => String(r).trim()).filter(Boolean).join("; ");
-        } else if (typeof altFocus === "string") {
-          copy.focus = altFocus.trim();
-        }
-      }
-
-      return copy;
+      return {
+        path: args.path,
+        content: args.content,
+        focus: typeof args.focus === "string" ? args.focus : undefined
+      };
     },
 
     /**

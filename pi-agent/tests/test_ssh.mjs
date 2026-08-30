@@ -67,6 +67,12 @@ function loadGateModule() {
   return load(targetPath);
 }
 
+export async function runSshTests() {
+  const unit = await runUnitTests();
+  const mock = await runMockServerTests();
+  return [...unit, ...mock];
+}
+
 // ----------------------------------------------------------------------------
 // Section 1: Unit & Path Translation Tests
 // ----------------------------------------------------------------------------
@@ -519,10 +525,10 @@ export async function runMockServerTests() {
         const noChangeRender = writeTool.renderResult(noChangeRes, {}, mockTheme);
         assert.ok(noChangeRender.text.includes("no changes"), "Must render 'no changes'");
 
-        // 6. Alternate parameter name: file_path
+        // 6. Standard parameter write
         const altParamPath = path.join(tempTestDir, "alt_param.txt");
-        const altParamRes = await writeTool.execute("call_w_4", { file_path: altParamPath, content: "hello world" }, undefined, undefined, {});
-        assert.equal(altParamRes.details?.isOverwrite, false, "Must handle file_path parameter");
+        const altParamRes = await writeTool.execute("call_w_4", { path: altParamPath, content: "hello world" }, undefined, undefined, {});
+        assert.equal(altParamRes.details?.isOverwrite, false, "Must handle write parameter");
 
         // 7. CRLF line endings normalization
         const crlfPath = path.join(tempTestDir, "crlf.txt");

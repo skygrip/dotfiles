@@ -101,21 +101,13 @@ export async function runCriticTests() {
   assert.ok(criticTool, "critic_review tool must be registered");
 
   // ----------------------------------------------------
-  // Section 1: Argument Normalizer (12B Model Aliases)
+  // Section 1: Argument Pass-Through
   // ----------------------------------------------------
-  test("Argument Normalizer: resolves path aliases (filePath, file, target)", () => {
+  test("Argument Pass-Through: passes path, content, and focus cleanly", () => {
     const fn = criticTool.prepareArguments;
-    assert.equal(fn({ path: "src/main.ts" }).path, "src/main.ts");
-    assert.equal(fn({ file: "src/utils.py" }).path, "src/utils.py");
-    assert.equal(fn({ target: "Cargo.toml" }).path, "Cargo.toml");
-  });
-
-  test("Argument Normalizer: resolves content aliases (code, draft, snippet, text)", () => {
-    const fn = criticTool.prepareArguments;
-    assert.equal(fn({ code: "const x = 1;" }).content, "const x = 1;");
-    assert.equal(fn({ draft: "def foo(): pass" }).content, "def foo(): pass");
-    assert.equal(fn({ snippet: "fn bar() {}" }).content, "fn bar() {}");
-    assert.equal(fn({ text: "let y = 2;" }).content, "let y = 2;");
+    assert.equal(fn({ path: "src/main.ts", content: "code", focus: "types" }).path, "src/main.ts");
+    assert.equal(fn({ path: "src/main.ts", content: "code", focus: "types" }).content, "code");
+    assert.equal(fn({ path: "src/main.ts", content: "code", focus: "types" }).focus, "types");
   });
 
   // ----------------------------------------------------

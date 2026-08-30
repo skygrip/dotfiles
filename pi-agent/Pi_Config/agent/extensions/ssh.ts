@@ -981,6 +981,17 @@ export default function (pi: ExtensionAPI) {
     type: "string"
   });
 
+  // Mutually exclusive: Exit early if no remote SSH target was requested
+  const hasSsh = Boolean(
+    (typeof pi.getFlag === "function" && pi.getFlag("ssh")) ||
+    process.env.PI_SSH ||
+    process.argv.some(arg => arg === "--ssh" || arg.startsWith("--ssh="))
+  );
+
+  if (!hasSsh) {
+    return;
+  }
+
   const session = new SshSessionManager();
   const localCwd = process.cwd();
 
@@ -1026,15 +1037,14 @@ export default function (pi: ExtensionAPI) {
     ...localRead,
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
       return {
-        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        path: args.path ?? "",
         offset: args.offset,
         limit: args.limit
       };
     },
     async execute(id, params: any, signal, onUpdate, _ctx) {
-      const rawPath = params.path ?? params.file_path ?? "";
+      const rawPath = params.path ?? "";
       if (session.isConnected() && session.targetInfo) {
         const tool = createReadTool(localCwd, {
           operations: createRemoteReadOps(session, session.targetInfo.remoteCwd, localCwd)
@@ -1049,18 +1059,17 @@ export default function (pi: ExtensionAPI) {
     ...localWrite,
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
       return {
-        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        path: args.path ?? "",
         content: args.content ?? ""
       };
     },
     renderCall(args: any, theme: any, _renderCtx: any) {
-      const rawPath = args?.path ?? args?.file_path ?? "file";
+      const rawPath = args?.path ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
     async execute(id, params: any, signal, onUpdate, _ctx) {
-      const rawPath = params.path ?? params.file_path ?? "";
+      const rawPath = params.path ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
       let isOverwrite = false;
@@ -1166,18 +1175,17 @@ export default function (pi: ExtensionAPI) {
     ...localEdit,
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
       return {
-        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        path: args.path ?? "",
         edits: Array.isArray(args.edits) ? args.edits : []
       };
     },
     renderCall(args: any, theme: any, _renderCtx: any) {
-      const rawPath = args?.path ?? args?.file_path ?? "file";
+      const rawPath = args?.path ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("edit")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
     async execute(id, params: any, signal, onUpdate, _ctx) {
-      const rawPath = params.path ?? params.file_path ?? "";
+      const rawPath = params.path ?? "";
       const edits = params.edits ?? [];
       if (session.isConnected() && session.targetInfo) {
         const tool = createEditTool(localCwd, {
