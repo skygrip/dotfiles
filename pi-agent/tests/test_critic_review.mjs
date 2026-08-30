@@ -103,19 +103,19 @@ export async function runCriticTests() {
   // ----------------------------------------------------
   // Section 1: Argument Normalizer (12B Model Aliases)
   // ----------------------------------------------------
-  test("Argument Normalizer: resolves filePath aliases (path, file, target)", () => {
+  test("Argument Normalizer: resolves path aliases (filePath, file, target)", () => {
     const fn = criticTool.prepareArguments;
-    assert.equal(fn({ path: "src/main.ts" }).filePath, "src/main.ts");
-    assert.equal(fn({ file: "src/utils.py" }).filePath, "src/utils.py");
-    assert.equal(fn({ target: "Cargo.toml" }).filePath, "Cargo.toml");
+    assert.equal(fn({ path: "src/main.ts" }).path, "src/main.ts");
+    assert.equal(fn({ file: "src/utils.py" }).path, "src/utils.py");
+    assert.equal(fn({ target: "Cargo.toml" }).path, "Cargo.toml");
   });
 
-  test("Argument Normalizer: resolves draft aliases (code, content, snippet, text)", () => {
+  test("Argument Normalizer: resolves content aliases (code, draft, snippet, text)", () => {
     const fn = criticTool.prepareArguments;
-    assert.equal(fn({ code: "const x = 1;" }).draft, "const x = 1;");
-    assert.equal(fn({ content: "def foo(): pass" }).draft, "def foo(): pass");
-    assert.equal(fn({ snippet: "fn bar() {}" }).draft, "fn bar() {}");
-    assert.equal(fn({ text: "let y = 2;" }).draft, "let y = 2;");
+    assert.equal(fn({ code: "const x = 1;" }).content, "const x = 1;");
+    assert.equal(fn({ draft: "def foo(): pass" }).content, "def foo(): pass");
+    assert.equal(fn({ snippet: "fn bar() {}" }).content, "fn bar() {}");
+    assert.equal(fn({ text: "let y = 2;" }).content, "let y = 2;");
   });
 
   // ----------------------------------------------------
@@ -130,18 +130,19 @@ export async function runCriticTests() {
   // ----------------------------------------------------
   // Section 3: End-to-End Tool Execution with Mock AI
   // ----------------------------------------------------
-  await asyncTest("Execution: error on missing draft and filePath", async () => {
+  await asyncTest("Execution: error on missing path and content", async () => {
     const mockCtx = {
       hasUI: false,
       model: { id: "test-model", provider: "mock" }
     };
 
-    const res = await criticTool.execute("call_err_1", {}, undefined, undefined, mockCtx);
-    assert.ok(res.content?.[0]?.text?.includes("Must provide either 'draft' or 'filePath'"));
-    assert.equal(res.details?.error, "Missing draft or filePath");
+    const args = criticTool.prepareArguments ? criticTool.prepareArguments({}) : {};
+    const res = await criticTool.execute("call_err_1", args, undefined, undefined, mockCtx);
+    assert.ok(res.content?.[0]?.text?.includes("Must provide either 'path'"));
+    assert.equal(res.details?.error, "Missing path or content");
   });
 
-  await asyncTest("Execution: audits inline draft in headless mode", async () => {
+  await asyncTest("Execution: audits inline content in headless mode", async () => {
     const mockCtx = {
       hasUI: false,
       model: { id: "test-model", provider: "mock" },
@@ -150,18 +151,14 @@ export async function runCriticTests() {
       }
     };
 
-    const res = await criticTool.execute(
-      "call_draft_1",
-      {
-        draft: "function add(a, b) {\n  return a + b;\n}",
-        language: "javascript",
-        rules: ["Must use strict TypeScript types"]
-      },
-      undefined,
-      undefined,
-      mockCtx
-    );
+    const args = criticTool.prepareArguments
+      ? criticTool.prepareArguments({
+          content: "function add(a, b) {\n  return a + b;\n}",
+          focus: "Must use strict TypeScript types"
+        })
+      : { content: "function add(a, b) {\n  return a + b;\n}" };
 
+    const res = await criticTool.execute("call_draft_1", args, undefined, undefined, mockCtx);
     assert.ok(res.content?.[0]?.text, "Must return text response");
   });
 
@@ -180,18 +177,14 @@ export async function runCriticTests() {
         }
       };
 
-      const res = await criticTool.execute(
-        "call_file_1",
-        {
-          filePath: tmpFile,
-          startLine: 3,
-          endLine: 6
-        },
-        undefined,
-        undefined,
-        mockCtx
-      );
+      const args = criticTool.prepareArguments
+        ? criticTool.prepareArguments({
+            path: tmpFile,
+            focus: "lines 3-6"
+          })
+        : { path: tmpFile };
 
+      const res = await criticTool.execute("call_file_1", args, undefined, undefined, mockCtx);
       assert.ok(res.content?.[0]?.text, "Must return review response");
     } finally {
       try { await fs.unlink(tmpFile); } catch {}
@@ -203,7 +196,7 @@ export async function runCriticTests() {
     controller.abort();
 
     const mockCtx = { hasUI: false };
-    const res = await criticTool.execute("call_aborted", { draft: "code" }, controller.signal, undefined, mockCtx);
+    const res = await criticTool.execute("call_aborted", { content: "code" }, controller.signal, undefined, mockCtx);
     assert.ok(res.content?.[0]?.text?.includes("Aborted"));
   });
 

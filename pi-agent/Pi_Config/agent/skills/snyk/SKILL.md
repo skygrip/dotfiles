@@ -1,6 +1,6 @@
 ---
 name: snyk
-description: Scan projects for security vulnerabilities, licenses, and SAST code flaws. Use snyk test for dependency CVEs, snyk code test for SAST, snyk container test IMAGE, or snyk iac test.
+description: Scan projects for dependencies CVEs, licenses, and SAST code flaws (e.g. snyk test, snyk code test).
 ---
 
 # Snyk Security CLI Capabilities Reference

@@ -1,0 +1,137 @@
+{
+  "providers": {
+    "local-llama": {
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "apiKey": "not-needed",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "gemma4-12b",
+          "name": "Unsloth Gemma 4 12B IT (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-12b:no_think",
+          "name": "Unsloth Gemma 4 12B IT (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-26ba4b",
+          "name": "Unsloth Gemma 4 26B MoE (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-26ba4b:no_think",
+          "name": "Unsloth Gemma 4 26B MoE (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "qwen3.6-35ba3b",
+          "name": "Unsloth Qwen 3.6 35B MoE (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "qwen3.6-35ba3b:no_think",
+          "name": "Unsloth Qwen 3.6 35B MoE (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-31b",
+          "name": "Unsloth Gemma 4 31B Dense (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-31b:no_think",
+          "name": "Unsloth Gemma 4 31B Dense (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "qwen3.8-27b",
+          "name": "Unsloth Qwen 3.8 27B Dense (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "qwen3.8-27b:no_think",
+          "name": "Unsloth Qwen 3.8 27B Dense (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-12b-abliterated",
+          "name": "HauhauCS Gemma 4 12B Abliterated (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65536,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-12b-abliterated:no_think",
+          "name": "HauhauCS Gemma 4 12B Abliterated (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65535,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-26ba4b-abliterated",
+          "name": "HauhauCS Gemma 4 26B MoE Abliterated (MTP)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65535,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        },
+        {
+          "id": "gemma4-26ba4b-abliterated:no_think",
+          "name": "HauhauCS Gemma 4 26B MoE Abliterated (Fast / No-Think)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 65535,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
+        }
+      ]
+    }
+  }
+}

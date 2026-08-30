@@ -6,11 +6,12 @@
  * ============================================================================
  *
  * Dedicated test suite for `ask-question.ts`:
- * - Section 1: Argument Normalizer (Enum aliases: boolean -> confirm, menu -> select)
- * - Section 2: Choice Normalization & Number Stripping ("1. Option" -> "Option")
- * - Section 3: Headless Mode Fallback & Default Values
- * - Section 4: Interactive UI Modes (confirm, select, input)
- * - Section 5: Timeout & AbortSignal Handling
+ * - Section 1: Schema & Parameter Validation (Streamlined question + options)
+ * - Section 2: Argument Normalizer (Question aliases & options aliases)
+ * - Section 3: Option Normalization & Number Stripping ("1. Option" -> "Option")
+ * - Section 4: Headless Mode Fallback
+ * - Section 5: Interactive UI Modes (options menu vs open-ended input)
+ * - Section 6: Timeout & AbortSignal Handling
  */
 
 import assert from "node:assert/strict";
@@ -102,35 +103,36 @@ export async function runAskQuestionTests() {
   // ----------------------------------------------------
   // Section 1: Schema & Parameter Validation
   // ----------------------------------------------------
-  test("Schema: timeoutMs is not exposed in tool parameter schema", () => {
+  test("Schema: streamlined schema exposes question and options only", () => {
+    assert.ok(askTool.parameters?.properties?.question, "question property must be present");
+    assert.ok(askTool.parameters?.properties?.options, "options property must be present");
+    assert.equal(askTool.parameters?.properties?.type, undefined, "type enum must not be exposed");
     assert.equal(askTool.parameters?.properties?.timeoutMs, undefined, "timeoutMs must not be in tool schema");
-    assert.equal(mod.AskQuestionSchema?.properties?.timeoutMs, undefined, "AskQuestionSchema must not have timeoutMs");
     assert.ok(typeof mod.DEFAULT_TIMEOUT_MS === "number" && mod.DEFAULT_TIMEOUT_MS > 0, "DEFAULT_TIMEOUT_MS must be a positive number");
   });
 
-  test("Argument Normalizer: resolves type aliases (boolean, yes_no -> confirm)", () => {
+  test("Argument Normalizer: resolves question aliases (prompt, message, query, title)", () => {
     const fn = askTool.prepareArguments;
-    assert.equal(fn({ type: "boolean" }).type, "confirm");
-    assert.equal(fn({ type: "yes_no" }).type, "confirm");
-    assert.equal(fn({ type: "confirmation" }).type, "confirm");
+    assert.equal(fn({ prompt: "Proceed?" }).question, "Proceed?");
+    assert.equal(fn({ message: "Choose target" }).question, "Choose target");
+    assert.equal(fn({ query: "Which engine?" }).question, "Which engine?");
+    assert.equal(fn({ title: "Confirm delete" }).question, "Confirm delete");
   });
 
-  test("Argument Normalizer: resolves type aliases (options, menu, choice -> select)", () => {
+  test("Argument Normalizer: resolves options aliases (choices, items, variants)", () => {
     const fn = askTool.prepareArguments;
-    assert.equal(fn({ type: "options" }).type, "select");
-    assert.equal(fn({ type: "menu" }).type, "select");
-    assert.equal(fn({ type: "choice" }).type, "select");
-    assert.equal(fn({ type: "multiple_choice" }).type, "select");
+    assert.deepEqual(fn({ choices: ["A", "B"] }).options, ["A", "B"]);
+    assert.deepEqual(fn({ items: ["1. X", "2. Y"] }).options, ["X", "Y"]);
+    assert.deepEqual(fn({ variants: ["Alpha", "Beta"] }).options, ["Alpha", "Beta"]);
   });
 
   // ----------------------------------------------------
-  // Section 2: Choice Sanitization & Number Stripping
+  // Section 2: Option Sanitization & Number Stripping
   // ----------------------------------------------------
-  test("Choice Normalizer: strips leading numbers and bullet points", () => {
+  test("Option Normalizer: strips leading numbers and bullet points", () => {
     const fn = askTool.prepareArguments;
     const res = fn({
-      type: "select",
-      choices: [
+      options: [
         "1. Option Alpha",
         "2) Option Beta",
         "* Option Gamma",
@@ -138,7 +140,7 @@ export async function runAskQuestionTests() {
         "• Option Epsilon"
       ]
     });
-    assert.deepEqual(res.choices, [
+    assert.deepEqual(res.options, [
       "Option Alpha",
       "Option Beta",
       "Option Gamma",
@@ -147,95 +149,55 @@ export async function runAskQuestionTests() {
     ]);
   });
 
-  test("Choice Normalizer: parses object lists and stringified JSON arrays", () => {
+  test("Option Normalizer: parses object lists and extracts label/name/value", () => {
     const fn = askTool.prepareArguments;
     const res = fn({
-      type: "select",
-      choices: [{ label: "Choice One" }, { name: "Choice Two" }, { value: "Choice Three" }]
+      options: [{ label: "Choice One" }, { name: "Choice Two" }, { value: "Choice Three" }]
     });
-    assert.deepEqual(res.choices, ["Choice One", "Choice Two", "Choice Three"]);
+    assert.deepEqual(res.options, ["Choice One", "Choice Two", "Choice Three"]);
+  });
+
+  test("Option Normalizer: extracts options from prompt string with numbered items", () => {
+    const fn = askTool.prepareArguments;
+    const res = fn({
+      question: "Which database should we use?\n1. PostgreSQL\n2. DuckDB\n3. SQLite"
+    });
+    assert.deepEqual(res.options, ["PostgreSQL", "DuckDB", "SQLite"]);
   });
 
   // ----------------------------------------------------
   // Section 3: Headless Mode Fallbacks
   // ----------------------------------------------------
-  await asyncTest("Headless Mode: returns defaultValue when provided", async () => {
+  await asyncTest("Headless Mode: returns fallback choice or text", async () => {
     const headlessCtx = { hasUI: false };
     const res = await askTool.execute(
       "call_1",
-      { question: "Proceed?", type: "confirm", defaultValue: "Yes" },
+      { question: "Proceed?", options: ["Yes", "No"] },
       undefined,
       undefined,
       headlessCtx
     );
-    assert.equal(res.details?.answer, "Yes");
     assert.ok(res.content?.[0]?.text?.includes("[Headless Mode Fallback]: Yes"));
     assert.equal(res.details?.headless, true);
-  });
-
-  await asyncTest("Headless Mode: returns sensible default without defaultValue", async () => {
-    const headlessCtx = { hasUI: false };
-
-    // Confirm defaults to 'No'
-    const resConfirm = await askTool.execute(
-      "call_2",
-      { question: "Delete all files?", type: "confirm" },
-      undefined,
-      undefined,
-      headlessCtx
-    );
-    assert.equal(resConfirm.details?.answer, "No");
-    assert.ok(resConfirm.content?.[0]?.text?.includes("[Headless Mode Fallback]: No"));
-
-    // Select defaults to first choice
-    const resSelect = await askTool.execute(
-      "call_3",
-      { question: "Pick library", type: "select", choices: ["A", "B"] },
-      undefined,
-      undefined,
-      headlessCtx
-    );
-    assert.equal(resSelect.details?.answer, "A");
-    assert.ok(resSelect.content?.[0]?.text?.includes("[Headless Mode Fallback]: A"));
+    assert.equal(res.details?.answer, "Yes");
   });
 
   // ----------------------------------------------------
-  // Section 4: Interactive UI Modes (confirm, select, input)
+  // Section 4: Interactive UI Dialogs (select, confirm, input)
   // ----------------------------------------------------
-  await asyncTest("Interactive Mode: confirm returns user boolean choice", async () => {
+  await asyncTest("Interactive Mode: options triggers ctx.ui.select", async () => {
     const mockCtx = {
       hasUI: true,
       ui: {
-        async confirm(title, msg) {
-          return true; // User clicks Yes
+        async select(title, choices) {
+          return choices[1]; // User picks second option (DuckDB)
         }
       }
     };
 
     const res = await askTool.execute(
       "call_interactive_1",
-      { question: "Deploy to production?", type: "confirm" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-    assert.equal(res.details?.answer, "Yes");
-    assert.ok(res.content?.[0]?.text?.includes('User selected: "Yes"'));
-  });
-
-  await asyncTest("Interactive Mode: select returns selected menu item", async () => {
-    const mockCtx = {
-      hasUI: true,
-      ui: {
-        async select(title, choices) {
-          return choices[1]; // User picks second option
-        }
-      }
-    };
-
-    const res = await askTool.execute(
-      "call_interactive_2",
-      { question: "Choose database", type: "select", choices: ["Postgres", "DuckDB", "SQLite"] },
+      { question: "Choose database", options: ["PostgreSQL", "DuckDB"] },
       undefined,
       undefined,
       mockCtx
@@ -244,25 +206,46 @@ export async function runAskQuestionTests() {
     assert.ok(res.content?.[0]?.text?.includes('User selected: "DuckDB"'));
   });
 
-  await asyncTest("Interactive Mode: input returns freeform text entered by user", async () => {
+  await asyncTest("Interactive Mode: confirmation prompt triggers ctx.ui.confirm", async () => {
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async confirm(title, msg) {
+          return true; // User confirms Yes
+        }
+      }
+    };
+
+    const res = await askTool.execute(
+      "call_interactive_2",
+      { question: "Confirm deploy to production?" },
+      undefined,
+      undefined,
+      mockCtx
+    );
+    assert.equal(res.details?.answer, "Yes");
+    assert.ok(res.content?.[0]?.text?.includes('User selected: "Yes"'));
+  });
+
+  await asyncTest("Interactive Mode: open-ended question triggers ctx.ui.input", async () => {
     const mockCtx = {
       hasUI: true,
       ui: {
         async input(title, placeholder) {
-          return "my-api-token-value";
+          return "my-token-123";
         }
       }
     };
 
     const res = await askTool.execute(
       "call_interactive_3",
-      { question: "Enter API Token", type: "input" },
+      { question: "Enter API key" },
       undefined,
       undefined,
       mockCtx
     );
-    assert.equal(res.details?.answer, "my-api-token-value");
-    assert.ok(res.content?.[0]?.text?.includes('User response: "my-api-token-value"'));
+    assert.equal(res.details?.answer, "my-token-123");
+    assert.ok(res.content?.[0]?.text?.includes('User response: "my-token-123"'));
   });
 
   // ----------------------------------------------------
@@ -275,40 +258,18 @@ export async function runAskQuestionTests() {
     const mockCtx = {
       hasUI: true,
       ui: {
-        async input() { return "never reached"; }
+        custom() { return new Promise(() => {}); }
       }
     };
 
     const res = await askTool.execute(
       "call_abort",
-      { question: "Input?", type: "input", defaultValue: "DefaultOnAbort" },
+      { question: "Input?" },
       controller.signal,
       undefined,
       mockCtx
     );
-    assert.ok(res.details?.cancelled || res.content?.[0]?.text?.includes("DefaultOnAbort"));
-  });
-
-  await asyncTest("Timeout Handling: falls back gracefully on prompt timeout", async () => {
-    const mockCtx = {
-      hasUI: true,
-      ui: {
-        async input() {
-          throw new Error("Prompt timed out after 60000ms");
-        }
-      }
-    };
-
-    const res = await askTool.execute(
-      "call_timeout",
-      { question: "Provide feedback", type: "input", defaultValue: "AutoFallback" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-    assert.equal(res.details?.timedOut, true);
-    assert.equal(res.details?.answer, "AutoFallback");
-    assert.ok(res.content?.[0]?.text?.includes("[Prompt Timed Out]"));
+    assert.ok(res.details?.cancelled || res.content?.[0]?.text?.includes("Cancelled"));
   });
 
   return results;

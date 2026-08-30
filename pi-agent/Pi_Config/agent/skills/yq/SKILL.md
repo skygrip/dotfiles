@@ -1,6 +1,6 @@
 ---
 name: yq
-description: Query, mutate, and convert YAML, TOML, XML, and JSON while preserving comments. Run yq -i .field = VALUE config.yml or yq .spec k8s.yml.
+description: Query, mutate, and convert YAML, TOML, XML, and JSON preserving comments (e.g. yq .field config.yml).
 ---
 
 # `yq` (Mike Farah Go v4+) Capabilities Reference

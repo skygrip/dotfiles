@@ -723,10 +723,23 @@ export default function (pi: ExtensionAPI) {
         outputText += theme.fg("dim", ` [$${details.cost.toFixed(5)}]`);
       }
 
-      // Full markdown report body
+      // Markdown report body with Ctrl+O collapse/expand support
       const reviewBlock = result.content?.[0];
       if (reviewBlock?.type === "text" && reviewBlock.text) {
-        outputText += "\n\n" + theme.fg("toolOutput", reviewBlock.text);
+        const fullReview = reviewBlock.text.trim();
+        const lines = fullReview.split(/\r?\n/);
+        const maxCollapsedLines = 10;
+
+        if (!options?.expanded && lines.length > maxCollapsedLines) {
+          const preview = lines.slice(0, maxCollapsedLines).join("\n");
+          const remaining = lines.length - maxCollapsedLines;
+          const hint = theme.fg("muted", `\n\n... (${remaining} more lines, `) +
+            theme.fg("accent", "ctrl+o") +
+            theme.fg("muted", " to expand)");
+          outputText += "\n\n" + theme.fg("toolOutput", preview) + hint;
+        } else {
+          outputText += "\n\n" + theme.fg("toolOutput", fullReview);
+        }
       }
 
       return new Text(outputText, 0, 0);

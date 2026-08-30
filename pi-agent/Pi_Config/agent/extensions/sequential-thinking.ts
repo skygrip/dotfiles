@@ -63,26 +63,50 @@ export default function initExtension(pi: ExtensionAPI) {
     /**
      * Executes the reasoning step and returns a success confirmation back to the agent loop.
      */
-    async execute(_toolCallId: string, _params: SequentialThinkingParams) {
+    async execute(_toolCallId: string, params: SequentialThinkingParams) {
+      const thought = typeof params.thought === "string" ? params.thought.trim() : "";
       return {
         content: [
           {
             type: "text",
             text: "Thought logged successfully. Consider if you have another thought to lodge, otherwise proceed with the next step."
           }
-        ]
+        ],
+        details: { thought }
       };
     },
 
     renderCall(args: any, theme: any, _context: any) {
-      const thought = typeof args.thought === "string" ? args.thought.trim() : "";
-      const header = theme.fg("toolTitle", theme.bold("sequential_thinking")) + "\n";
-      const indented = thought.split("\n").map(line => `  ${line}`).join("\n");
-      return new Text(header + theme.fg("muted", indented), 0, 0);
+      const thought = typeof args?.thought === "string" ? args.thought.trim() : "";
+      const preview = thought.length > 65 ? `${thought.slice(0, 62)}...` : thought;
+      return new Text(
+        theme.fg("toolTitle", theme.bold("sequential_thinking")) +
+        (preview ? theme.fg("muted", ` "${preview}"`) : ""),
+        0,
+        0
+      );
     },
 
-    renderResult(_result: any, _options: any, _theme: any, _context: any) {
-      return new Text("", 0, 0);
+    renderResult(result: any, options: any, theme: any, _context: any) {
+      const thought = typeof result?.details?.thought === "string" ? result.details.thought : "";
+      if (!thought) {
+        return new Text(theme.fg("success", "🧠 THOUGHT LOGGED"), 0, 0);
+      }
+
+      const header = theme.fg("success", "🧠 THOUGHT");
+      const lines = thought.split("\n");
+
+      if (!options?.expanded) {
+        const previewLines = lines.slice(0, 3).map((l: string) => `  ${theme.fg("dim", l)}`).join("\n");
+        const remaining = lines.length - 3;
+        const hint = remaining > 0
+          ? theme.fg("muted", `\n  ... (${remaining} more lines, `) + theme.fg("accent", "ctrl+o") + theme.fg("muted", " to expand)")
+          : "";
+        return new Text(`${header}\n${previewLines}${hint}`, 0, 0);
+      }
+
+      const fullLines = lines.map((l: string) => `  ${theme.fg("toolOutput", l)}`).join("\n");
+      return new Text(`${header}\n${fullLines}`, 0, 0);
     }
   });
 }
