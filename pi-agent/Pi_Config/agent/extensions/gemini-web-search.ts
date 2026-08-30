@@ -379,10 +379,7 @@ export type WebSearchParams = Static<typeof WebSearchSchema>;
 export const FetchUrlSchema = Type.Object({
   url: Type.String({
     description: "The URL of the web page, file, or image to fetch."
-  }),
-  prompt: Type.Optional(Type.String({
-    description: "Optional question or extraction goal (e.g. 'how to configure auth', 'what is in this diagram'). When provided, extracts only the relevant answer. Omit to fetch the full content."
-  }))
+  })
 });
 
 export type FetchUrlParams = Static<typeof FetchUrlSchema>;
@@ -444,137 +441,28 @@ async function resolveApiKey(ctx: ExtensionContext): Promise<string | null> {
 }
 
 /**
- * Checks if IPv4 address is private, loopback, link-local, or reserved.
+ * Validates protocol and URL structure.
  */
-function isBlockedIPv4(address: string): boolean {
-  const parts = address.split(".").map(part => Number(part));
-  if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255)) {
-    return true;
-  }
-  const [a, b] = parts;
-
-  return (
-    a === 0 || // 0.0.0.0/8
-    a === 10 || // 10.0.0.0/8
-    a === 127 || // 127.0.0.0/8
-    (a === 100 && b >= 64 && b <= 127) || // 100.64.0.0/10
-    (a === 169 && b === 254) || // 169.254.0.0/16
-    (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12
-    (a === 192 && b === 168) || // 192.168.0.0/16
-    (a === 198 && (b === 18 || b === 19)) || // 198.18.0.0/15
-    a >= 224 // 224.0.0.0/4
-  );
-}
-
-/**
- * Checks if IPv6 address is private, loopback, link-local, or reserved.
- */
-function isBlockedIPv6(address: string): boolean {
-  const norm = address.toLowerCase();
-  if (norm === "::1" || norm === "::") return true;
-  if (norm.startsWith("fc") || norm.startsWith("fd")) return true;
-  if (norm.startsWith("fe8") || norm.startsWith("fe9") || norm.startsWith("fea") || norm.startsWith("feb")) return true;
-
-  // Check IPv4-mapped IPv6 (::ffff:x.x.x.x or ::ffff:xxxx:xxxx)
-  if (norm.startsWith("::ffff:")) {
-    const rest = norm.slice(7);
-    if (net.isIP(rest) === 4) {
-      return isBlockedIPv4(rest);
-    }
-    const hexParts = rest.split(":");
-    if (hexParts.length === 2) {
-      const high = parseInt(hexParts[0], 16);
-      const low = parseInt(hexParts[1], 16);
-      if (Number.isFinite(high) && Number.isFinite(low)) {
-        const b1 = (high >> 8) & 0xff;
-        const b2 = high & 0xff;
-        const b3 = (low >> 8) & 0xff;
-        const b4 = low & 0xff;
-        return isBlockedIPv4(`${b1}.${b2}.${b3}.${b4}`);
-      }
-    }
-    return true; // Block unparseable or ambiguous mapped addresses
-  }
-  return false;
-}
-
-/**
- * Validates protocol, hostname, and resolves DNS to prevent SSRF against private networks.
- */
-async function validateRemoteUrl(rawUrl: string | URL): Promise<URL> {
+function validateRemoteUrl(rawUrl: string | URL): URL {
   const url = rawUrl instanceof URL ? rawUrl : new URL(rawUrl);
-
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error(`Invalid protocol '${url.protocol}'. Only HTTP and HTTPS URLs are allowed.`);
   }
-
-  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
-  if (!hostname) throw new Error("URL must include a valid hostname.");
-
-  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-    throw new Error(`Blocked internal hostname: ${hostname}`);
+  if (!url.hostname) {
+    throw new Error("URL must include a valid hostname.");
   }
-
-  const ipVersion = net.isIP(hostname);
-  if (ipVersion === 4) {
-    if (isBlockedIPv4(hostname)) throw new Error(`Blocked private/internal IPv4 address: ${hostname}`);
-    return url;
-  }
-  if (ipVersion === 6) {
-    if (isBlockedIPv6(hostname)) throw new Error(`Blocked private/internal IPv6 address: ${hostname}`);
-    return url;
-  }
-
-  let addresses: Array<{ address: string; family: number }>;
-  try {
-    addresses = await dnsLookup(hostname, { all: true });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to resolve DNS for ${hostname}: ${msg}`);
-  }
-
-  if (!addresses || addresses.length === 0) {
-    throw new Error(`Failed to resolve DNS for ${hostname}: no IP addresses returned`);
-  }
-
-  for (const { address, family } of addresses) {
-    if (family === 4 && isBlockedIPv4(address)) {
-      throw new Error(`Blocked private/internal IP address for ${hostname}: ${address}`);
-    }
-    if (family === 6 && isBlockedIPv6(address)) {
-      throw new Error(`Blocked private/internal IP address for ${hostname}: ${address}`);
-    }
-  }
-
   return url;
 }
 
 /**
- * Helper to parse Retry-After header (either seconds or HTTP-Date) into ms, bounded between minMs and maxMs.
- */
-function parseRetryAfterMs(header: string | null | undefined, defaultMs = 2000, maxMs = 10000): number {
-  if (!header) return defaultMs;
-  const seconds = Number(header);
-  if (!Number.isNaN(seconds)) {
-    return Math.min(Math.max(seconds * 1000, 500), maxMs);
-  }
-  const dateMs = Date.parse(header);
-  if (!Number.isNaN(dateMs)) {
-    const diff = dateMs - Date.now();
-    return Math.min(Math.max(diff, 500), maxMs);
-  }
-  return defaultMs;
-}
-
-/**
- * Fetches remote URL safely with redirect following (up to 5 hops), 5MB streaming cut, anti-bot handling via got-scraping, and SSRF validation.
+ * Fetches remote URL safely with redirect following (up to 5 hops), 5MB size ceiling, and anti-bot handling via got-scraping / fetch.
  */
 async function fetchSafeRemote(
   rawUrl: string,
   signal?: AbortSignal,
   timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<{ rawBuffer: Uint8Array; contentType: string; finalUrl: string }> {
-  let currentUrl = await validateRemoteUrl(rawUrl);
+  let currentUrl = validateRemoteUrl(rawUrl);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -588,7 +476,7 @@ async function fetchSafeRemote(
   try {
     for (let redirectCount = 0; redirectCount <= 5; redirectCount++) {
       let responseStatus = 0;
-      let responseHeaders: Record<string, string | string[] | undefined> = {};
+      let contentType = "";
       let rawBuffer: Uint8Array | null = null;
       let locationHeader: string | undefined;
 
@@ -611,126 +499,53 @@ async function fetchSafeRemote(
           });
 
           responseStatus = res.statusCode;
-          responseHeaders = res.headers || {};
+          contentType = (Array.isArray(res.headers["content-type"]) ? res.headers["content-type"][0] : res.headers["content-type"]) || "";
           rawBuffer = new Uint8Array(res.rawBody || res.body);
           locationHeader = typeof res.headers.location === "string" ? res.headers.location : undefined;
         } catch (gotErr: any) {
-          if (gotErr.name === "AbortError" || combinedSignal.aborted) {
-            throw gotErr;
-          }
-          // If got-scraping threw a protocol or connection error, allow fallback to fetch
+          if (gotErr.name === "AbortError" || combinedSignal.aborted) throw gotErr;
           responseStatus = 0;
         }
       }
 
-      // 2. Secondary fallback path: Native fetch with full modern browser headers & manual 429 retry
+      // 2. Secondary fallback path: Native fetch
       if (responseStatus === 0 || rawBuffer === null) {
-        const maxFetchAttempts = 3;
-        for (let attempt = 1; attempt <= maxFetchAttempts; attempt++) {
-          const fetchRes = await fetch(currentUrl, {
-            method: "GET",
-            signal: combinedSignal,
-            redirect: "manual",
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-              "Accept-Language": "en-US,en;q=0.9",
-              "Sec-CH-UA": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
-              "Sec-CH-UA-Mobile": "?0",
-              "Sec-CH-UA-Platform": '"Windows"',
-              "Sec-Fetch-Dest": "document",
-              "Sec-Fetch-Mode": "navigate",
-              "Sec-Fetch-Site": "none",
-              "Sec-Fetch-User": "?1",
-              "Upgrade-Insecure-Requests": "1"
-            }
-          });
-
-          responseStatus = fetchRes.status;
-          locationHeader = fetchRes.headers.get("location") || undefined;
-          const contentType = fetchRes.headers.get("content-type") || "";
-          responseHeaders["content-type"] = contentType;
-
-          // Handle 429 backoff
-          if (responseStatus === 429 && attempt < maxFetchAttempts && !combinedSignal.aborted) {
-            const retryMs = parseRetryAfterMs(fetchRes.headers.get("retry-after"), Math.pow(2, attempt) * 1000 + Math.random() * 500);
-            await new Promise(resolve => setTimeout(resolve, retryMs));
-            continue;
+        const fetchRes = await fetch(currentUrl, {
+          method: "GET",
+          signal: combinedSignal,
+          redirect: "manual",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9"
           }
+        });
 
-          if ([301, 302, 303, 307, 308].includes(responseStatus)) {
-            break;
-          }
+        responseStatus = fetchRes.status;
+        locationHeader = fetchRes.headers.get("location") || undefined;
+        contentType = fetchRes.headers.get("content-type") || "";
 
-          if (!fetchRes.ok) {
-            throw new Error(`HTTP ${fetchRes.status}: ${fetchRes.statusText || "Request failed"}`);
-          }
-
-          const contentLengthHeader = fetchRes.headers.get("content-length");
-          if (contentLengthHeader) {
-            const len = parseInt(contentLengthHeader, 10);
-            if (Number.isFinite(len) && len > MAX_FETCH_BYTES) {
-              throw new Error(`Response size (${Math.round(len / 1024 / 1024)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
-            }
-          }
-
-          const reader = fetchRes.body?.getReader();
-          if (!reader) {
-            const arrayBuf = await fetchRes.arrayBuffer();
-            rawBuffer = new Uint8Array(arrayBuf);
-          } else {
-            const chunks: Uint8Array[] = [];
-            let totalBytes = 0;
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                if (!value) continue;
-                totalBytes += value.byteLength;
-                if (totalBytes > MAX_FETCH_BYTES) {
-                  await reader.cancel();
-                  throw new Error(`Response exceeded maximum size of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
-                }
-                chunks.push(value);
-              }
-            } finally {
-              reader.releaseLock();
-            }
-            rawBuffer = new Uint8Array(totalBytes);
-            let offset = 0;
-            for (const chunk of chunks) {
-              rawBuffer.set(chunk, offset);
-              offset += chunk.byteLength;
-            }
-          }
-          break;
+        if ([301, 302, 303, 307, 308].includes(responseStatus)) {
+          // Handled below in redirect loop
+        } else if (fetchRes.ok) {
+          const arrayBuf = await fetchRes.arrayBuffer();
+          rawBuffer = new Uint8Array(arrayBuf);
+        } else {
+          throw new Error(`HTTP ${fetchRes.status}: ${fetchRes.statusText || "Request failed"}`);
         }
       }
 
-      // 3. Handle redirects (up to 5 hops with SSRF validation)
+      // Handle redirects
       if ([301, 302, 303, 307, 308].includes(responseStatus)) {
         if (!locationHeader) throw new Error(`Received redirect ${responseStatus} with no Location header`);
         if (redirectCount === 5) throw new Error("Too many redirects (exceeded 5 hops)");
-
-        const nextUrl = new URL(locationHeader, currentUrl);
-        currentUrl = await validateRemoteUrl(nextUrl);
+        currentUrl = validateRemoteUrl(new URL(locationHeader, currentUrl));
         continue;
       }
 
       if (responseStatus >= 400) {
-        const isVercelChallenge = responseHeaders["x-vercel-mitigated"] === "challenge" || Boolean(responseHeaders["x-vercel-challenge-token"]);
-        const isCloudflareChallenge = responseHeaders["cf-mitigated"] === "challenge";
-        if (isVercelChallenge || isCloudflareChallenge) {
-          throw new Error(`HTTP ${responseStatus}: Blocked by interactive JavaScript Security Checkpoint (${isVercelChallenge ? "Vercel Firewall" : "Cloudflare"}). This website requires a browser with JavaScript execution to access.`);
-        }
-        const headerVal = responseHeaders["status-text"];
-        const statusMsg = typeof headerVal === "string" ? headerVal : (responseStatus === 429 ? "Too Many Requests (Rate Limited)" : "Request failed");
-        throw new Error(`HTTP ${responseStatus}: ${statusMsg}`);
+        throw new Error(`HTTP ${responseStatus}: Request failed`);
       }
-
-      const contentTypeHeader = (Array.isArray(responseHeaders["content-type"])
-        ? responseHeaders["content-type"][0]
-        : responseHeaders["content-type"]) || "";
 
       if (!rawBuffer) {
         rawBuffer = new Uint8Array(0);
@@ -740,7 +555,7 @@ async function fetchSafeRemote(
         throw new Error(`Response size (${(rawBuffer.length / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
       }
 
-      return { rawBuffer, contentType: contentTypeHeader, finalUrl: currentUrl.toString() };
+      return { rawBuffer, contentType, finalUrl: currentUrl.toString() };
     }
 
     throw new Error("Too many redirects fetching URL");
@@ -853,7 +668,7 @@ async function fetchViaChromeCDP(
     throw new Error("Playwright is not available. Please install playwright-core in ~/.pi/agent/npm/");
   }
 
-  const validUrl = await validateRemoteUrl(rawUrl);
+  const validUrl = validateRemoteUrl(rawUrl);
 
   const cdpPort = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
   const cdpUrl = `http://127.0.0.1:${cdpPort}`;
@@ -1154,20 +969,13 @@ export default function (pi: ExtensionAPI) {
     parameters: WebSearchSchema,
 
     /**
-     * Parameter normalizer for small-model aliases (e.g. q -> query).
+     * Pre-validation argument pass-through.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const copy = { ...args };
-
-      if (copy.query === undefined) {
-        if (typeof copy.q === "string") copy.query = copy.q;
-        else if (typeof copy.search === "string") copy.query = copy.search;
-        else if (typeof copy.text === "string") copy.query = copy.text;
-        else if (typeof copy.prompt === "string") copy.query = copy.prompt;
-      }
-
-      return copy;
+      return {
+        query: typeof args.query === "string" ? args.query : ""
+      };
     },
 
     async execute(_toolCallId, params: WebSearchParams, signal, onUpdate, ctx) {
@@ -1357,32 +1165,19 @@ export default function (pi: ExtensionAPI) {
     description: "Fetch content from a URL on the internet (web pages, text, code, or images).",
 
     promptGuidelines: [
-      "Use fetch_url to inspect web pages, remote documentation, or online diagrams (pass 'prompt' for targeted answer extraction)."
+      "Use fetch_url to inspect web pages, remote documentation, or online diagrams."
     ],
 
     parameters: FetchUrlSchema,
 
     /**
-     * Parameter normalizer for small-model aliases (e.g. link/target -> url).
+     * Pre-validation argument pass-through.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
-      const copy = { ...args };
-
-      if (copy.url === undefined) {
-        if (typeof copy.link === "string") copy.url = copy.link;
-        else if (typeof copy.uri === "string") copy.url = copy.uri;
-        else if (typeof copy.target === "string") copy.url = copy.target;
-        else if (typeof copy.path === "string") copy.url = copy.path;
-      }
-
-      if (copy.prompt === undefined) {
-        if (typeof copy.q === "string") copy.prompt = copy.q;
-        else if (typeof copy.query === "string") copy.prompt = copy.query;
-        else if (typeof copy.question === "string") copy.prompt = copy.question;
-      }
-
-      return copy;
+      return {
+        url: typeof args.url === "string" ? args.url : ""
+      };
     },
 
     async execute(_toolCallId, params: FetchUrlParams, signal, onUpdate, ctx) {
@@ -1420,75 +1215,102 @@ export default function (pi: ExtensionAPI) {
 
       try {
         let rawBuffer: Uint8Array;
-        let contentType = "";
         let finalUrl = targetUrl;
         let usedBrowser = false;
         let viaCDP = false;
-        let pageTitle: string | undefined;
+        let pageTitle = "";
         let discoveredLinks: Array<{ text: string; href: string }> = [];
 
+        // Try primary network fetch (got-scraping with SSRF protection)
+        let fetchSuccess = false;
+        let rawHeaderMime = "";
         try {
-          const fetched = await fetchSafeRemote(targetUrl, signal);
-          rawBuffer = fetched.rawBuffer;
-          contentType = fetched.contentType;
-          finalUrl = fetched.finalUrl;
-        } catch (directErr: any) {
-          const errMsg = directErr?.message || String(directErr);
-          const isChallengeOrBlocked = errMsg.includes("429") ||
-            errMsg.includes("403") ||
-            errMsg.includes("Security Checkpoint") ||
-            errMsg.includes("Cloudflare") ||
-            errMsg.includes("Vercel") ||
-            errMsg.includes("ECONNRESET") ||
-            errMsg.includes("socket hang up");
+          const res = await fetchSafeRemote(targetUrl, signal);
+          rawBuffer = res.rawBuffer;
+          finalUrl = res.finalUrl;
+          rawHeaderMime = res.contentType;
+          fetchSuccess = true;
+        } catch (fetchErr) {
+          fetchSuccess = false;
+        }
 
-          if (isChallengeOrBlocked && getPlaywright() && !signal?.aborted) {
-            onUpdate?.({ content: [{ type: "text", text: `Bot challenge or rate limit encountered on ${targetUrl}. Attempting Chrome Remote Debugging on port 9222...` }] });
-            try {
-              const browserRes = await fetchViaChromeCDP(targetUrl, signal);
-              rawBuffer = browserRes.rawBuffer;
-              contentType = browserRes.contentType;
-              finalUrl = browserRes.finalUrl;
-              pageTitle = browserRes.pageTitle;
-              discoveredLinks = browserRes.links || [];
-              usedBrowser = true;
-              viaCDP = true;
-            } catch (cdpErr: any) {
-              const cdpMsg = cdpErr?.message || String(cdpErr);
-              throw new Error(`${errMsg}\n[Chrome CDP Fallback]: ${cdpMsg}`);
-            }
-          } else {
-            throw directErr;
+        // If anti-bot blocked (or empty response), fallback to real Chrome CDP
+        if (!fetchSuccess || !rawBuffer! || rawBuffer!.length === 0) {
+          onUpdate?.({ content: [{ type: "text", text: `Retrying ${targetUrl} via Agent Chrome (CDP fallback)...` }] });
+          try {
+            const browserRes = await fetchViaChromeCDP(targetUrl, { signal });
+            rawBuffer = new TextEncoder().encode(browserRes.html);
+            finalUrl = browserRes.finalUrl;
+            pageTitle = browserRes.title;
+            discoveredLinks = browserRes.links;
+            rawHeaderMime = "text/html; charset=utf-8";
+            usedBrowser = true;
+            viaCDP = true;
+          } catch (cdpErr: any) {
+            throw new Error(`Failed to retrieve page via HTTP and Chrome CDP: ${cdpErr.message}`);
           }
         }
 
-        const sniffed = sniffContentType(rawBuffer, contentType);
+        const sniffed = sniffContentType(rawBuffer!, rawHeaderMime);
 
         // ----------------------------------------------------
-        // ROUTE 1: Unsupported Binary Denial
+        // ROUTE 1: Multimodal Vision Image (.png, .jpg, .webp)
         // ----------------------------------------------------
-        if (sniffed.category === "binary") {
-          const sizeKb = (rawBuffer.length / 1024).toFixed(1);
+        if (sniffed.category === "image") {
+          const { resizeImage, formatDimensionNote } = getImageResizer();
+          let processedData = Buffer.from(rawBuffer!).toString("base64");
+          let processedMime = sniffed.mimeType;
+          let dimNote = "";
+          let finalW: number | undefined;
+          let finalH: number | undefined;
+
+          if (resizeImage) {
+            try {
+              const res = await resizeImage({
+                data: processedData,
+                mimeType: sniffed.mimeType,
+                maxDimension: 1568
+              });
+              processedData = res.data;
+              processedMime = res.mimeType;
+              finalW = res.width;
+              finalH = res.height;
+              if (formatDimensionNote && res.originalWidth && res.originalHeight) {
+                dimNote = `\n${formatDimensionNote(res.originalWidth, res.originalHeight, res.width, res.height)}`;
+              }
+            } catch {}
+          }
+
+          const caption = `Image from ${finalUrl} (${sniffed.mimeType})${dimNote}`;
           return {
-            content: [{
-              type: "text",
-              text: `[Fetch URL Error for ${finalUrl}]: Unsupported binary content type '${sniffed.mimeType}' (${sizeKb} KB). Binary archives, executables, audio, and video cannot be parsed as text.`
-            }],
-            details: { url: finalUrl, error: `Unsupported binary content type: ${sniffed.mimeType}`, durationMs: Date.now() - startTime } as WebToolDetails
+            content: [
+              { type: "image", data: processedData, mimeType: processedMime },
+              { type: "text", text: caption }
+            ],
+            details: {
+              url: finalUrl,
+              isImage: true,
+              contentType: sniffed.mimeType,
+              width: finalW,
+              height: finalH,
+              sizeBytes: rawBuffer!.length,
+              durationMs: Date.now() - startTime
+            } as WebToolDetails,
+            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
           };
         }
 
         // ----------------------------------------------------
-        // ROUTE 2: Vector Graphics (SVG)
+        // ROUTE 2: SVG Vector Graphics
         // ----------------------------------------------------
         if (sniffed.category === "svg") {
           let svgText = "";
           try {
-            svgText = new TextDecoder(sniffed.charset).decode(rawBuffer);
+            svgText = new TextDecoder(sniffed.charset).decode(rawBuffer!);
           } catch {
-            svgText = new TextDecoder("utf-8").decode(rawBuffer);
+            svgText = new TextDecoder("utf-8").decode(rawBuffer!);
           }
-          const formatted = `# Vector SVG: ${finalUrl}\n**Type**: image/svg+xml | **Size**: ${(rawBuffer.length / 1024).toFixed(1)} KB\n\n\`\`\`xml\n${svgText.trim()}\n\`\`\``;
+          const formatted = `# SVG Graphic: ${finalUrl}\n**URL**: ${finalUrl}\n\n\`\`\`xml\n${svgText.trim()}\n\`\`\``;
           const truncation = truncateHead(formatted, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
           return {
             content: [{ type: "text", text: truncation.content }],
@@ -1498,95 +1320,17 @@ export default function (pi: ExtensionAPI) {
         }
 
         // ----------------------------------------------------
-        // ROUTE 3: Multimodal Raster Images (PNG, JPEG, WebP, GIF)
+        // ROUTE 3: Binary Non-Text File
         // ----------------------------------------------------
-        if (sniffed.category === "image") {
-          const extractPrompt = params.prompt?.trim();
-          if (extractPrompt) {
-            // Multimodal Flash-Lite Vision extraction
-            const apiKey = await resolveApiKey(ctx);
-            if (apiKey) {
-              onUpdate?.({ content: [{ type: "text", text: `Analyzing image with Gemini Flash-Lite Vision for: "${extractPrompt}"...` }] });
-              const model = process.env.GEMINI_SEARCH_MODEL?.trim() || DEFAULT_MODEL;
-              const summarizeUrl = `${DEFAULT_API_HOST}/v1beta/models/${model}:generateContent`;
-              const base64Data = Buffer.from(rawBuffer).toString("base64");
-
-              const res = await fetch(summarizeUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-                body: JSON.stringify({
-                  contents: [{
-                    role: "user",
-                    parts: [
-                      { text: `<instruction>${extractPrompt}</instruction>\n<source_url>${finalUrl}</source_url>` },
-                      { inlineData: { mimeType: sniffed.mimeType, data: base64Data } }
-                    ]
-                  }],
-                  systemInstruction: {
-                    parts: [{
-                      text: "Extract and answer the instruction using ONLY the provided image. Provide direct answers, format code snippets in fenced code blocks with language identifiers, preserve tables verbatim, and do not add conversational preambles. If the requested information is not found in the image, reply with 'Information not found in the provided image.'"
-                    }]
-                  }
-                }),
-                signal
-              });
-
-              if (res.ok) {
-                const data: any = await res.json();
-                const usage = computeGeminiUsage(data.usageMetadata);
-                const visualText = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n") || "";
-                if (visualText.trim()) {
-                  const markdown = `### Visual Analysis for: "${extractPrompt}"\n**Source**: [Image](${finalUrl})\n\n${visualText.trim()}`;
-                  return {
-                    content: [{ type: "text", text: markdown }],
-                    details: { url: finalUrl, title: finalUrl, durationMs: Date.now() - startTime, summarized: true, isImage: true } as WebToolDetails,
-                    usage
-                  };
-                }
-              }
-            }
-          }
-
-          // Direct Image Return with Pi WASM Resizer
-          const { resizeImage, formatDimensionNote } = getImageResizer();
-          let imageOutput: any = {
-            data: Buffer.from(rawBuffer).toString("base64"),
-            mimeType: sniffed.mimeType,
-            width: 0,
-            height: 0,
-            originalWidth: 0,
-            originalHeight: 0,
-            wasResized: false
-          };
-
-          if (typeof resizeImage === "function") {
-            try {
-              const resized = await resizeImage(rawBuffer, sniffed.mimeType, {
-                maxWidth: 1024,
-                maxHeight: 1024,
-                maxBytes: 384 * 1024
-              });
-              if (resized?.data) {
-                imageOutput = resized;
-              }
-            } catch {}
-          }
-
-          const dimNote = typeof formatDimensionNote === "function" ? formatDimensionNote(imageOutput) : undefined;
-          const noteText = dimNote ? `\n${dimNote}` : "";
-          const caption = `### Image: ${finalUrl}\n**Type**: ${imageOutput.mimeType} | **Size**: ${(rawBuffer.length / 1024).toFixed(1)} KB${noteText}`;
-
+        if (sniffed.category === "binary") {
+          const fileName = path.basename(new URL(finalUrl).pathname) || "binary.bin";
+          const sizeKb = (rawBuffer!.length / 1024).toFixed(1);
           return {
-            content: [
-              { type: "text", text: caption },
-              { type: "image", data: imageOutput.data, mimeType: imageOutput.mimeType }
-            ],
+            content: [{ type: "text", text: `[Binary File Downloaded]: "${fileName}" (${sniffed.mimeType}, ${sizeKb} KB). URL: ${finalUrl}` }],
             details: {
               url: finalUrl,
-              contentType: imageOutput.mimeType,
-              isImage: true,
-              width: imageOutput.width,
-              height: imageOutput.height,
+              contentType: sniffed.mimeType,
+              sizeBytes: rawBuffer!.length,
               durationMs: Date.now() - startTime
             } as WebToolDetails,
             usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
@@ -1599,9 +1343,9 @@ export default function (pi: ExtensionAPI) {
         if (sniffed.category === "json") {
           let jsonText = "";
           try {
-            jsonText = new TextDecoder(sniffed.charset).decode(rawBuffer);
+            jsonText = new TextDecoder(sniffed.charset).decode(rawBuffer!);
           } catch {
-            jsonText = new TextDecoder("utf-8").decode(rawBuffer);
+            jsonText = new TextDecoder("utf-8").decode(rawBuffer!);
           }
           try {
             const parsedObj = JSON.parse(jsonText);
@@ -1621,9 +1365,9 @@ export default function (pi: ExtensionAPI) {
         // ----------------------------------------------------
         let rawContent = "";
         try {
-          rawContent = new TextDecoder(sniffed.charset).decode(rawBuffer);
+          rawContent = new TextDecoder(sniffed.charset).decode(rawBuffer!);
         } catch {
-          rawContent = new TextDecoder("utf-8").decode(rawBuffer);
+          rawContent = new TextDecoder("utf-8").decode(rawBuffer!);
         }
 
         let title = pageTitle || finalUrl;
@@ -1648,57 +1392,7 @@ export default function (pi: ExtensionAPI) {
           markdown += linkSection;
         }
 
-        const extractPrompt = params.prompt?.trim();
-        let wasSummarized = false;
-        let summarizeUsage: any = null;
-
-        if (extractPrompt && markdown.length > 200) {
-          const apiKey = await resolveApiKey(ctx);
-          if (apiKey) {
-            onUpdate?.({ content: [{ type: "text", text: `Extracting answers with Gemini Flash-Lite for prompt: "${extractPrompt}"...` }] });
-
-            const model = process.env.GEMINI_SEARCH_MODEL?.trim() || DEFAULT_MODEL;
-            const summarizeUrl = `${DEFAULT_API_HOST}/v1beta/models/${model}:generateContent`;
-
-            const promptText = [
-              `<instruction>${extractPrompt}</instruction>`,
-              `<source_title>${title}</source_title>`,
-              `<source_url>${finalUrl}</source_url>`,
-              `<webpage_content>\n${markdown.slice(0, 40000)}\n</webpage_content>`
-            ].join("\n\n");
-
-            const res = await fetch(summarizeUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey
-              },
-              body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: promptText }] }],
-                systemInstruction: {
-                  parts: [{
-                    text: "Extract and answer the instruction using ONLY the provided webpage content. Provide direct answers, format code snippets in fenced code blocks with language identifiers, preserve tables and CLI flags verbatim, and do not add conversational preambles. If the requested information is not found in the content, reply with 'Information not found in the provided document.'"
-                  }]
-                }
-              }),
-              signal
-            });
-
-            if (res.ok) {
-              const data: any = await res.json();
-              summarizeUsage = computeGeminiUsage(data.usageMetadata);
-              const summarizedText = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
-              if (summarizedText && summarizedText.trim().length > 0) {
-                markdown = `### Extracted Summary for: "${extractPrompt}"\n**Source**: [${title}](${finalUrl})\n\n${summarizedText.trim()}`;
-                wasSummarized = true;
-              }
-            }
-          }
-        }
-
-        if (!wasSummarized) {
-          markdown = `# ${title}\n**URL**: ${finalUrl}\n\n${markdown}`;
-        }
+        markdown = `# ${title}\n**URL**: ${finalUrl}\n\n${markdown}`;
 
         const truncation = truncateHead(markdown, {
           maxLines: DEFAULT_MAX_LINES,
@@ -1706,7 +1400,7 @@ export default function (pi: ExtensionAPI) {
         });
 
         const durationMs = Date.now() - startTime;
-        const usage = summarizeUsage || {
+        const usage = {
           input: 0,
           output: 0,
           cacheRead: 0,
@@ -1721,7 +1415,6 @@ export default function (pi: ExtensionAPI) {
             url: finalUrl,
             title,
             durationMs,
-            summarized: wasSummarized,
             usedBrowser,
             viaCDP,
             linkCount: discoveredLinks.length,
@@ -1741,11 +1434,7 @@ export default function (pi: ExtensionAPI) {
 
     renderCall(args: any, theme) {
       const u = typeof args?.url === "string" ? args.url : "Fetching URL...";
-      let text = theme.fg("toolTitle", theme.bold("fetch_url")) + ` ${u}`;
-      if (args?.prompt) {
-        text += theme.fg("dim", ` (prompt: "${args.prompt}")`);
-      }
-      return new Text(text, 0, 0);
+      return new Text(theme.fg("toolTitle", theme.bold("fetch_url")) + ` ${u}`, 0, 0);
     },
 
     renderResult(result, options, theme) {
@@ -1764,7 +1453,7 @@ export default function (pi: ExtensionAPI) {
         return new Text(theme.fg("warning", `✗ FETCH FAILED: ${details.error}`), 0, 0);
       }
 
-      if (details?.isImage && !details?.summarized) {
+      if (details?.isImage) {
         const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
         const dimStr = details?.width && details?.height ? ` [${details.width}x${details.height}]` : "";
         const header = theme.fg("success", "✓ IMAGE FETCHED") + theme.fg("dim", `${dimStr}${timeStr}`);
@@ -1782,9 +1471,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
-      const sumTag = details?.summarized ? " [Summarized]" : "";
       const browserTag = details?.viaCDP ? " [Chrome Live CDP]" : "";
-      const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${browserTag}${sumTag}${timeStr}`);
+      const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${browserTag}${timeStr}`);
       const formattedBody = formatToolOutput(content, theme, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);

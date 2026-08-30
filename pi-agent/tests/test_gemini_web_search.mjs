@@ -86,20 +86,50 @@ export async function runGeminiTests() {
     assert.ok(registeredCommands.has("chrome"), "chrome command must be registered");
   });
 
-  // 2. SSRF Guard on Private/Localhost IPs
-  await test("SSRF Guard: blocks access to private 127.0.0.1 and internal hosts", async () => {
+  // 2. Strict Parameter Pass-Through (prepareArguments)
+  await test("Parameter Pass-Through: web_search and fetch_url prepareArguments", async () => {
+    const webSearch = registeredTools.get("web_search");
+    const fetchUrl = registeredTools.get("fetch_url");
+
+    const searchArgs = webSearch.prepareArguments({ query: "typescript 5.6 features" });
+    assert.deepEqual(searchArgs, { query: "typescript 5.6 features" });
+
+    const fetchArgs = fetchUrl.prepareArguments({ url: "https://example.com/docs" });
+    assert.deepEqual(fetchArgs, { url: "https://example.com/docs" });
+  });
+
+  // 3. Localhost & Dev Endpoints Allowed
+  await test("Localhost Support: allows local development URLs (localhost, 127.0.0.1)", async () => {
     const fetchTool = registeredTools.get("fetch_url");
     const res = await fetchTool.execute(
-      "call_ssrf_test",
-      { url: "http://127.0.0.1:8080/admin" },
+      "call_local_test",
+      { url: "http://localhost:59999/nonexistent" },
+      undefined,
+      undefined,
+      mockCtx
+    );
+    const text = res.content?.[0]?.text || "";
+    // Should fail with connection/fetch error, NOT an SSRF blocked error!
+    assert.ok(
+      !text.toLowerCase().includes("ssrf") && !text.toLowerCase().includes("blocked internal"),
+      `Localhost should not be blocked by SSRF filter, got: ${text}`
+    );
+  });
+
+  // 4. Protocol Validation (non-HTTP rejection)
+  await test("Protocol Validation: blocks non-HTTP protocols like file:// and ftp://", async () => {
+    const fetchTool = registeredTools.get("fetch_url");
+    const res = await fetchTool.execute(
+      "call_protocol_test",
+      { url: "file:///etc/passwd" },
       undefined,
       undefined,
       mockCtx
     );
     const text = res.content?.[0]?.text || "";
     assert.ok(
-      text.includes("SSRF Protection") || text.includes("blocked") || text.includes("private"),
-      `Expected SSRF blocking, got: ${text}`
+      text.includes("Invalid protocol") || text.includes("Error"),
+      `Expected protocol blocking, got: ${text}`
     );
   });
 
@@ -148,27 +178,22 @@ export async function runGeminiTests() {
     assert.equal(sniffContentType(binBytes, "application/octet-stream").category, "binary");
   });
 
-  // 5. SSRF Comprehensive Guard
-  await test("SSRF Guard: blocks all reserved IPv4, IPv6, and protocol attacks", async () => {
+  // 5. Protocol Security Guard
+  await test("Protocol Guard: blocks non-HTTP/HTTPS protocols", async () => {
     const fetchTool = registeredTools.get("fetch_url");
     const blockedTargets = [
       "ftp://github.com",
       "file:///etc/passwd",
-      "http://10.0.0.1/secrets",
-      "http://172.16.5.1/internal",
-      "http://192.168.1.1/router",
-      "http://169.254.169.254/latest/meta-data",
-      "http://[::1]:8080/admin",
-      "http://localhost:3000/api",
-      "http://sub.localhost/api"
+      "gopher://test.local",
+      "javascript:alert(1)"
     ];
 
     for (const url of blockedTargets) {
-      const res = await fetchTool.execute("ssrf_call", { url }, undefined, undefined, mockCtx);
+      const res = await fetchTool.execute("protocol_call", { url }, undefined, undefined, mockCtx);
       const text = (res.content?.[0]?.text || "").toLowerCase();
       assert.ok(
-        text.includes("ssrf") || text.includes("blocked") || text.includes("invalid protocol") || text.includes("private") || text.includes("internal"),
-        `Expected blocking for ${url}, got: ${text}`
+        text.includes("invalid protocol") || text.includes("error"),
+        `Expected protocol blocking for ${url}, got: ${text}`
       );
     }
   });
@@ -295,6 +320,21 @@ export async function runGeminiTests() {
     assert.ok(pageTitle.includes("GitHub"), `Page title must include GitHub, got: ${pageTitle}`);
 
     await page.close();
+  });
+
+  // 11. Output Truncation Guard
+  await test("Truncation Guard: truncateHead caps content to maxLines and maxBytes", async () => {
+    const { truncateHead } = mod;
+    assert.ok(typeof truncateHead === "function", "truncateHead must be exported");
+
+    let longText = "";
+    for (let i = 1; i <= 50; i++) {
+      longText += `Line ${i}: sample markdown text line\n`;
+    }
+
+    const res = truncateHead(longText, { maxLines: 10, maxBytes: 1024 });
+    assert.equal(res.truncated, true, "Must flag as truncated");
+    assert.equal(res.content.split("\n").length, 10, "Must contain exactly 10 lines");
   });
 
   return results;

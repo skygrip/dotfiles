@@ -161,6 +161,21 @@ export async function runUnitTests() {
     assert.equal(toRemote("C:\\workspace\\myproject\\package.json"), "/home/remote/myproject/package.json");
   });
 
+  test("createPathTranslator: handles complex subpaths and nested directories", () => {
+    const localCwd = "C:/workspace/myproject";
+    const toRemote = createPathTranslator("/var/www/app", localCwd);
+    assert.equal(toRemote("packages/backend/src/server.ts"), "/var/www/app/packages/backend/src/server.ts");
+    assert.equal(toRemote("./config/database.json"), "/var/www/app/config/database.json");
+  });
+
+  test("parseSshTarget: custom port with root directory", () => {
+    const t = parseSshTarget("root@edge-router:8022:/");
+    assert.equal(t.username, "root");
+    assert.equal(t.host, "edge-router");
+    assert.equal(t.port, 8022);
+    assert.equal(t.remoteCwd, "/");
+  });
+
   // MIME Map
   test("KNOWN_IMAGE_EXTS: common image extensions", () => {
     assert.equal(KNOWN_IMAGE_EXTS[".png"], "image/png");
@@ -504,16 +519,15 @@ export async function runMockServerTests() {
         const expandedRender = writeTool.renderResult(createRes, { expanded: true }, mockTheme);
         assert.ok(expandedRender.text.includes("line 15"), "Expanded new file render must show all lines");
 
-        // 3. File overwrite with Myers diff (contextLines = 1)
+        // 3. File overwrite with native Pi diff
         const overwriteRes = await writeTool.execute("call_w_2", { path: newFilePath, content: multiContent + "\nline 16" }, undefined, undefined, {});
         assert.equal(overwriteRes.details?.isOverwrite, true, "Must detect overwrite");
         assert.ok(overwriteRes.details?.diff, "Must compute diff");
-        assert.equal(overwriteRes.details?.diff?.addedCount, 1, "Must detect 1 added line ('line 16')");
+        assert.ok(typeof overwriteRes.details?.diff === "string", "Diff must be a native diff string");
 
         // 4. renderResult formatted with diff and ctrl+o support
         const diffRender = writeTool.renderResult(overwriteRes, { expanded: false }, mockTheme);
         assert.ok(diffRender.text.includes("Overwrite Diff"), "renderResult must include 'Overwrite Diff' header");
-        assert.ok(diffRender.text.includes("+1"), "renderResult must include +1 added");
         assert.ok(diffRender.text.includes("line 16"), "renderResult must include added content");
 
         const expandedDiffRender = writeTool.renderResult(overwriteRes, { expanded: true }, mockTheme);
@@ -534,7 +548,7 @@ export async function runMockServerTests() {
         const crlfPath = path.join(tempTestDir, "crlf.txt");
         await writeTool.execute("call_w_5", { path: crlfPath, content: "line A\r\nline B" }, undefined, undefined, {});
         const crlfModRes = await writeTool.execute("call_w_6", { path: crlfPath, content: "line A\r\nline C" }, undefined, undefined, {});
-        assert.equal(crlfModRes.details?.diff?.modifiedCount, 1, "Must detect modified count with CRLF endings");
+        assert.ok(crlfModRes.details?.diff, "Must generate diff with CRLF endings");
       } finally {
         await fs.rm(tempTestDir, { recursive: true, force: true });
       }

@@ -291,6 +291,57 @@ export async function runWriteDiffTests() {
     assert.ok(component.text.includes("no changes"), "Must render 'no changes' indicator");
   });
 
+  test("TUI Rendering: renders syntax preview and ctrl+o hint for brand new files", () => {
+    const registeredTools = new Map();
+    const mockPi = {
+      getFlag() { return undefined; },
+      registerTool(tool) { registeredTools.set(tool.name, tool); }
+    };
+    extensionFactory(mockPi);
+
+    const writeTool = registeredTools.get("write");
+
+    let longCode = "";
+    for (let i = 1; i <= 20; i++) {
+      longCode += `const item_${i} = ${i};\n`;
+    }
+
+    const result = {
+      content: [{ type: "text", text: "Created file" }],
+      details: {
+        isOverwrite: false,
+        content: longCode,
+        lineCount: 20,
+        filePath: "src/items.ts"
+      }
+    };
+
+    const compCollapsed = writeTool.renderResult(result, { expanded: false }, mockTheme, {});
+    assert.ok(compCollapsed.text.includes("const item_1"));
+    assert.ok(compCollapsed.text.includes("ctrl+o"), "New long file must include ctrl+o expansion hint");
+
+    const compExpanded = writeTool.renderResult(result, { expanded: true }, mockTheme, {});
+    assert.ok(compExpanded.text.includes("const item_20"), "Expanded new file view must show all lines");
+  });
+
+  test("TUI Rendering: renders error text cleanly when isError is true", () => {
+    const registeredTools = new Map();
+    const mockPi = {
+      getFlag() { return undefined; },
+      registerTool(tool) { registeredTools.set(tool.name, tool); }
+    };
+    extensionFactory(mockPi);
+
+    const writeTool = registeredTools.get("write");
+    const result = {
+      isError: true,
+      content: [{ type: "text", text: "EACCES: permission denied, open '/root/protected.txt'" }]
+    };
+
+    const component = writeTool.renderResult(result, {}, mockTheme, {});
+    assert.ok(component.text.includes("permission denied"), "Must render error message");
+  });
+
   return results;
 }
 

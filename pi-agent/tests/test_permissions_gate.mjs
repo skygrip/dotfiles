@@ -122,6 +122,14 @@ export async function runPermissionsGateTests() {
     assert.ok(matchDangerous("runas /user:Administrator cmd"));
   });
 
+  test("Gate Detection: blocks bash access to sensitive SSH identity files and authorized_keys", () => {
+    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/authorized_keys"), "Must block reading authorized_keys in bash");
+    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/id_ed25519"), "Must block reading private keys in bash");
+    assert.ok(isCredentialFile(".ssh/authorized_keys"), "Must flag authorized_keys as credential file");
+    assert.ok(isCredentialFile(".ssh/id_ed25519"), "Must flag id_ed25519 as credential file");
+    assert.ok(isCredentialFile("etc/shadow"), "Must flag /etc/shadow as credential file");
+  });
+
   test("Gate Detection: allows benign developer commands", () => {
     assert.equal(matchDangerous("git status"), undefined);
     assert.equal(matchDangerous("git log --oneline"), undefined);

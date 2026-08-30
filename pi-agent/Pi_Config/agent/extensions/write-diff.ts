@@ -1,14 +1,34 @@
 /**
  * @fileoverview Enhanced Write Diff Visualizer Extension for Pi Coding Agent.
  *
- * Replaces the default `write` tool with a clean, theme-integrated file writer that:
- * 1. Uses Pi's native, battle-tested `generateDiffString` and `renderDiff` engines.
- * 2. Renders accurate line-numbered diffs with intra-line token highlights on file overwrites.
- * 3. Supports collapsible 12-line previews with `ctrl+o` expand/collapse in interactive mode.
+ * -------------------------------------------------------------------------------------
+ * Overview:
+ * -------------------------------------------------------------------------------------
+ * Replaces the default `write` tool with a clean, theme-integrated file visualizer that
+ * provides immediate feedback on file modifications without altering Pi's core write semantics.
  *
+ * -------------------------------------------------------------------------------------
+ * Key Capabilities & Three-State Visual Feedback:
+ * -------------------------------------------------------------------------------------
+ * 1. File Overwrite Detection:
+ *    Pre-reads existing files before write execution. If an existing file is modified,
+ *    it generates a line-numbered, intra-line token-highlighted unified diff using Pi's
+ *    native `generateDiffString()` and `renderDiff()` engines.
+ * 2. New File Creation:
+ *    For brand-new files, renders a syntax-highlighted code preview with total line counts.
+ * 3. Identical / No-Op Overwrites:
+ *    Detects when written content is byte-for-byte identical to existing content, rendering
+ *    a clean, non-disruptive `✓ no changes` indicator.
+ * 4. Interactive TUI Collapsing (`ctrl+o`):
+ *    Collapses large diffs and long files to 10–12 line previews in the active terminal,
+ *    with instant full-content expansion upon pressing `ctrl+o`.
+ *
+ * -------------------------------------------------------------------------------------
  * Mutual Exclusivity:
- * Exits early if an active `--ssh` session is requested so `ssh.ts` can register
- * the remote SFTP write transport without tool registration collisions.
+ * -------------------------------------------------------------------------------------
+ * Exits immediately at startup if an active `--ssh` session is requested (via flag, env,
+ * or CLI argument), allowing `ssh.ts` to take over the remote SFTP write transport without
+ * tool registration collisions.
  */
 
 import {
@@ -24,13 +44,20 @@ import * as path from "node:path";
 
 /**
  * Formats a native Pi diff string for TUI display with optional line truncation.
+ *
+ * @param filePath Path to the modified file (used in header display).
+ * @param diffText Raw diff output from Pi's `generateDiffString()`.
+ * @param theme Pi TUI theme object supplying color and typography helpers.
+ * @param expanded Whether to show the entire diff (true) or a 12-line preview (false).
+ * @returns Formatted ANSI string ready for Text component rendering.
  */
 function formatNativeDiff(filePath: string, diffText: string, theme: any, expanded = false): string {
   let renderedBody: string;
   try {
+    // Render diff with syntax colors and gutter indicators via Pi's native renderer
     renderedBody = renderDiff(diffText);
   } catch {
-    // Fallback if theme is uninitialized in headless test runner
+    // Graceful fallback if theme is uninitialized in headless test environments
     renderedBody = diffText;
   }
 
@@ -43,6 +70,7 @@ function formatNativeDiff(filePath: string, diffText: string, theme: any, expand
   const header = theme.fg("accent", "⚡ Overwrite Diff: ") + theme.bold(path.basename(filePath)) + "\n";
   let output = header + displayed.join("\n");
 
+  // Append ctrl+o expansion hint if lines were truncated
   if (remaining > 0) {
     output += `\n${theme.fg("muted", `... (${remaining} more lines, `)}${theme.fg("accent", "ctrl+o")}${theme.fg("muted", " to expand)")}`;
   }
@@ -52,9 +80,17 @@ function formatNativeDiff(filePath: string, diffText: string, theme: any, expand
 
 /**
  * Extension entrypoint for Write Diff Visualizer.
+ *
+ * Registers the enhanced `write` tool with pre-execution overwrite detection
+ * and native Pi TUI diff rendering.
+ *
+ * @param pi ExtensionAPI interface provided by Pi Agent.
  */
 export default function (pi: ExtensionAPI) {
-  // Mutually exclusive: Exit early if remote SSH session is active
+  // -----------------------------------------------------------------------------------
+  // 1. Mutual Exclusivity Guard
+  // -----------------------------------------------------------------------------------
+  // If an SSH target is configured, yield write tool registration to ssh.ts
   const hasSsh = Boolean(
     (typeof pi.getFlag === "function" && pi.getFlag("ssh")) ||
     process.env.PI_SSH ||
@@ -68,8 +104,16 @@ export default function (pi: ExtensionAPI) {
   const localCwd = process.cwd();
   const localWrite = createWriteTool(localCwd);
 
+  // -----------------------------------------------------------------------------------
+  // 2. Enhanced Write Tool Registration
+  // -----------------------------------------------------------------------------------
   pi.registerTool({
     ...localWrite,
+
+    /**
+     * Pre-validation argument pass-through.
+     * Enforces strict schema conformity without injecting unneeded parameter aliases.
+     */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
       return {
@@ -77,16 +121,25 @@ export default function (pi: ExtensionAPI) {
         content: args.content ?? ""
       };
     },
+
+    /**
+     * Custom TUI header rendered when the tool call is initiated.
+     */
     renderCall(args: any, theme: any, _renderCtx: any) {
       const rawPath = args?.path ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
+
+    /**
+     * Executes the write operation while capturing pre-existing file state to compute diffs.
+     */
     async execute(id, params: any, signal, onUpdate, _ctx) {
       const rawPath = params.path ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
       let isOverwrite = false;
 
+      // Check if target file already exists on disk before performing write
       const absPath = path.isAbsolute(rawPath) ? rawPath : path.resolve(localCwd, rawPath);
       if (fsSync.existsSync(absPath)) {
         try {
@@ -97,23 +150,33 @@ export default function (pi: ExtensionAPI) {
         }
       }
 
+      // Delegate actual file writing to Pi's robust native write handler
       const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate);
 
+      // Attach structured details metadata for renderResult
       if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
+        // State 1: Modified overwrite -> compute native diff
         const diffObj = generateDiffString(oldContent, content);
         const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: true, diff: diffObj.diff, filePath: relPath, content };
       } else if (isOverwrite && oldContent === content && !result.isError) {
+        // State 2: No-op overwrite -> identical content
         const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: true, noChanges: true, filePath: relPath };
       } else if (!isOverwrite && !result.isError) {
+        // State 3: Brand new file -> syntax preview with line counts
         const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: false, content, lineCount: content.split(/\r?\n/).length, filePath: relPath };
       }
 
       return result;
     },
+
+    /**
+     * Renders the visual completion card in the terminal TUI.
+     */
     renderResult(result: any, options: any, theme: any, renderCtx: any) {
+      // 1. Error state
       if (result.isError) {
         const text = result.content?.[0]?.text || "Write error";
         return new Text(theme.fg("error", text), 0, 0);
@@ -122,15 +185,18 @@ export default function (pi: ExtensionAPI) {
       const isExpanded = Boolean(options?.expanded || renderCtx?.expanded);
       const details = result.details;
 
+      // 2. No changes state
       if (details?.noChanges) {
         return new Text(theme.fg("muted", "✓ no changes"), 0, 0);
       }
 
+      // 3. Overwrite diff state
       if (details?.isOverwrite && details.diff) {
         const formatted = formatNativeDiff(details.filePath, details.diff, theme, isExpanded);
         return new Text(formatted, 0, 0);
       }
 
+      // 4. New file syntax-highlighted preview state
       if (details && !details.isOverwrite && details.content) {
         const ext = path.extname(details.filePath || "").slice(1);
         let lines: string[];
@@ -152,6 +218,7 @@ export default function (pi: ExtensionAPI) {
         return new Text(body, 0, 0);
       }
 
+      // Fallback empty container
       const component = renderCtx?.lastComponent instanceof Container ? renderCtx.lastComponent : new Container();
       component.clear();
       return component;

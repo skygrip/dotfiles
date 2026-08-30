@@ -23,7 +23,6 @@ import { runWriteDiffTests } from "./test_write_diff.mjs";
 import { runPromptCleanerTests } from "./test_prompt_cleaner.mjs";
 import { runPermissionsGateTests } from "./test_permissions_gate.mjs";
 import { runSshTests } from "./test_ssh.mjs";
-import { runCriticTests } from "./test_critic_review.mjs";
 import { runSequentialThinkingTests } from "./test_sequential_thinking.mjs";
 import { runAskQuestionTests } from "./test_ask_question.mjs";
 import { runGeminiTests } from "./test_gemini_web_search.mjs";
@@ -43,7 +42,6 @@ const SUITES = [
   { name: "Prompt Cleaner (prompt-cleaner.ts)", runner: runPromptCleanerTests },
   { name: "Permissions Gate (permissions-gate.ts)", runner: runPermissionsGateTests },
   { name: "SSH Remote (ssh.ts)", runner: runSshTests },
-  { name: "Critic Review (critic-review.ts)", runner: runCriticTests },
   { name: "Sequential Thinking (sequential-thinking.ts)", runner: runSequentialThinkingTests },
   { name: "Ask Question (ask-question.ts)", runner: runAskQuestionTests },
   { name: "Gemini Web Search (gemini-web-search.ts)", runner: runGeminiTests }

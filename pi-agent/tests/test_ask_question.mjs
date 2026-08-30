@@ -249,8 +249,37 @@ export async function runAskQuestionTests() {
   });
 
   // ----------------------------------------------------
-  // Section 5: Timeout & AbortSignal Handling
+  // Section 5: Timeout, Dismissal & AbortSignal Handling
   // ----------------------------------------------------
+  await asyncTest("Cancellation: handles user modal dismissal (Escape/Cancel)", async () => {
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async select() {
+          return undefined; // User presses Escape or cancels modal
+        }
+      }
+    };
+
+    const res = await askTool.execute(
+      "call_dismiss",
+      { question: "Choose deployment strategy", options: ["Canary", "Blue-Green"] },
+      undefined,
+      undefined,
+      mockCtx
+    );
+    assert.equal(res.details?.cancelled, true);
+    assert.ok(res.content?.[0]?.text?.includes("User Cancelled Prompt"));
+  });
+
+  test("Validation: prepareArguments provides fallback when question is empty", () => {
+    const prepNoQ = askTool.prepareArguments({});
+    assert.equal(prepNoQ.question, "Please provide input:");
+
+    const prepWithOptions = askTool.prepareArguments({ options: ["Alpha", "Beta"] });
+    assert.equal(prepWithOptions.question, "Select an option:");
+  });
+
   await asyncTest("Cancellation: handles AbortSignal correctly", async () => {
     const controller = new AbortController();
     controller.abort();

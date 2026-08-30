@@ -107,6 +107,7 @@ export async function runSequentialThinkingTests() {
   });
 
   // ----------------------------------------------------
+  // ----------------------------------------------------
   // Section 2: Argument Pass-Through
   // ----------------------------------------------------
   test("Argument Pass-Through: cleanly passes thought parameter", () => {
@@ -124,6 +125,20 @@ export async function runSequentialThinkingTests() {
     assert.equal(emptyPrep.thought, "");
   });
 
+  test("Argument Robustness: handles non-object and edge case inputs", () => {
+    const registeredTools = new Map();
+    const mockPi = {
+      registerTool(tool) { registeredTools.set(tool.name, tool); }
+    };
+    extensionFactory(mockPi);
+
+    const tool = registeredTools.get("sequential_thinking");
+    assert.deepEqual(tool.prepareArguments(null), null);
+    assert.deepEqual(tool.prepareArguments(undefined), undefined);
+    assert.equal(tool.prepareArguments("just a string"), "just a string");
+    assert.equal(tool.prepareArguments({ thought: 12345 }).thought, "");
+  });
+
   // ----------------------------------------------------
   // Section 3: Tool Execution
   // ----------------------------------------------------
@@ -139,6 +154,27 @@ export async function runSequentialThinkingTests() {
 
     assert.ok(res.content?.[0]?.text?.includes("Thought logged successfully"));
     assert.equal(res.details?.thought, "Decomposing problem into 3 phases...");
+  });
+
+  await asyncTest("Execution: handles multi-turn sequential thoughts cleanly", async () => {
+    const registeredTools = new Map();
+    const mockPi = {
+      registerTool(tool) { registeredTools.set(tool.name, tool); }
+    };
+    extensionFactory(mockPi);
+
+    const tool = registeredTools.get("sequential_thinking");
+    const steps = [
+      "Phase 1: Survey dependencies",
+      "Phase 2: Refactor AST walker",
+      "Phase 3: Run integration tests"
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      const res = await tool.execute(`call_st_${i}`, { thought: steps[i] });
+      assert.equal(res.details?.thought, steps[i]);
+      assert.ok(res.content?.[0]?.text?.includes("Thought logged successfully"));
+    }
   });
 
   // ----------------------------------------------------
