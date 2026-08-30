@@ -25,6 +25,7 @@ macros:
   parallel_slots: 1
   ncmoe_gemma26: "-ncmoe 14"
   ncmoe_qwen35: "-ncmoe 18"
+  gemma_template: "--chat-template-file ${env.USERPROFILE}/Build/dotfiles/llama-swap/templates/gemma4.jinja"
 
   hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -fit ${fit} -fitt ${fit_target} -bs --no-mmproj-offload"
   kv_args: "--kv-unified --parallel ${parallel_slots}"
@@ -77,6 +78,7 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
+      ${gemma_template}
       -hf unsloth/gemma-4-12b-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
@@ -106,6 +108,7 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
+      ${gemma_template}
       ${ncmoe_gemma26}
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
@@ -163,6 +166,7 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
+      ${gemma_template}
       -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
