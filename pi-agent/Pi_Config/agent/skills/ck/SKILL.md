@@ -1,6 +1,6 @@
 ---
 name: ck
-description: Fast lexical, hybrid, and semantic code search via ck. Run 'ck "literal"', 'ck --hybrid "query"', or 'ck --sem "concept"'.
+description: Fast lexical, hybrid, and semantic code search via ck. Run ck literal, ck --hybrid query, or ck --sem concept.
 ---
 
 # `ck` (Seek) Codebase Search Capabilities Reference

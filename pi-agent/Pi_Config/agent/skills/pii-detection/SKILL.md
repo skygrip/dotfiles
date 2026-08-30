@@ -1,6 +1,6 @@
 ---
 name: pii-detection
-description: Audit logs, datasets, emails, and code for PII (names, emails, phones, SSNs, credit cards, physical addresses) using OpenAI Privacy Filter ('openai/privacy-filter'), DuckDB SQL, and ripgrep.
+description: Audit logs, datasets, emails, and code for PII (names, emails, phones, SSNs, credit cards, physical addresses) using OpenAI Privacy Filter (openai/privacy-filter), DuckDB SQL, and ripgrep.
 ---
 
 # PII & Sensitive Data Detection Reference

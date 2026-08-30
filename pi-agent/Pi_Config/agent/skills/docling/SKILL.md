@@ -1,6 +1,6 @@
 ---
 name: docling
-description: Convert PDF, DOCX, PPTX, XLSX, HTML, and images to clean Markdown/JSON. Use 'docling <file> --output <dir> --no-ocr --image-export-mode placeholder' for fast document extraction.
+description: Convert PDF, DOCX, PPTX, XLSX, HTML, and images to clean Markdown/JSON. Use docling FILE --output DIR --no-ocr --image-export-mode placeholder for fast document extraction.
 ---
 
 # Docling Document Parsing Capabilities Reference

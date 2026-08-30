@@ -72,26 +72,18 @@ function getLanguageFromPath(filePath: string): string {
 }
 
 /**
- * TypeBox Schema for the `critic_review` tool parameters exposed to the LLM.
+ * Streamlined TypeBox Schema for `critic_review` tool parameters.
+ * Uses 2-3 standard fields (path, content, focus) matching native agent naming conventions.
  */
 export const CriticReviewSchema = Type.Object({
-  draft: Type.Optional(Type.String({
-    description: "Proposed code snippet, refactor draft, architectural plan, or content to critique."
+  path: Type.Optional(Type.String({
+    description: "Path to an existing workspace file to audit (optional if content is provided)."
   })),
-  filePath: Type.Optional(Type.String({
-    description: "Path to an existing workspace file to audit."
+  content: Type.Optional(Type.String({
+    description: "Inline code snippet, refactor draft, or architectural plan to audit (optional if path is provided)."
   })),
-  startLine: Type.Optional(Type.Integer({
-    description: "Optional 1-based start line number when auditing a specific slice of a file."
-  })),
-  endLine: Type.Optional(Type.Integer({
-    description: "Optional 1-based end line number when auditing a specific slice of a file."
-  })),
-  language: Type.Optional(Type.String({
-    description: "Programming or markup language of the draft (e.g. 'typescript', 'python')."
-  })),
-  rules: Type.Optional(Type.Array(Type.String(), {
-    description: "Optional list of project-specific rules, constraints, or invariants to enforce during audit."
+  focus: Type.Optional(Type.String({
+    description: "Optional audit focus, invariants, or line range (e.g. 'security', 'error handling', 'lines 20-50')."
   }))
 });
 
@@ -173,37 +165,43 @@ export default function (pi: ExtensionAPI) {
     label: "Critic Review",
     description: "Perform an isolated technical audit on code drafts, plans, or file snippets.",
 
-    promptSnippet: "Request an independent technical audit of code drafts, plans, or file slices.",
-
     promptGuidelines: [
-      "Use critic_review before applying complex refactors, security-critical changes, or large migrations.",
-      "Provide either filePath (with optional startLine/endLine) or inline draft text for review."
+      "Use critic_review for an independent audit on architecture plans, complex logic drafts, subtle bug fixes, or security-sensitive code before finalizing."
     ],
 
     parameters: CriticReviewSchema,
 
     /**
      * Pre-validation argument normalizer.
-     * Intercepts common 12B model property hallucinations (e.g. 'file'/'path' -> 'filePath',
-     * 'code'/'content'/'snippet' -> 'draft') before TypeBox schema validation.
+     * Intercepts common 12B model property aliases and maps them to standard fields.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
       const copy = { ...args };
 
-      // Normalize filePath aliases
-      if (copy.filePath === undefined) {
-        if (typeof copy.path === "string") copy.filePath = copy.path;
-        else if (typeof copy.file === "string") copy.filePath = copy.file;
-        else if (typeof copy.target === "string") copy.filePath = copy.target;
+      // 1. Normalize path aliases & forward slashes
+      if (copy.path === undefined) {
+        const altPath = copy.filePath ?? copy.file ?? copy.target ?? copy.filename ?? copy.src;
+        if (typeof altPath === "string") copy.path = altPath;
+      }
+      if (typeof copy.path === "string") {
+        copy.path = copy.path.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "");
       }
 
-      // Normalize draft aliases
-      if (copy.draft === undefined) {
-        if (typeof copy.code === "string") copy.draft = copy.code;
-        else if (typeof copy.content === "string") copy.draft = copy.content;
-        else if (typeof copy.snippet === "string") copy.draft = copy.snippet;
-        else if (typeof copy.text === "string") copy.draft = copy.text;
+      // 2. Normalize content aliases
+      if (copy.content === undefined) {
+        const altContent = copy.draft ?? copy.code ?? copy.snippet ?? copy.text ?? copy.diff ?? copy.patch ?? copy.plan;
+        if (typeof altContent === "string") copy.content = altContent;
+      }
+
+      // 3. Normalize focus aliases (supporting legacy 'rules', 'rule', 'constraints', 'instruction')
+      if (copy.focus === undefined) {
+        const altFocus = copy.rules ?? copy.rule ?? copy.constraints ?? copy.invariants ?? copy.guidelines ?? copy.instruction ?? copy.prompt;
+        if (Array.isArray(altFocus)) {
+          copy.focus = altFocus.map((r: any) => String(r).trim()).filter(Boolean).join("; ");
+        } else if (typeof altFocus === "string") {
+          copy.focus = altFocus.trim();
+        }
       }
 
       return copy;
@@ -221,28 +219,40 @@ export default function (pi: ExtensionAPI) {
       // Phase 1: Resolve Target Code / Content
       // ----------------------------------------------------
       let codeToReview = "";
-      let resolvedLang = params.language || "text";
+      let resolvedLang = "text";
       let targetDesc = "";
 
-      if (params.filePath) {
-        targetDesc = params.filePath;
-        resolvedLang = params.language || getLanguageFromPath(params.filePath);
+      // Check if focus or raw args specify a line range (e.g. "lines 20-50", "L20-L50", "20:50")
+      let startLine = typeof (params as any).startLine === "number" ? (params as any).startLine : 1;
+      let endLine: number | undefined = typeof (params as any).endLine === "number" ? (params as any).endLine : undefined;
+
+      if (params.focus && (!endLine || startLine === 1)) {
+        const lineMatch = params.focus.match(/(?:lines?|L)\s*(\d+)\s*(?:-|–|to|:)\s*(?:lines?|L)?\s*(\d+)/i);
+        if (lineMatch) {
+          startLine = Math.max(1, parseInt(lineMatch[1], 10));
+          endLine = Math.max(startLine, parseInt(lineMatch[2], 10));
+        }
+      }
+
+      if (params.path) {
+        targetDesc = params.path;
+        resolvedLang = getLanguageFromPath(params.path);
 
         try {
           // Resolve relative path against active workspace cwd
-          const resolvedPath = path.isAbsolute(params.filePath)
-            ? params.filePath
-            : path.resolve(ctx.cwd || process.cwd(), params.filePath);
+          const resolvedPath = path.isAbsolute(params.path)
+            ? params.path
+            : path.resolve(ctx.cwd || process.cwd(), params.path);
 
           const rawContent = await fs.readFile(resolvedPath, "utf8");
           const lines = rawContent.split("\n");
 
-          const start = Math.max(1, params.startLine ?? 1);
-          const end = Math.min(lines.length, params.endLine ?? lines.length);
+          const start = Math.max(1, startLine);
+          const end = Math.min(lines.length, endLine ?? lines.length);
 
           if (start > lines.length) {
             return {
-              content: [{ type: "text", text: `[Critic Error]: startLine ${start} exceeds total file lines (${lines.length})` }],
+              content: [{ type: "text", text: `[Critic Error]: start line ${start} exceeds total file lines (${lines.length})` }],
               details: { error: "Invalid line range" }
             };
           }
@@ -252,7 +262,7 @@ export default function (pi: ExtensionAPI) {
           const cappedLines = slicedLines.slice(0, 2000);
           codeToReview = formatWithLineNumbers(cappedLines.join("\n"), start);
 
-          if (params.startLine || params.endLine) {
+          if (start > 1 || end < lines.length) {
             targetDesc += ` (lines ${start}-${end})`;
           }
         } catch (err) {
@@ -262,13 +272,13 @@ export default function (pi: ExtensionAPI) {
             details: { error: msg }
           };
         }
-      } else if (params.draft) {
-        targetDesc = "Inline Draft";
-        codeToReview = params.draft;
+      } else if (params.content) {
+        targetDesc = "Inline Code Draft";
+        codeToReview = params.content;
       } else {
         return {
-          content: [{ type: "text", text: "[Critic Error]: Must provide either 'draft' or 'filePath'." }],
-          details: { error: "Missing draft or filePath" }
+          content: [{ type: "text", text: "[Critic Error]: Must provide either 'path' (file to audit) or 'content' (code snippet to audit)." }],
+          details: { error: "Missing path or content" }
         };
       }
 
@@ -515,8 +525,8 @@ export default function (pi: ExtensionAPI) {
       // Phase 3: Assemble Audit Messages
       // ----------------------------------------------------
       let userPrompt = `Please audit the following ${resolvedLang} code (${targetDesc}):\n\n`;
-      if (params.rules && params.rules.length > 0) {
-        userPrompt += `Project Constraints & Invariants:\n${params.rules.map((r, i) => `${i + 1}. ${r}`).join("\n")}\n\n`;
+      if (params.focus) {
+        userPrompt += `Audit Focus & Constraints:\n- ${params.focus}\n\n`;
       }
       userPrompt += `\`\`\`${resolvedLang}\n${codeToReview}\n\`\`\``;
 
@@ -669,11 +679,12 @@ export default function (pi: ExtensionAPI) {
      * Renders the collapsed/pending call card in the TUI.
      */
     renderCall(args: any, theme, _context) {
-      const target = args?.filePath ?? (args?.draft ? "Inline Draft" : "Unknown");
+      const target = args?.path ?? args?.filePath ?? (args?.content || args?.draft ? "Inline Code Draft" : "Unknown");
       let text = theme.fg("toolTitle", theme.bold("critic_review")) +
         theme.fg("dim", ` target: ${target}`);
-      if (args?.startLine || args?.endLine) {
-        text += theme.fg("muted", ` [lines ${args.startLine ?? 1}-${args.endLine ?? "end"}]`);
+      if (args?.focus) {
+        const truncFocus = args.focus.length > 45 ? `${args.focus.slice(0, 42)}...` : args.focus;
+        text += theme.fg("muted", ` [focus: ${truncFocus}]`);
       }
       return new Text(text, 0, 0);
     },

@@ -1,6 +1,6 @@
 ---
 name: mlr
-description: Stream processing and stats for CSV, TSV, and JSONL. Run 'mlr --ijsonl --ocsv unsparsify file.jsonl', compute stats with 'mlr --csv stats1', or chain verbs with 'then'.
+description: Stream processing and stats for CSV, TSV, and JSONL. Run mlr --ijsonl --ocsv unsparsify file.jsonl, compute stats with mlr --csv stats1, or chain verbs with then.
 ---
 
 # Miller (`mlr`) Streaming Tabular Capabilities Reference

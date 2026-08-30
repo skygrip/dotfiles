@@ -1,6 +1,6 @@
 ---
 name: image-prompt-builder
-description: "Construct high-grade prompts with FACS facial mechanics and optical staging for AI image engines: Krea 2 (RAW/Turbo/Edit), ANIMA (Anime/LoRA), Flux, SDXL, and Midjourney."
+description: Construct high-grade prompts and optical staging across AI image engines including Krea 2 (RAW/Turbo/Edit), ANIMA (Anime/LoRA), Flux, SDXL, and Midjourney.
 ---
 
 # Universal AI Image Prompt Builder

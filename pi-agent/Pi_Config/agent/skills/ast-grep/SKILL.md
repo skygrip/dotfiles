@@ -1,6 +1,6 @@
 ---
 name: ast-grep
-description: Structural AST-based code search and rewrites using ast-grep. Use 'ast-grep run -p "..." -l <lang>' to match syntax trees ignoring whitespace, or 'ast-grep run -p "..." -r "..." -U' for safe AST rewrites.
+description: Structural AST-based code search and rewrites using ast-grep. Use ast-grep run -p PATTERN -l LANG to match syntax trees ignoring whitespace, or ast-grep run -p PATTERN -r REPLACEMENT -U for safe AST rewrites.
 ---
 
 # `ast-grep` Structural AST Capabilities Reference

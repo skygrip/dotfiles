@@ -1,6 +1,6 @@
 ---
 name: gh
-description: GitHub CLI for PRs, issues, Actions CI workflows, releases, and raw GraphQL/REST queries. Use 'gh pr diff', 'gh run view --log-failed', 'gh issue list --json', or 'gh api'.
+description: GitHub CLI for PRs, issues, Actions CI workflows, releases, and raw GraphQL/REST queries. Use gh pr diff, gh run view --log-failed, gh issue list --json, or gh api.
 ---
 
 # GitHub CLI (`gh`) Capabilities Reference

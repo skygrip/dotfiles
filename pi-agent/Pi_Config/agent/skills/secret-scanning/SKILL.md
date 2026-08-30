@@ -1,6 +1,6 @@
 ---
 name: secret-scanning
-description: Detect and verify leaked API keys, tokens, and credentials using TruffleHog ('trufflehog filesystem . --results=verified', 'trufflehog git file://.'). Emits structured JSON/SARIF findings for CI gates and security audits.
+description: Detect and verify leaked API keys, tokens, and credentials using TruffleHog (trufflehog filesystem . --results=verified, trufflehog git file://.). Emits structured JSON/SARIF findings for CI gates and security audits.
 ---
 
 # Secret & Credential Scanning Capabilities Reference

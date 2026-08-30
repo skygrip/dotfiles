@@ -28,7 +28,29 @@ Models fail primarily due to **dialect uncertainty** (e.g., *"Does DuckDB suppor
 
 ---
 
-## 2. Standard Multi-File Directory Layout
+## 2. YAML Frontmatter & XML/Prompt Hygiene
+
+Agent harness prompt compilers (such as Pi Agent's `formatSkillsForPrompt()`) format skill manifests into `<available_skills>` XML blocks and apply standard XML escaping to frontmatter fields.
+
+> [!IMPORTANT]
+> **Zero XML-Sensitive Characters and Unquoted Colons in Frontmatter `description`:**
+> `SKILL.md` frontmatter `description` strings must **NEVER** contain single quotes (`'`), double quotes (`"`), angle brackets (`<`, `>`), ampersands (`&`), or colons followed by a space (`: `).
+> 
+> * **Why Quotes & Brackets:** When harness prompt builders run `escapeXml()`, quotes and brackets convert into literal entity strings (`&apos;`, `&quot;`, `&lt;`, `&gt;`, `&amp;`). Ingested into LLM context, smaller open-weights models (e.g. 12B/14B) copy these literally into generated code and shell calls, producing broken syntax like `bash(command="ast-grep run -p &quot;test&quot; -l typescript")`.
+> * **Why Colons (`: `):** In unquoted YAML frontmatters, a colon followed by a space is parsed as a nested mapping key delimiter, triggering `Nested mappings are not allowed in compact mappings` parser errors. Use words like `including`, `with`, or `by` instead.
+> * **Placeholders:** Use uppercase bare words (e.g., `FILE`, `DIR`, `PATTERN`, `LANG`, `IMAGE`) instead of angle brackets (`<file>`, `<dir>`).
+> * **Commands & Flags:** Omit wrapping quotes entirely (e.g., `Run ck literal, ck --hybrid query, or ck --sem concept`).
+> * **Conjunctions:** Use `and` instead of `&`.
+
+### Valid vs Invalid Description Examples:
+* ❌ **BAD:** `description: "Use 'ast-grep run -p \"...\" -l <lang>' or 'ast-grep run -r \"...\" -U'"`
+* ✅ **GOOD:** `description: Use ast-grep run -p PATTERN -l LANG for AST search, or ast-grep run -p PATTERN -r REPLACEMENT -U for safe AST rewrites.`
+* ❌ **BAD:** `description: Configure Pi Agent: modify AGENTS.md, APPEND_SYSTEM.md, extensions, and skills.`
+* ✅ **GOOD:** `description: Configure Pi Agent by modifying AGENTS.md, APPEND_SYSTEM.md, extensions, and skills.`
+
+---
+
+## 3. Standard Multi-File Directory Layout
 
 Skills must strictly adhere to the standard multi-file layout:
 
@@ -43,7 +65,7 @@ Skills must strictly adhere to the standard multi-file layout:
 
 ---
 
-## 3. The 5 Skill Archetypes & Structural Blueprints
+## 4. The 5 Skill Archetypes & Structural Blueprints
 
 Do not force a single rigid format onto fundamentally different domains. Choose the archetype that fits the skill's operational purpose:
 
@@ -93,7 +115,7 @@ Do not force a single rigid format onto fundamentally different domains. Choose 
 
 ---
 
-## 4. Diagram Standards: Native Mermaid Only
+## 5. Diagram Standards: Native Mermaid Only
 
 > [!IMPORTANT]
 > **Zero ASCII Box Art:**
@@ -112,10 +134,11 @@ flowchart TD
 
 ---
 
-## 5. Universal Do's and Don'ts Checklist
+## 6. Universal Do's and Don'ts Checklist
 
 | Dimension | ✅ DO | ❌ DON'T |
 | :--- | :--- | :--- |
+| **Frontmatter XML Hygiene** | Use bare uppercase placeholders (`FILE`, `DIR`) and unquoted CLI commands in `description`. | Use `'`, `"`, `<`, `>`, or `&` in frontmatter descriptions, which trigger XML entity escaping (`&quot;`, `&apos;`, `&lt;`). |
 | **Token Density** | Use compact Markdown tables for flags, operators, and parameters. | Write conversational paragraphs explaining basic computer science or SQL basics. |
 | **Fast-Paths** | List bundled `scripts/` helpers and prioritize them as Example 1. | Omit helper scripts or force models to reconstruct complex multi-step pipelines. |
 | **Shell Portability** | Write cross-platform shell commands that execute reliably in PowerShell and Bash. | Use ambiguous nested double-quotes that break string interpolation across shells. |

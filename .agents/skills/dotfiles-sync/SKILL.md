@@ -1,6 +1,6 @@
 ---
 name: dotfiles-sync
-description: "Syncs agent configurations, skills, and extensions from this dotfiles repository to global Pi Agent (~/.pi/agent) and Antigravity (~/.gemini/config/skills) directories using basic native copy commands."
+description: Syncs agent configurations, skills, and extensions from this dotfiles repository to global Pi Agent (~/.pi/agent) and Antigravity (~/.gemini/config/skills) directories using basic native copy commands.
 ---
 
 # Dotfiles Agent Sync Guide

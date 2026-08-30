@@ -14,7 +14,6 @@ export default function (pi: ExtensionAPI) {
     name: "custom_tool_name",
     label: "Custom Tool",
     description: "Executes custom analysis or action.",
-    promptSnippet: "Summary injected into agent tool description.",
     promptGuidelines: ["Specific constraint or boundary rule for tool use."],
     parameters: Type.Object({
       inputPath: Type.String({ description: "Path to input file" }),

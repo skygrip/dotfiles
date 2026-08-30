@@ -1,6 +1,6 @@
 ---
 name: plan-execute
-description: Multi-step task execution loop (3+ dependent steps). Creates and maintains a living 'PLAN.md' with phase checkboxes and interactive user confirmation gates.
+description: Multi-step task execution loop (3+ dependent steps). Creates and maintains a living PLAN.md with phase checkboxes and interactive user confirmation gates.
 ---
 
 # Plan & Execute Workflow Loop Reference

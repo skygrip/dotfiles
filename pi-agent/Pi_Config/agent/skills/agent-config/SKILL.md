@@ -1,6 +1,6 @@
 ---
 name: agent-config
-description: "Configure Pi Agent: modify AGENTS.md, APPEND_SYSTEM.md, extensions (.ts), skills, settings.json, mcp.json, and prompt templates."
+description: Configure Pi Agent by modifying AGENTS.md, APPEND_SYSTEM.md, extensions (.ts), skills, settings.json, mcp.json, and prompt templates.
 ---
 
 # Pi Agent Configuration & Architecture Blueprint
@@ -108,28 +108,9 @@ Check for unsanitized inputs, unindexed queries, and error handling.
 
 ---
 
-## 5. Official Documentation Index & Node Paths
+## 5. References & Boilerplates
 
-These files are located inside the global `node_modules` directory of the `pi` installation under `@earendil-works/pi-coding-agent/docs/`:
-
-* **Finding the Directory:**
-  * Windows: `%AppData%\npm\node_modules\@earendil-works\pi-coding-agent\docs\`
-  * Linux/macOS: `/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/docs/`
-  * Dynamic: `npm root -g` + `/@earendil-works/pi-coding-agent/docs/`
-
-* **Topic & File Map:**
-  * **Skills & Prompts:** `docs/skills.md` (Agent Skills), `docs/prompt-templates.md` (Prompt templates).
-  * **Extensions & API:** `docs/extensions.md` (TypeScript extensions), `docs/custom-provider.md` (Custom LLM providers), `docs/sdk.md` (Pi SDK).
-  * **Models & Routing:** `docs/models.md` (LLM configuration), `docs/providers.md` (API providers).
-  * **Core Architecture & TUI:** `docs/tui.md` (UI rendering), `docs/themes.md` (styling), `docs/keybindings.md` (shortcuts).
-  * **Session Lifecycle & Internals:** `docs/session-format.md` (message schemas), `docs/sessions.md` (branches, leaves), `docs/compaction.md` (pruning).
-  * **Configuration & Integration:** `docs/settings.md` (settings.json options), `docs/packages.md` (custom packaging), `docs/usage.md` (flags & CLI).
-
----
-
-## 6. References & Boilerplates
-
-* [TypeScript Extension Blueprint](file:///c:/Users/Glen/Build/dotfiles/pi-agent/Pi_Config/agent/skills/agent-config/examples/extension_blueprint.ts): Full starter extension with TypeBox schema, headless fallbacks, and UI rendering.
-* [Extension Development & Introspection Playbook](file:///c:/Users/Glen/Build/dotfiles/pi-agent/Pi_Config/agent/skills/agent-config/references/extension_playbook.md): Node.js CLI one-liners to inspect ground-truth types, test TUI components headlessly, and dry-run JITI compilation.
+* [TypeScript Extension Blueprint](examples/extension_blueprint.ts): Starter extension with TypeBox schema, headless fallbacks, and UI rendering.
+* [Extension Development Playbook](references/extension_playbook.md): Node CLI one-liners to inspect ground-truth types, test TUI components headlessly, and verify JITI compilation.
 
 

@@ -1,6 +1,6 @@
 ---
 name: vt-cli
-description: Query VirusTotal Enterprise/Pro for threat intelligence, hash lookups, IOC validation, sandbox reports, and search pivots using 'vt-cli'.
+description: Query VirusTotal Enterprise/Pro for threat intelligence, hash lookups, IOC validation, sandbox reports, and search pivots using vt-cli.
 ---
 
 # VirusTotal CLI (`vt-cli`) Capabilities Reference

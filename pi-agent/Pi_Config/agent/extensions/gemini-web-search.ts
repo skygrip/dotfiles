@@ -1144,11 +1144,8 @@ export default function (pi: ExtensionAPI) {
     label: "Web Search",
     description: "Search Google for current information, documentation, and live web sources.",
 
-    promptSnippet: "Search Google for live facts, recent documentation, or technical solutions.",
-
     promptGuidelines: [
-      "Use web_search for current facts, library APIs released after knowledge cutoff, or live debugging references.",
-      "Cite primary sources as markdown links when provided in the search results."
+      "Use web_search for live facts, recent API changes post-cutoff, or active error triage, citing primary sources as markdown links."
     ],
 
     parameters: WebSearchSchema,
@@ -1356,13 +1353,8 @@ export default function (pi: ExtensionAPI) {
     label: "Fetch URL",
     description: "Fetch content from a URL on the internet (web pages, text, code, or images).",
 
-    promptSnippet: "Fetch content from a URL on the internet (web pages, text, code, or images).",
-
     promptGuidelines: [
-      "Use fetch_url to fetch web pages, documentation, raw files, or images from the internet.",
-      "Images (PNG, JPEG, WebP, GIF, SVG) are returned as visual image attachments that you can inspect directly.",
-      "Pass 'prompt' when you only need a specific answer or detail from a long page or image instead of loading the full content.",
-      "Omit 'prompt' when you want to read the entire page, code, or view the full image."
+      "Use fetch_url to inspect web pages, remote documentation, or online diagrams (pass 'prompt' for targeted answer extraction)."
     ],
 
     parameters: FetchUrlSchema,

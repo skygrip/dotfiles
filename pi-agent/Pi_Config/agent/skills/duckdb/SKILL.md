@@ -1,6 +1,6 @@
 ---
 name: duckdb
-description: Fast in-process SQL analytics on Parquet, CSV, JSONL, and SQLite files. Run 'duckdb -json -bail -c "SELECT * FROM '\''data.parquet'\'' LIMIT 10;"'.
+description: Fast in-process SQL analytics on Parquet, CSV, JSONL, and SQLite files. Run duckdb -json -bail -c SELECT * FROM data.parquet LIMIT 10.
 ---
 
 # DuckDB CLI & SQL Capabilities Reference

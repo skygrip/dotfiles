@@ -1,6 +1,6 @@
 ---
 name: semgrep
-description: Multi-language AST static security analysis (SAST) and code quality scanning. Use 'semgrep scan --config auto', 'semgrep scan --config p/bandit' (Python), or 'p/owasp-top-ten'.
+description: Multi-language AST static security analysis (SAST) and code quality scanning. Use semgrep scan --config auto, semgrep scan --config p/bandit (Python), or p/owasp-top-ten.
 ---
 
 # Semgrep SAST & Security Linting Capabilities Reference

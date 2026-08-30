@@ -1,6 +1,6 @@
 ---
 name: batch-automator
-description: Generate sequential 'pi -p' shell commands for headless bulk refactoring, docstring generation, or audits across 100+ files.
+description: Generate sequential pi -p shell commands for headless bulk refactoring, docstring generation, or audits across 100+ files.
 ---
 
 # Batch Automator (Headless `pi -p` Loops) Reference

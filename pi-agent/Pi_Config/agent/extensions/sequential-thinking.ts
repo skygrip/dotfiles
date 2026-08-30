@@ -30,12 +30,8 @@ export default function initExtension(pi: ExtensionAPI) {
     label: "Sequential Thinking",
     description: "Run a step-by-step reasoning loop to think through complex logic or multi-file problems.",
 
-    promptSnippet: "Run a step-by-step reasoning loop to think through complex logic, hypotheses, or multi-file problems.",
-
     promptGuidelines: [
-      "Use sequential_thinking to formulate complex architectural plans or multi-file refactors before executing edits.",
-      "You can call sequential_thinking multiple times in sequence to reason through problems across multiple turns before proceeding.",
-      "Keep thoughts structured, actionable, and focused on current task milestones."
+      "Use sequential_thinking to structure multi-step reasoning, test hypotheses, and decompose complex logic before committing changes."
     ],
 
     parameters: SequentialThinkingSchema,

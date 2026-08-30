@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { Text } from "@earendil-works/pi-tui";
 
 /**
@@ -10,21 +9,16 @@ import { Text } from "@earendil-works/pi-tui";
 export const DEFAULT_TIMEOUT_MS = Number(process.env.PI_ASK_QUESTION_TIMEOUT_MS || process.env.PI_ASK_TIMEOUT_MS) || 60000;
 
 /**
- * TypeBox Schema definition for `ask_question` tool parameters.
- * Designed with a required question and clear constraints.
+ * Streamlined TypeBox Schema for `ask_question`.
+ * Designed with 2 straightforward fields (question + optional options).
+ * Eliminates mode enums and conditional constraints for 12B/local models.
  */
 export const AskQuestionSchema = Type.Object({
   question: Type.String({
-    description: "The prompt or question to display to the user."
+    description: "The question or prompt to display to the user."
   }),
-  type: StringEnum(["input", "confirm", "select"] as const, {
-    description: "Interaction mode: 'confirm' for Yes/No, 'select' for menu list, 'input' for freeform text."
-  }),
-  choices: Type.Optional(Type.Array(Type.String(), {
-    description: "List of options for the user to choose from (required when type is 'select')."
-  })),
-  defaultValue: Type.Optional(Type.String({
-    description: "Optional fallback value returned if prompt times out, is cancelled, or runs in headless mode."
+  options: Type.Optional(Type.Array(Type.String(), {
+    description: "Optional list of choices for multiple choice selection. Omit for freeform text or confirmation."
   }))
 });
 
@@ -39,18 +33,18 @@ export interface AskQuestionDetails {
 }
 
 /**
- * Normalizes choices passed by models (handles arrays, comma-delimited strings, and object lists).
- * Automatically strips leading numbering/bullets (e.g. "1. Option" -> "Option") to prevent double numbering in TUI.
+ * Normalizes options passed by models (handles arrays, comma-delimited strings, and object lists).
+ * Automatically strips leading numbering/bullets (e.g. "1. Option" -> "Option") to prevent double numbering.
  */
-function normalizeChoices(rawChoices: unknown): string[] {
-  if (!rawChoices) return [];
+function normalizeOptions(rawOptions: unknown): string[] {
+  if (!rawOptions) return [];
 
   const cleanItem = (item: string): string => {
     return item.trim().replace(/^(?:\d+[\.\)\-:]|\*|-|\u2022)\s*/, "").trim();
   };
 
-  if (Array.isArray(rawChoices)) {
-    return rawChoices
+  if (Array.isArray(rawOptions)) {
+    return rawOptions
       .map(c => {
         if (typeof c === "string") return cleanItem(c);
         if (typeof c === "object" && c !== null) {
@@ -61,12 +55,12 @@ function normalizeChoices(rawChoices: unknown): string[] {
       })
       .filter(Boolean);
   }
-  if (typeof rawChoices === "string") {
-    const trimmed = rawChoices.trim();
+  if (typeof rawOptions === "string") {
+    const trimmed = rawOptions.trim();
     if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
       try {
         const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) return normalizeChoices(parsed);
+        if (Array.isArray(parsed)) return normalizeOptions(parsed);
       } catch {
         // Fall back to splitting
       }
@@ -74,6 +68,24 @@ function normalizeChoices(rawChoices: unknown): string[] {
     return trimmed.split(/\r?\n|,/).map(s => cleanItem(s)).filter(Boolean);
   }
   return [];
+}
+
+/**
+ * Extracts enumerated choices from question text if the model embedded options inside the prompt string.
+ */
+function extractOptionsFromQuestion(q: string): string[] {
+  if (!q || typeof q !== "string") return [];
+  const lines = q.split(/\r?\n/);
+  const options: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Matches "1. Option", "1) Option", "- Option", "* Option", "A) Option"
+    const match = trimmed.match(/^(?:(?:\d+|[a-zA-Z])[\.\)\-:]|\*|-|\u2022)\s+(.+)$/);
+    if (match && match[1]) {
+      options.push(match[1].trim());
+    }
+  }
+  return options;
 }
 
 /**
@@ -109,14 +121,7 @@ function withTimeoutAndSignal<T>(
 }
 
 /**
- * Extension module that registers the custom `ask_question` tool.
- * 
- * Purpose:
- * Provides a bridge between autonomous agent execution and the user, allowing the agent
- * to ask clarifying questions, request selections from menus, or ask for binary confirmation
- * without terminating the agent's turn.
- * 
- * @param pi - The ExtensionAPI instance provided by the pi-coding-agent harness.
+ * Extension module registering the streamlined `ask_question` tool.
  */
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
@@ -124,64 +129,60 @@ export default function (pi: ExtensionAPI) {
     label: "Ask Question",
     description: "Prompt user for input, menu selection, or yes/no confirmation.",
 
-    promptSnippet: "Proactively prompt the user for clarifying choices, architectural trade-offs, yes/no approvals, or missing inputs.",
-
     promptGuidelines: [
-      "Use 'select' to present 2-4 concrete options when facing architectural trade-offs, library choices, or design forks.",
-      "Use 'confirm' before high-impact refactors, service restarts, or destructive operations.",
-      "Use 'input' when requirements or configurations are ambiguous rather than making blind assumptions.",
-      "Prefer calling ask_question with structured choices over asking questions in plain markdown text."
+      "Use ask_question with 'options' for design trade-offs, menus, or approvals; omit 'options' for open-ended text input or yes/no confirmation."
     ],
 
     parameters: AskQuestionSchema,
 
     /**
-     * Pre-validation argument normalizer to withstand 12B model enum hallucinations.
+     * Pre-validation argument normalizer to withstand 12B model parameter aliases.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
       const copy = { ...args };
 
-      // Normalize enum types
-      if (typeof copy.type === "string") {
-        const t = copy.type.toLowerCase().trim();
-        if (["confirm", "confirmation", "boolean", "yes_no", "yesno"].includes(t)) {
-          copy.type = "confirm";
-        } else if (["select", "choice", "choices", "options", "menu", "multiple_choice"].includes(t)) {
-          copy.type = "select";
-        } else {
-          copy.type = "input";
+      // Normalize question aliases
+      if (copy.question === undefined || copy.question === null) {
+        const altQ = copy.prompt ?? copy.message ?? copy.query ?? copy.title ?? copy.text ?? copy.description;
+        if (altQ !== undefined && altQ !== null) {
+          copy.question = String(altQ);
+        }
+      } else if (typeof copy.question !== "string") {
+        copy.question = String(copy.question);
+      }
+
+      // Normalize options aliases (supporting legacy 'choices', 'items', 'variants')
+      const rawOptions = copy.options ?? copy.choices ?? copy.items ?? copy.variants ?? copy.candidates;
+      if (rawOptions !== undefined) {
+        copy.options = normalizeOptions(rawOptions);
+      }
+
+      // If options is missing, attempt to extract numbered/bulleted options from question text
+      if ((!copy.options || copy.options.length === 0) && copy.question) {
+        const extracted = extractOptionsFromQuestion(copy.question);
+        if (extracted.length >= 2) {
+          copy.options = extracted;
         }
       }
 
-      // Normalize choice list
-      if (copy.choices !== undefined) {
-        copy.choices = normalizeChoices(copy.choices);
-      }
-
-      // Ensure question is a string
-      if (copy.question === undefined || copy.question === null) {
-        copy.question = copy.type === "confirm" ? "Proceed?" : copy.type === "select" ? "Choose an option:" : "Enter value:";
-      } else if (typeof copy.question !== "string") {
-        copy.question = String(copy.question);
+      // Fallback default question if completely empty
+      if (!copy.question) {
+        copy.question = copy.options && copy.options.length > 0 ? "Select an option:" : "Please provide input:";
       }
 
       return copy;
     },
 
     async execute(_toolCallId, params: AskQuestionParams, signal, _onUpdate, ctx) {
-      const promptType = params.type || "input";
-      const question = params.question.trim() || (promptType === "confirm" ? "Proceed?" : promptType === "select" ? "Choose an option:" : "Enter value:");
-      const choices = normalizeChoices(params.choices);
+      const question = (params.question || "").trim() || "Please provide input:";
+      const options = normalizeOptions(params.options);
 
       // ----------------------------------------------------
       // 1. Headless Fallback Mode
       // ----------------------------------------------------
       if (!ctx.hasUI || !ctx.ui) {
-        let fallback = params.defaultValue;
-        if (fallback === undefined) {
-          fallback = promptType === "confirm" ? "No" : (promptType === "select" && choices.length > 0 ? choices[0] : "No response");
-        }
+        const fallback = options.length > 0 ? options[0] : "No response";
         return {
           content: [{ type: "text", text: `[Headless Mode Fallback]: ${fallback}` }],
           details: { answer: fallback, headless: true } as AskQuestionDetails
@@ -194,8 +195,38 @@ export default function (pi: ExtensionAPI) {
       // 2. Interactive TUI Modes
       // ----------------------------------------------------
       try {
-        // Mode: Confirm (Binary Yes/No modal gate)
-        if (promptType === "confirm") {
+        // Mode A: Multiple Choice Selection (When 2+ options provided)
+        if (options.length >= 2) {
+          const selection = await withTimeoutAndSignal(
+            ctx.ui.select(question, options, dialogOptions),
+            DEFAULT_TIMEOUT_MS,
+            signal
+          );
+
+          if (selection === undefined) {
+            return {
+              content: [{ type: "text", text: `[User Cancelled Prompt]: No selection made.` }],
+              details: { answer: "", cancelled: true } as AskQuestionDetails
+            };
+          }
+
+          return {
+            content: [{ type: "text", text: `User selected: "${selection}". Decision confirmed — proceed with implementation using this direction.` }],
+            details: { answer: selection, cancelled: false } as AskQuestionDetails
+          };
+        }
+
+        // Mode B: Binary Confirmation (Detect question asking for Yes/No confirmation)
+        const lowerQ = question.toLowerCase();
+        const isConfirmQuestion =
+          lowerQ.includes("(y/n)") ||
+          lowerQ.includes("yes/no") ||
+          lowerQ.startsWith("confirm") ||
+          lowerQ.startsWith("proceed") ||
+          lowerQ.startsWith("are you sure") ||
+          (lowerQ.endsWith("?") && (lowerQ.includes("delete") || lowerQ.includes("restart") || lowerQ.includes("overwrite") || lowerQ.includes("proceed")));
+
+        if (isConfirmQuestion) {
           const confirmed = await withTimeoutAndSignal(
             ctx.ui.confirm("Confirmation", question, dialogOptions),
             DEFAULT_TIMEOUT_MS,
@@ -208,51 +239,7 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        // Mode: Select (Vertical scroll option list)
-        if (promptType === "select") {
-          if (choices.length === 0) {
-            // Gracefully degrade to text input if model failed to provide choice items
-            const textResponse = await withTimeoutAndSignal(
-              ctx.ui.input(`${question} (Type your choice):`, "", dialogOptions),
-              DEFAULT_TIMEOUT_MS,
-              signal
-            );
-            if (textResponse === undefined) {
-              const fallback = params.defaultValue;
-              return {
-                content: [{ type: "text", text: fallback !== undefined ? `[User Cancelled Prompt]: Returning fallback "${fallback}"` : `[User Cancelled Prompt]: No selection made.` }],
-                details: { answer: fallback, cancelled: true } as AskQuestionDetails
-              };
-            }
-            const finalVal = textResponse.trim() || params.defaultValue || "";
-            return {
-              content: [{ type: "text", text: `User selected: "${finalVal}". Decision confirmed — proceed with implementation using this direction.` }],
-              details: { answer: finalVal, cancelled: false } as AskQuestionDetails
-            };
-          }
-
-          const selection = await withTimeoutAndSignal(
-            ctx.ui.select(question, choices, dialogOptions),
-            DEFAULT_TIMEOUT_MS,
-            signal
-          );
-
-          if (selection === undefined) {
-            // User cancelled with Escape
-            const fallback = params.defaultValue;
-            return {
-              content: [{ type: "text", text: fallback !== undefined ? `[User Cancelled Prompt]: Returning fallback "${fallback}"` : `[User Cancelled Prompt]: No selection made.` }],
-              details: { answer: fallback, cancelled: true } as AskQuestionDetails
-            };
-          }
-
-          return {
-            content: [{ type: "text", text: `User selected: "${selection}". Decision confirmed — proceed with implementation using this direction.` }],
-            details: { answer: selection, cancelled: false } as AskQuestionDetails
-          };
-        }
-
-        // Mode: TextInput (Freeform keyboard text entry)
+        // Mode C: Freeform Text Input
         const response = await withTimeoutAndSignal(
           ctx.ui.input(question, "", dialogOptions),
           DEFAULT_TIMEOUT_MS,
@@ -260,15 +247,13 @@ export default function (pi: ExtensionAPI) {
         );
 
         if (response === undefined) {
-          // User cancelled with Escape
-          const fallback = params.defaultValue;
           return {
-            content: [{ type: "text", text: fallback !== undefined ? `[User Cancelled Prompt]: Returning fallback "${fallback}"` : `[User Cancelled Prompt]: No input entered.` }],
-            details: { answer: fallback, cancelled: true } as AskQuestionDetails
+            content: [{ type: "text", text: `[User Cancelled Prompt]: No input entered.` }],
+            details: { answer: "", cancelled: true } as AskQuestionDetails
           };
         }
 
-        const finalResponse = response.trim() || params.defaultValue || "";
+        const finalResponse = response.trim();
         return {
           content: [{ type: "text", text: `User response: "${finalResponse}". Decision confirmed — proceed with implementation using this direction.` }],
           details: { answer: finalResponse, cancelled: false } as AskQuestionDetails
@@ -287,17 +272,15 @@ export default function (pi: ExtensionAPI) {
         }
 
         if (isTimeout) {
-          const fallback = params.defaultValue ?? (promptType === "confirm" ? "No" : "");
           return {
-            content: [{ type: "text", text: `[Prompt Timed Out]: No user interaction within timeout. Fallback: "${fallback}"` }],
-            details: { answer: fallback, timedOut: true, cancelled: true } as AskQuestionDetails
+            content: [{ type: "text", text: `[Prompt Timed Out]: No user interaction within timeout.` }],
+            details: { answer: "", timedOut: true, cancelled: true } as AskQuestionDetails
           };
         }
 
-        const fallback = params.defaultValue ?? "";
         return {
-          content: [{ type: "text", text: `[Prompt Error]: ${errMsg}. Fallback: "${fallback}"` }],
-          details: { answer: fallback, error: errMsg, cancelled: true } as AskQuestionDetails
+          content: [{ type: "text", text: `[Prompt Error]: ${errMsg}` }],
+          details: { answer: "", error: errMsg, cancelled: true } as AskQuestionDetails
         };
       }
     },
@@ -306,21 +289,19 @@ export default function (pi: ExtensionAPI) {
      * Renders a preview block in the TUI console during the tool-calling pre-execution step.
      */
     renderCall(args: any, theme, _context) {
-      const type = typeof args?.type === "string" ? args.type : "input";
       const qText = typeof args?.question === "string" ? args.question.trim() : "";
       const truncatedQ = qText.length > 70 ? `${qText.slice(0, 67)}...` : qText;
+      const opts = Array.isArray(args?.options) ? args.options : Array.isArray(args?.choices) ? args.choices : [];
 
-      let text = theme.fg("toolTitle", theme.bold("ask_question")) +
-        theme.fg("dim", ` (mode: ❓ ${type})`);
-
+      let text = theme.fg("toolTitle", theme.bold("ask_question"));
       if (truncatedQ) {
-        text += theme.fg("muted", `\n  "${truncatedQ}"`);
+        text += theme.fg("muted", ` "${truncatedQ}"`);
       }
 
-      if (type === "select" && Array.isArray(args?.choices) && args.choices.length > 0) {
-        const choicesPreview = args.choices.slice(0, 3).map((c: string, i: number) => `${i + 1}. ${c}`).join(" | ");
-        const suffix = args.choices.length > 3 ? ` (+${args.choices.length - 3} more)` : "";
-        text += theme.fg("dim", `\n  Choices: [${choicesPreview}${suffix}]`);
+      if (opts.length > 0) {
+        const preview = opts.slice(0, 3).map((c: string, i: number) => `${i + 1}. ${c}`).join(" | ");
+        const suffix = opts.length > 3 ? ` (+${opts.length - 3} more)` : "";
+        text += theme.fg("dim", `\n  Options: [${preview}${suffix}]`);
       }
 
       return new Text(text, 0, 0);
@@ -341,16 +322,15 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (details.headless) {
-        return new Text(theme.fg("dim", `⚡ HEADLESS: Fallback "${details.answer ?? "No response"}"`), 0, 0);
+        return new Text(theme.fg("dim", `⚡ HEADLESS: "${details.answer ?? "No response"}"`), 0, 0);
       }
 
       if (details.timedOut) {
-        return new Text(theme.fg("warning", `⏱ TIMED OUT: Fallback "${details.answer ?? "None"}"`), 0, 0);
+        return new Text(theme.fg("warning", `⏱ TIMED OUT`), 0, 0);
       }
 
       if (details.cancelled) {
-        const fallbackText = details.answer ? ` (Fallback: "${details.answer}")` : " (No input)";
-        return new Text(theme.fg("muted", `⊘ CANCELLED${fallbackText}`), 0, 0);
+        return new Text(theme.fg("muted", `⊘ CANCELLED`), 0, 0);
       }
 
       const answer = details.answer !== undefined ? String(details.answer) : "";

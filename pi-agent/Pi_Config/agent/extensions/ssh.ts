@@ -60,6 +60,7 @@ import {
   type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Text } from "@earendil-works/pi-tui";
+import { Type } from "typebox";
 import { createRequire } from "node:module";
 import * as fsSync from "node:fs";
 import * as path from "node:path";
@@ -1023,25 +1024,43 @@ export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
   pi.registerTool({
     ...localRead,
-    async execute(id, params, signal, onUpdate, _ctx) {
+    prepareArguments(args: any) {
+      if (!args || typeof args !== "object") return args;
+      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
+      return {
+        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        offset: args.offset,
+        limit: args.limit
+      };
+    },
+    async execute(id, params: any, signal, onUpdate, _ctx) {
+      const rawPath = params.path ?? params.file_path ?? "";
       if (session.isConnected() && session.targetInfo) {
         const tool = createReadTool(localCwd, {
           operations: createRemoteReadOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, params, signal, onUpdate);
+        return tool.execute(id, { ...params, path: rawPath }, signal, onUpdate);
       }
-      return localRead.execute(id, params, signal, onUpdate);
+      return localRead.execute(id, { ...params, path: rawPath }, signal, onUpdate);
     }
   });
 
   pi.registerTool({
     ...localWrite,
+    prepareArguments(args: any) {
+      if (!args || typeof args !== "object") return args;
+      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
+      return {
+        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        content: args.content ?? ""
+      };
+    },
     renderCall(args: any, theme: any, _renderCtx: any) {
       const rawPath = args?.path ?? args?.file_path ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
-    async execute(id, params, signal, onUpdate, _ctx) {
-      const rawPath = params.path ?? (params as any).file_path ?? "";
+    async execute(id, params: any, signal, onUpdate, _ctx) {
+      const rawPath = params.path ?? params.file_path ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
       let isOverwrite = false;
@@ -1145,14 +1164,28 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     ...localEdit,
-    async execute(id, params, signal, onUpdate, _ctx) {
+    prepareArguments(args: any) {
+      if (!args || typeof args !== "object") return args;
+      const targetPath = args.path ?? args.file_path ?? args._path ?? "";
+      return {
+        path: typeof targetPath === "string" ? targetPath.replace(/\\/g, "/").trim().replace(/^["']|["']$/g, "") : targetPath,
+        edits: Array.isArray(args.edits) ? args.edits : []
+      };
+    },
+    renderCall(args: any, theme: any, _renderCtx: any) {
+      const rawPath = args?.path ?? args?.file_path ?? "file";
+      return new Text(theme.fg("toolTitle", theme.bold("edit")) + " " + theme.fg("accent", rawPath), 0, 0);
+    },
+    async execute(id, params: any, signal, onUpdate, _ctx) {
+      const rawPath = params.path ?? params.file_path ?? "";
+      const edits = params.edits ?? [];
       if (session.isConnected() && session.targetInfo) {
         const tool = createEditTool(localCwd, {
           operations: createRemoteEditOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, params, signal, onUpdate);
+        return tool.execute(id, { path: rawPath, edits }, signal, onUpdate);
       }
-      return localEdit.execute(id, params, signal, onUpdate);
+      return localEdit.execute(id, { path: rawPath, edits }, signal, onUpdate);
     }
   });
 
