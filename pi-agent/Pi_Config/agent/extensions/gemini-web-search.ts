@@ -351,18 +351,21 @@ export function truncateHead(content: string, options: { maxLines?: number; maxB
 /**
  * Formats tool output showing first X lines in collapsed view and full content on Ctrl+O.
  */
-function formatToolOutput(content: string, expanded?: boolean, maxLines = COLLAPSED_PREVIEW_LINES): string {
+function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxLines = COLLAPSED_PREVIEW_LINES): string {
   const trimmed = content.trim();
   if (!trimmed) return "";
   const lines = trimmed.split("\n");
 
   if (expanded || lines.length <= maxLines) {
-    return lines.join("\n");
+    return lines.map((l: string) => theme ? theme.fg("toolOutput", l) : l).join("\n");
   }
 
-  const preview = lines.slice(0, maxLines).join("\n");
+  const preview = lines.slice(0, maxLines).map((l: string) => theme ? theme.fg("toolOutput", l) : l).join("\n");
   const remaining = lines.length - maxLines;
-  return `${preview}\n... (${remaining} more lines)`;
+  const hint = theme
+    ? theme.fg("muted", `\n\n... (${remaining} more lines, `) + theme.fg("accent", "ctrl+o") + theme.fg("muted", " to expand)")
+    : `\n\n... (${remaining} more lines)`;
+  return `${preview}${hint}`;
 }
 
 export const WebSearchSchema = Type.Object({
@@ -1339,7 +1342,7 @@ export default function (pi: ExtensionAPI) {
 
       const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
       const header = theme.fg("success", "✓ SEARCH COMPLETED") + theme.fg("dim", timeStr);
-      const formattedBody = formatToolOutput(content, options?.expanded, COLLAPSED_PREVIEW_LINES);
+      const formattedBody = formatToolOutput(content, theme, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);
     }
@@ -1782,7 +1785,7 @@ export default function (pi: ExtensionAPI) {
       const sumTag = details?.summarized ? " [Summarized]" : "";
       const browserTag = details?.viaCDP ? " [Chrome Live CDP]" : "";
       const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${browserTag}${sumTag}${timeStr}`);
-      const formattedBody = formatToolOutput(content, options?.expanded, COLLAPSED_PREVIEW_LINES);
+      const formattedBody = formatToolOutput(content, theme, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);
     }
