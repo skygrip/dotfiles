@@ -44,6 +44,7 @@ macros:
   # cache_reuse: 16       # --cache-reuse
   # ncmoe_gemma26: ""     # 100% Metal GPU offload (no CPU offload needed)
   # ncmoe_qwen35: ""      # 100% Metal GPU offload (no CPU offload needed)
+  # gemma_template: "--chat-template-file ${env.HOME}/llama-swap/gemma4.jinja"
   #
   # hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -lm mmap+mlock -bs --swa-full"
   # kv_args: "--kv-unified --parallel ${parallel_slots} --cache-ram ${cache_ram} --cache-idle-slots --ctx-checkpoints ${max_checkpoints} --cache-reuse ${cache_reuse}"
