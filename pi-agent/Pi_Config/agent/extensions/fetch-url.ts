@@ -1110,7 +1110,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "fetch_url",
     label: "Fetch URL",
-    description: "Fetch and extract clean markdown, text, or images from a web URL instead of curl in bash (e.g. inspecting online library docs, specifications, or web architecture diagrams).",
+    description: "Fetch and extract clean markdown from web pages, or view and visually analyze online image URLs (e.g. inspecting online documentation, visual flowcharts, or reference photos).",
     parameters: FetchUrlSchema,
 
     prepareArguments(args: any) {
