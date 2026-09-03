@@ -166,37 +166,20 @@ export async function runAskQuestionTests() {
   });
 
   // ----------------------------------------------------
-  // Section 3: Headless Mode Fallbacks
+  // Section 3: Interactive UI Modes & Non-Selection Errors
   // ----------------------------------------------------
-  await asyncTest("Headless Mode: returns fallback choice or text", async () => {
-    const headlessCtx = { hasUI: false };
-    const res = await askTool.execute(
-      "call_1",
-      { question: "Proceed?", options: ["Yes", "No"] },
-      undefined,
-      undefined,
-      headlessCtx
-    );
-    assert.ok(res.content?.[0]?.text?.includes("[Headless Mode Fallback]: Yes"));
-    assert.equal(res.details?.headless, true);
-    assert.equal(res.details?.answer, "Yes");
-  });
-
-  // ----------------------------------------------------
-  // Section 4: Interactive UI Dialogs (select, confirm, input)
-  // ----------------------------------------------------
-  await asyncTest("Interactive Mode: options triggers ctx.ui.select", async () => {
+  await asyncTest("Mode 1 (Multi-Choice): passes 2+ options to ctx.ui.select and records answer", async () => {
     const mockCtx = {
       hasUI: true,
       ui: {
         async select(title, choices) {
-          return choices[1]; // User picks second option (DuckDB)
+          return choices[1]; // User picks DuckDB
         }
       }
     };
 
     const res = await askTool.execute(
-      "call_interactive_1",
+      "call_m1",
       { question: "Choose database", options: ["PostgreSQL", "DuckDB"] },
       undefined,
       undefined,
@@ -206,99 +189,84 @@ export async function runAskQuestionTests() {
     assert.ok(res.content?.[0]?.text?.includes('User selected: "DuckDB"'));
   });
 
-  await asyncTest("Interactive Mode: confirmation prompt triggers ctx.ui.confirm", async () => {
+  await asyncTest("Mode 2 (Binary Decision): omitting options defaults to ['Yes', 'No'] in ctx.ui.select", async () => {
+    let receivedChoices = [];
     const mockCtx = {
       hasUI: true,
       ui: {
-        async confirm(title, msg) {
-          return true; // User confirms Yes
+        async select(title, choices) {
+          receivedChoices = choices;
+          return choices[0]; // User picks Yes
         }
       }
     };
 
     const res = await askTool.execute(
-      "call_interactive_2",
+      "call_m2",
       { question: "Confirm deploy to production?" },
       undefined,
       undefined,
       mockCtx
     );
+    assert.deepEqual(receivedChoices, ["Yes", "No"]);
     assert.equal(res.details?.answer, "Yes");
     assert.ok(res.content?.[0]?.text?.includes('User selected: "Yes"'));
   });
 
-  await asyncTest("Interactive Mode: open-ended question triggers ctx.ui.input", async () => {
-    const mockCtx = {
-      hasUI: true,
-      ui: {
-        async input(title, placeholder) {
-          return "my-token-123";
-        }
-      }
-    };
+  await asyncTest("Non-Selection Unified Error: dismissal, timeout, and headless all return Error: No selection made", async () => {
+    // 1. Headless environment
+    const headlessRes = await askTool.execute("call_h", { question: "Q?" }, undefined, undefined, { hasUI: false });
+    assert.equal(headlessRes.content?.[0]?.text, "Error: No selection made.");
+    assert.equal(headlessRes.details?.error, "No selection made");
+    assert.equal(headlessRes.details?.cancelled, true);
 
-    const res = await askTool.execute(
-      "call_interactive_3",
-      { question: "Enter API key" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-    assert.equal(res.details?.answer, "my-token-123");
-    assert.ok(res.content?.[0]?.text?.includes('User response: "my-token-123"'));
+    // 2. User dismissal (Escape / Cancel)
+    const dismissCtx = { hasUI: true, ui: { async select() { return undefined; } } };
+    const dismissRes = await askTool.execute("call_d", { question: "Q?", options: ["A", "B"] }, undefined, undefined, dismissCtx);
+    assert.equal(dismissRes.content?.[0]?.text, "Error: No selection made.");
+    assert.equal(dismissRes.details?.error, "No selection made");
+    assert.equal(dismissRes.details?.cancelled, true);
+
+    // 3. Aborted / Timeout signal
+    const abortCtrl = new AbortController();
+    abortCtrl.abort();
+    const abortCtx = { hasUI: true, ui: { async select() { return "A"; } } };
+    const abortRes = await askTool.execute("call_a", { question: "Q?" }, abortCtrl.signal, undefined, abortCtx);
+    assert.equal(abortRes.content?.[0]?.text, "Error: No selection made.");
+    assert.equal(abortRes.details?.error, "No selection made");
   });
 
-  // ----------------------------------------------------
-  // Section 5: Timeout, Dismissal & AbortSignal Handling
-  // ----------------------------------------------------
-  await asyncTest("Cancellation: handles user modal dismissal (Escape/Cancel)", async () => {
-    const mockCtx = {
-      hasUI: true,
-      ui: {
-        async select() {
-          return undefined; // User presses Escape or cancels modal
-        }
-      }
+  test("TUI Component Rendering: renderCall header and renderResult badges", () => {
+    const mockTheme = {
+      fg: (_color, str) => str,
+      bold: (str) => `[BOLD]${str}[/BOLD]`
     };
 
-    const res = await askTool.execute(
-      "call_dismiss",
-      { question: "Choose deployment strategy", options: ["Canary", "Blue-Green"] },
-      undefined,
-      undefined,
-      mockCtx
+    // 1. renderCall preview
+    const callComponent = askTool.renderCall(
+      { question: "Select target", options: ["Alpha", "Beta"] },
+      mockTheme,
+      {}
     );
-    assert.equal(res.details?.cancelled, true);
-    assert.ok(res.content?.[0]?.text?.includes("User Cancelled Prompt"));
-  });
+    assert.ok(callComponent, "renderCall must return a component");
 
-  test("Validation: prepareArguments provides fallback when question is empty", () => {
-    const prepNoQ = askTool.prepareArguments({});
-    assert.equal(prepNoQ.question, "Please provide input:");
-
-    const prepWithOptions = askTool.prepareArguments({ options: ["Alpha", "Beta"] });
-    assert.equal(prepWithOptions.question, "Select an option:");
-  });
-
-  await asyncTest("Cancellation: handles AbortSignal correctly", async () => {
-    const controller = new AbortController();
-    controller.abort();
-
-    const mockCtx = {
-      hasUI: true,
-      ui: {
-        custom() { return new Promise(() => {}); }
-      }
-    };
-
-    const res = await askTool.execute(
-      "call_abort",
-      { question: "Input?" },
-      controller.signal,
-      undefined,
-      mockCtx
+    // 2. renderResult - Answered
+    const answeredResult = askTool.renderResult(
+      { details: { answer: "Alpha", cancelled: false } },
+      {},
+      mockTheme,
+      {}
     );
-    assert.ok(res.details?.cancelled || res.content?.[0]?.text?.includes("Cancelled"));
+    assert.ok(answeredResult, "renderResult answered must return a component");
+
+    // 3. renderResult - No selection made error
+    const errorResult = askTool.renderResult(
+      { details: { cancelled: true, error: "No selection made" } },
+      {},
+      mockTheme,
+      {}
+    );
+    assert.ok(errorResult, "renderResult error must return a component");
   });
 
   return results;

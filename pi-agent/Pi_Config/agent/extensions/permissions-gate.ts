@@ -48,7 +48,7 @@ function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: Extensio
   return true;
 }
 
-let gateEnabled = isGateInitiallyEnabled("PI_PERMISSIONS_GATE", "no-permissions-gate");
+let gateEnabled = true;
 
 /**
  * Dangerous bash command regex patterns with human-readable violation explanations.

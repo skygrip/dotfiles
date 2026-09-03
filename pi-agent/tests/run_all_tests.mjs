@@ -26,6 +26,7 @@ import { runSshTests } from "./test_ssh.mjs";
 import { runSequentialThinkingTests } from "./test_sequential_thinking.mjs";
 import { runAskQuestionTests } from "./test_ask_question.mjs";
 import { runGeminiTests } from "./test_gemini_web_search.mjs";
+import { runFetchUrlTests } from "./test_fetch_url.mjs";
 
 const ANSI = {
   reset: "\x1b[0m",
@@ -44,7 +45,8 @@ const SUITES = [
   { name: "SSH Remote (ssh.ts)", runner: runSshTests },
   { name: "Sequential Thinking (sequential-thinking.ts)", runner: runSequentialThinkingTests },
   { name: "Ask Question (ask-question.ts)", runner: runAskQuestionTests },
-  { name: "Gemini Web Search (gemini-web-search.ts)", runner: runGeminiTests }
+  { name: "Gemini Web Search (gemini-web-search.ts)", runner: runGeminiTests },
+  { name: "Fetch URL (fetch-url.ts)", runner: runFetchUrlTests }
 ];
 
 async function main() {

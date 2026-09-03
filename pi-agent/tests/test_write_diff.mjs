@@ -385,8 +385,12 @@ async function main() {
     console.log(`${ANSI.bold}${ANSI.yellow}--- Visual TUI Diff Output Demo ---${ANSI.reset}\n`);
     const demoDiff = `  1 import express from "express";\n+ 2 import cors from "cors";\n+ 3 \n  2 const app = express();\n+ 5 app.use(cors());\n  3 \n- 4 app.get("/api/users", (req, res) => {\n- 5   res.json({ users: [] });\n+ 7 app.get("/api/users", async (req, res) => {\n+ 8   const users = await fetchUsersFromDatabase();\n+ 9   res.json({ success: true, users });\n  6 });\n  7 \n- 8 app.listen(3000, () => {\n- 9   console.log("Server listening on port 3000");\n+12 app.listen(8080, () => {\n+13   console.log("Server listening on port 8080");\n 10 });`;
     
-    const themeModule = require(path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js"));
-    themeModule.initTheme("dark");
+    let activeTheme = mockTheme;
+    try {
+      const themeModule = require(path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js"));
+      themeModule.initTheme("dark");
+      activeTheme = themeModule.theme;
+    } catch {}
 
     const sampleResult = {
       content: [{ type: "text", text: "Wrote file" }],
@@ -400,10 +404,10 @@ async function main() {
     const localTool = mockRegistered.get("write");
 
     console.log(`${ANSI.cyan}[1. Collapsed View (12 lines max)]:${ANSI.reset}`);
-    console.log(localTool.renderResult(sampleResult, { expanded: false }, themeModule.theme, {}).text);
+    console.log(localTool.renderResult(sampleResult, { expanded: false }, activeTheme, {}).text);
 
     console.log(`\n${ANSI.cyan}[2. Expanded View (ctrl+o)]:${ANSI.reset}`);
-    console.log(localTool.renderResult(sampleResult, { expanded: true }, themeModule.theme, {}).text);
+    console.log(localTool.renderResult(sampleResult, { expanded: true }, activeTheme, {}).text);
     console.log(`\n${ANSI.bold}${ANSI.yellow}-----------------------------------${ANSI.reset}\n`);
 
     process.exit(0);

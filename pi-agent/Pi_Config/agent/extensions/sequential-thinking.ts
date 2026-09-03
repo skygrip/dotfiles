@@ -28,12 +28,7 @@ export default function initExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "sequential_thinking",
     label: "Sequential Thinking",
-    description: "Run a step-by-step reasoning loop to think through complex logic or multi-file problems.",
-
-    promptGuidelines: [
-      "Use sequential_thinking to structure multi-step reasoning, test hypotheses, and decompose complex logic before committing changes."
-    ],
-
+    description: "For Step-by-step reasoning, test hypotheses, or to plan multi-file changes before editing code or executing actions (e.g. diagnosing subtle race conditions or planning complex refactors).",
     parameters: SequentialThinkingSchema,
 
     /**

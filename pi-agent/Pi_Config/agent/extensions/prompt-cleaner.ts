@@ -24,6 +24,10 @@
  * 3. Cross-Format Argument Normalization:
  *    - Transparently handles OpenAI-style function calls (`tool_calls[].function.arguments`),
  *      Anthropic-style tool invocations (`toolCalls[].arguments`), and raw content blocks (`content[].input`).
+ *
+ * 4. Windows Path Normalization (Issue #8841):
+ *    - Normalizes unescaped Windows backslashes in documentation paths, context instructions,
+ *      and skill locations to forward slashes.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -107,12 +111,41 @@ function sanitizeMessages(messages: any[]): any[] {
 }
 
 /**
+ * Normalizes Windows drive-letter paths in the system prompt to forward slashes.
+ * Fixes issue #8841: unnormalized backslashes in documentation, context, and skill paths.
+ *
+ * @param text - The raw prompt text containing Windows file paths.
+ * @returns The prompt text with normalized forward-slash paths.
+ */
+export function normalizeWindowsPaths(text: string): string {
+  if (!text || typeof text !== "string") return text;
+
+  // 1. Normalize XML attributes and tags (<location> and <project_instructions path="...">)
+  text = text.replace(
+    /<location>([a-zA-Z]:\\[^<]+)<\/location>/g,
+    (_, p) => `<location>${p.replace(/\\/g, "/")}</location>`
+  );
+  text = text.replace(
+    /<project_instructions path="([a-zA-Z]:\\[^"]+)">/g,
+    (_, p) => `<project_instructions path="${p.replace(/\\/g, "/")}">`
+  );
+
+  // 2. Normalize documentation paths and general unquoted Windows drive-letter paths
+  text = text.replace(
+    /([a-zA-Z]:\\[^\s"'<>]+)/g,
+    (match) => match.replace(/\\/g, "/")
+  );
+
+  return text;
+}
+
+/**
  * Default export entrypoint for the Prompt Cleaner extension.
  *
  * @param pi - Pi Extension API instance.
  */
 export default function (pi: ExtensionAPI) {
-  // 1. Clean system prompt boilerplate
+  // 1. Clean system prompt boilerplate & normalize Windows paths
   pi.on("before_agent_start", async (event) => {
     let prompt = event.systemPrompt;
 
@@ -122,6 +155,9 @@ export default function (pi: ExtensionAPI) {
       ""
     );
 
+    // Normalize Windows backslashes in system prompt paths (issue #8841)
+    prompt = normalizeWindowsPaths(prompt);
+
     return { systemPrompt: prompt };
   });
 
@@ -129,6 +165,11 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_provider_request", async (event) => {
     const payload: any = event.payload;
     if (payload && Array.isArray(payload.messages)) {
+      for (const msg of payload.messages) {
+        if (msg && (msg.role === "system" || msg.role === "developer") && typeof msg.content === "string") {
+          msg.content = normalizeWindowsPaths(msg.content);
+        }
+      }
       sanitizeMessages(payload.messages);
     }
     return payload;
@@ -142,3 +183,4 @@ export default function (pi: ExtensionAPI) {
     return { messages: event.messages };
   });
 }
+

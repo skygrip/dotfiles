@@ -1,42 +1,29 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
-import { createRequire } from "node:module";
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import * as os from "node:os";
-import * as fsSync from "node:fs";
-import * as net from "node:net";
-import { spawn } from "node:child_process";
-import { lookup as dnsLookup } from "node:dns/promises";
 
 /**
  * Lean Gemini Web Search Extension for Pi Coding Agent
  *
  * Tools & Commands:
  * - `web_search`: Google Search grounding via Gemini API with parallel citation resolution.
- * - `fetch_url`: Safe HTTP retrieval with got-scraping, SSRF protection, dedicated Chrome CDP browser fallback, Readability/Turndown parsing, and multimodal vision.
- * - `/web-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
- * - `/chrome`: Slash command to inspect or open Agent Chrome with dedicated persistent profile ([open|start|status|profile]).
+ * - `/search-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
  *
  * Configuration & CLI Flags:
- * - Gemini API Key: Resolved securely from Pi Model Registry or ~/.pi/agent/auth.json (google.key).
+ * - Gemini API Key: Resolved from GEMINI_API_KEY / GOOGLE_API_KEY env vars or Pi ModelRegistry (google).
  * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-flash-lite-latest").
- * - `--no-web-gate`: CLI flag to disable confirmation prompts for web search and URL fetch.
- * - `PI_WEB_GATE`: Environment variable override (set to "0" or "false" to disable).
+ * - `--no-search-gate`: CLI flag to disable confirmation prompts for web search.
+ * - `PI_SEARCH_GATE`: Environment variable override (set to "0" or "false" to disable).
  * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
- * - `PI_CHROME_CDP_PORT`: Override Chrome Remote Debugging port (default: 9222).
  */
 
 const DEFAULT_MODEL = "gemini-flash-lite-latest";
 const DEFAULT_API_HOST = "https://generativelanguage.googleapis.com";
-const DEFAULT_TIMEOUT_MS = 30000;
-const MAX_FETCH_BYTES = 5 * 1024 * 1024; // 5 MB download limit
 const CONFIRM_TIMEOUT_MS = 30000; // 30s confirmation auto-dismiss
+const COLLAPSED_PREVIEW_LINES = 6;
 
 export const DEFAULT_MAX_LINES = 2000;
 export const DEFAULT_MAX_BYTES = 50 * 1024; // 50 KB output ceiling
-const COLLAPSED_PREVIEW_LINES = 6;
 
 // Rates for gemini-flash-lite-latest (USD per 1M tokens)
 const INPUT_PRICE_PER_M = 0.075;
@@ -45,11 +32,11 @@ const OUTPUT_PRICE_PER_M = 0.30;
 /**
  * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
  */
-function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: ExtensionAPI): boolean {
-  if (pi && typeof pi.getFlag === "function" && pi.getFlag(flagName) === true) {
+function isGateEnabled(pi?: ExtensionAPI): boolean {
+  if (pi && typeof pi.getFlag === "function" && pi.getFlag("no-search-gate") === true) {
     return false;
   }
-  if (process.argv.includes(`--${flagName}`) || process.argv.includes("--no-gates")) {
+  if (process.argv.includes("--no-search-gate") || process.argv.includes("--no-gates")) {
     return false;
   }
 
@@ -58,258 +45,12 @@ function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: Extensio
     return false;
   }
 
-  const val = process.env[gateKey]?.trim().toLowerCase();
+  const val = process.env.PI_SEARCH_GATE?.trim().toLowerCase();
   if (val && ["0", "false", "off", "disable", "disabled", "no"].includes(val)) {
     return false;
   }
 
   return true;
-}
-
-let gateEnabled = isGateInitiallyEnabled("PI_WEB_GATE", "no-web-gate");
-
-/**
- * Resolves npm packages from ~/.pi/agent/npm/node_modules or global paths
- * regardless of the current working directory.
- */
-function loadDependency<T = any>(name: string): T {
-  try {
-    const req = createRequire(import.meta.url);
-    return req(name);
-  } catch {}
-
-  try {
-    const piNpmDir = path.join(os.homedir(), ".pi", "agent", "npm", "package.json");
-    const piReq = createRequire(piNpmDir);
-    return piReq(name);
-  } catch {}
-
-  try {
-    const globalPath = path.join(process.env.APPDATA || "", "npm", "node_modules", "package.json");
-    const globalReq = createRequire(globalPath);
-    return globalReq(name);
-  } catch {}
-
-  throw new Error(`Failed to load '${name}'. Please install it in ~/.pi/agent/npm/ (e.g. npm i ${name})`);
-}
-
-let cachedReadability: any = null;
-let cachedParseHTML: any = null;
-let cachedTurndown: any = null;
-let cachedResizeImage: any = null;
-let cachedFormatDimensionNote: any = null;
-
-/**
- * Lazy loader for Pi's built-in Rust/WASM Photon image resizing engine.
- */
-function getImageResizer() {
-  if (!cachedResizeImage) {
-    try {
-      const piAgent = loadDependency("@earendil-works/pi-coding-agent");
-      if (typeof piAgent.resizeImage === "function") {
-        cachedResizeImage = piAgent.resizeImage;
-        cachedFormatDimensionNote = piAgent.formatDimensionNote;
-      }
-    } catch {}
-  }
-  return {
-    resizeImage: cachedResizeImage,
-    formatDimensionNote: cachedFormatDimensionNote
-  };
-}
-
-let cachedGotScraping: any = null;
-
-/**
- * Lazy loader for got-scraping anti-bot HTTP client.
- */
-function getGotScraping() {
-  if (!cachedGotScraping) {
-    try {
-      const mod = loadDependency("got-scraping");
-      cachedGotScraping = mod.gotScraping || mod.default || mod;
-    } catch {}
-  }
-  return cachedGotScraping;
-}
-
-let cachedPlaywright: any = null;
-
-/**
- * Lazy loader for Playwright browser automation engine.
- */
-function getPlaywright() {
-  if (!cachedPlaywright) {
-    try {
-      const mod = loadDependency("playwright-core");
-      cachedPlaywright = mod.chromium || mod;
-    } catch {}
-  }
-  return cachedPlaywright;
-}
-
-/**
- * Lazy loader for Readability, LinkeDOM, and Turndown parsers.
- */
-function getParsers() {
-  if (!cachedReadability) {
-    try {
-      const readMod = loadDependency("@mozilla/readability");
-      cachedReadability = readMod.Readability || readMod;
-    } catch {}
-  }
-  if (!cachedParseHTML) {
-    try {
-      const linkeMod = loadDependency("linkedom");
-      cachedParseHTML = linkeMod.parseHTML || linkeMod;
-    } catch {}
-  }
-  if (!cachedTurndown) {
-    try {
-      const TurnClass = loadDependency("turndown");
-      const instance = new TurnClass({
-        headingStyle: "atx",
-        codeBlockStyle: "fenced",
-        hr: "---"
-      });
-      instance.remove(["script", "style", "noscript", "iframe", "svg"]);
-      cachedTurndown = instance;
-    } catch {}
-  }
-
-  return {
-    Readability: cachedReadability,
-    parseHTML: cachedParseHTML,
-    turndown: cachedTurndown
-  };
-}
-
-export interface SniffedContent {
-  category: "html" | "image" | "svg" | "json" | "text" | "binary";
-  mimeType: string;
-  charset: string;
-}
-
-/**
- * 2-Tier Content Sniffer: Inspects Content-Type header and first 512 magic bytes.
- */
-export function sniffContentType(buffer: Uint8Array, rawHeaderMime = ""): SniffedContent {
-  const headerParts = rawHeaderMime.split(";");
-  const headerMime = (headerParts[0] || "").trim().toLowerCase();
-
-  let charset = "utf-8";
-  for (let i = 1; i < headerParts.length; i++) {
-    const part = headerParts[i].trim().toLowerCase();
-    if (part.startsWith("charset=")) {
-      charset = part.slice(8).replace(/["']/g, "").trim() || "utf-8";
-      break;
-    }
-  }
-
-  // 1. Magic Bytes for Raster Images
-  if (buffer.length >= 4) {
-    // PNG: 89 50 4E 47
-    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
-      return { category: "image", mimeType: "image/png", charset };
-    }
-    // JPEG: FF D8 FF
-    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-      return { category: "image", mimeType: "image/jpeg", charset };
-    }
-    // GIF: 47 49 46 38 (GIF8)
-    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
-      return { category: "image", mimeType: "image/gif", charset };
-    }
-    // WebP: RIFF....WEBP (52 49 46 46 ... 57 45 42 50)
-    if (buffer.length >= 12 &&
-        buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
-      return { category: "image", mimeType: "image/webp", charset };
-    }
-  }
-
-  // 2. SVG (Vector XML)
-  if (headerMime === "image/svg+xml") {
-    return { category: "svg", mimeType: "image/svg+xml", charset };
-  }
-
-  // 3. Scan first 512 bytes for null bytes (\0) to detect disguised binary files
-  const inspectLen = Math.min(buffer.length, 512);
-  let hasNullByte = false;
-  for (let i = 0; i < inspectLen; i++) {
-    if (buffer[i] === 0x00) {
-      hasNullByte = true;
-      break;
-    }
-  }
-
-  // Known image MIME types
-  if (headerMime.startsWith("image/")) {
-    return { category: "image", mimeType: headerMime, charset };
-  }
-
-  // Binary types or null-byte detection
-  if (hasNullByte ||
-      headerMime === "application/octet-stream" ||
-      headerMime === "application/zip" ||
-      headerMime === "application/x-tar" ||
-      headerMime === "application/gzip" ||
-      headerMime.startsWith("audio/") ||
-      headerMime.startsWith("video/") ||
-      headerMime === "application/pdf" ||
-      headerMime === "application/x-executable" ||
-      headerMime === "application/vnd.microsoft.portable-executable") {
-    return { category: "binary", mimeType: headerMime || "application/octet-stream", charset };
-  }
-
-  // Sample initial text for HTML, JSON, or SVG cues
-  let sampleText = "";
-  try {
-    const dec = new TextDecoder(charset);
-    sampleText = dec.decode(buffer.subarray(0, Math.min(buffer.length, 1024))).trim();
-  } catch {
-    sampleText = new TextDecoder("utf-8").decode(buffer.subarray(0, Math.min(buffer.length, 1024))).trim();
-  }
-
-  if (headerMime === "text/html" || headerMime === "application/xhtml+xml" || /<!doctype\s+html|<html[\s>]/i.test(sampleText)) {
-    return { category: "html", mimeType: "text/html", charset };
-  }
-
-  if (sampleText.startsWith("<svg") || (sampleText.startsWith("<?xml") && sampleText.includes("<svg"))) {
-    return { category: "svg", mimeType: "image/svg+xml", charset };
-  }
-
-  if (headerMime === "application/json" || headerMime === "application/ld+json" || ((sampleText.startsWith("{") || sampleText.startsWith("[")) && (sampleText.endsWith("}") || sampleText.endsWith("]")))) {
-    return { category: "json", mimeType: "application/json", charset };
-  }
-
-  return { category: "text", mimeType: headerMime || "text/plain", charset };
-}
-
-/**
- * Computes Pi-compatible Usage object from Gemini usageMetadata.
- */
-function computeGeminiUsage(usageMeta?: { promptTokenCount?: number; candidatesTokenCount?: number }) {
-  const input = usageMeta?.promptTokenCount ?? 0;
-  const output = usageMeta?.candidatesTokenCount ?? 0;
-  const inputCost = (input / 1_000_000) * INPUT_PRICE_PER_M;
-  const outputCost = (output / 1_000_000) * OUTPUT_PRICE_PER_M;
-  const totalCost = inputCost + outputCost;
-
-  return {
-    input,
-    output,
-    cacheRead: 0,
-    cacheWrite: 0,
-    totalTokens: input + output,
-    cost: {
-      input: inputCost,
-      output: outputCost,
-      cacheRead: 0,
-      cacheWrite: 0,
-      total: totalCost
-    }
-  };
 }
 
 /**
@@ -349,6 +90,32 @@ export function truncateHead(content: string, options: { maxLines?: number; maxB
 }
 
 /**
+ * Computes Pi-compatible Usage object from Gemini usageMetadata.
+ */
+export function computeGeminiUsage(usageMeta?: { promptTokenCount?: number; candidatesTokenCount?: number }) {
+  const input = usageMeta?.promptTokenCount ?? 0;
+  const output = usageMeta?.candidatesTokenCount ?? 0;
+  const inputCost = (input / 1_000_000) * INPUT_PRICE_PER_M;
+  const outputCost = (output / 1_000_000) * OUTPUT_PRICE_PER_M;
+  const totalCost = inputCost + outputCost;
+
+  return {
+    input,
+    output,
+    cacheRead: 0,
+    cacheWrite: 0,
+    totalTokens: input + output,
+    cost: {
+      input: inputCost,
+      output: outputCost,
+      cacheRead: 0,
+      cacheWrite: 0,
+      total: totalCost
+    }
+  };
+}
+
+/**
  * Formats tool output showing first X lines in collapsed view and full content on Ctrl+O.
  */
 function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxLines = COLLAPSED_PREVIEW_LINES): string {
@@ -357,15 +124,17 @@ function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxL
   const lines = trimmed.split("\n");
 
   if (expanded || lines.length <= maxLines) {
-    return lines.map((l: string) => theme ? theme.fg("toolOutput", l) : l).join("\n");
+    const body = lines.join("\n");
+    return theme ? theme.fg("toolOutput", body) : body;
   }
 
-  const preview = lines.slice(0, maxLines).map((l: string) => theme ? theme.fg("toolOutput", l) : l).join("\n");
+  const preview = lines.slice(0, maxLines).join("\n");
+  const coloredPreview = theme ? theme.fg("toolOutput", preview) : preview;
   const remaining = lines.length - maxLines;
   const hint = theme
     ? theme.fg("muted", `\n\n... (${remaining} more lines, `) + theme.fg("accent", "ctrl+o") + theme.fg("muted", " to expand)")
     : `\n\n... (${remaining} more lines)`;
-  return `${preview}${hint}`;
+  return `${coloredPreview}${hint}`;
 }
 
 export const WebSearchSchema = Type.Object({
@@ -376,467 +145,68 @@ export const WebSearchSchema = Type.Object({
 
 export type WebSearchParams = Static<typeof WebSearchSchema>;
 
-export const FetchUrlSchema = Type.Object({
-  url: Type.String({
-    description: "The URL of the web page, file, or image to fetch."
-  })
-});
-
-export type FetchUrlParams = Static<typeof FetchUrlSchema>;
-
 export interface SearchResultItem {
   title: string;
   url: string;
 }
 
-export interface WebToolDetails {
+export interface WebSearchToolDetails {
   query?: string;
-  url?: string;
-  title?: string;
   model?: string;
   sources?: SearchResultItem[];
   denied?: boolean;
   error?: string;
   durationMs?: number;
-  summarized?: boolean;
-  isImage?: boolean;
-  contentType?: string;
-  width?: number;
-  height?: number;
-  sizeBytes?: number;
-  usedBrowser?: boolean;
-  viaCDP?: boolean;
-  linkCount?: number;
   fullContent?: string;
 }
 
 /**
- * Resolves Gemini API key from Pi ModelRegistry or ~/.pi/agent/auth.json.
+ * Resolves Gemini API key from environment variables or Pi ModelRegistry.
  */
-async function resolveApiKey(ctx: ExtensionContext): Promise<string | null> {
-  if (typeof ctx.modelRegistry?.getApiKeyAndHeaders === "function") {
-    try {
-      const auth = await ctx.modelRegistry.getApiKeyAndHeaders({ provider: "google", id: DEFAULT_MODEL });
-      if (auth?.apiKey) return auth.apiKey;
-    } catch {}
-  }
+export async function resolveApiKey(ctx: ExtensionContext): Promise<string | null> {
+  const envKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
+  if (envKey) return envKey;
 
-  if (typeof ctx.modelRegistry?.getProviderAuth === "function") {
-    try {
-      const auth = await ctx.modelRegistry.getProviderAuth("google");
-      if (auth?.apiKey) return auth.apiKey;
-    } catch {}
-  }
-
-  try {
-    const authPath = path.join(os.homedir(), ".pi", "agent", "auth.json");
-    const raw = await fs.readFile(authPath, "utf8");
-    const parsed = JSON.parse(raw);
-    if (parsed.google?.key && typeof parsed.google.key === "string" && parsed.google.key.trim().length > 0) {
-      return parsed.google.key.trim();
+  if (ctx.modelRegistry) {
+    if (typeof ctx.modelRegistry.getApiKeyForProvider === "function") {
+      try {
+        const key = await ctx.modelRegistry.getApiKeyForProvider("google");
+        if (key) return key;
+      } catch {}
     }
-  } catch {}
+
+    if (typeof ctx.modelRegistry.getProviderAuth === "function") {
+      try {
+        const auth = await ctx.modelRegistry.getProviderAuth("google");
+        if (auth?.auth?.apiKey) return auth.auth.apiKey;
+      } catch {}
+    }
+
+    if (typeof ctx.modelRegistry.getApiKeyAndHeaders === "function") {
+      try {
+        const auth = await ctx.modelRegistry.getApiKeyAndHeaders({ provider: "google", id: DEFAULT_MODEL } as any);
+        if (auth?.ok && auth.apiKey) return auth.apiKey;
+      } catch {}
+    }
+  }
 
   return null;
-}
-
-/**
- * Validates protocol and URL structure.
- */
-function validateRemoteUrl(rawUrl: string | URL): URL {
-  const url = rawUrl instanceof URL ? rawUrl : new URL(rawUrl);
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error(`Invalid protocol '${url.protocol}'. Only HTTP and HTTPS URLs are allowed.`);
-  }
-  if (!url.hostname) {
-    throw new Error("URL must include a valid hostname.");
-  }
-  return url;
-}
-
-/**
- * Fetches remote URL safely with redirect following (up to 5 hops), 5MB size ceiling, and anti-bot handling via got-scraping / fetch.
- */
-async function fetchSafeRemote(
-  rawUrl: string,
-  signal?: AbortSignal,
-  timeoutMs = DEFAULT_TIMEOUT_MS
-): Promise<{ rawBuffer: Uint8Array; contentType: string; finalUrl: string }> {
-  let currentUrl = validateRemoteUrl(rawUrl);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  const combinedSignal = signal
-    ? AbortSignal.any([signal, controller.signal])
-    : controller.signal;
-
-  const gotScraping = getGotScraping();
-
-  try {
-    for (let redirectCount = 0; redirectCount <= 5; redirectCount++) {
-      let responseStatus = 0;
-      let contentType = "";
-      let rawBuffer: Uint8Array | null = null;
-      let locationHeader: string | undefined;
-
-      // 1. Primary path: got-scraping (browser TLS emulation, HTTP/2, auto-generated browser headers)
-      if (gotScraping) {
-        try {
-          const res = await gotScraping(currentUrl.toString(), {
-            method: "GET",
-            responseType: "buffer",
-            followRedirect: false,
-            throwHttpErrors: false,
-            timeout: { request: timeoutMs },
-            signal: combinedSignal,
-            retry: {
-              limit: 2,
-              methods: ["GET", "HEAD"],
-              statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
-              maxRetryAfter: 10000
-            }
-          });
-
-          responseStatus = res.statusCode;
-          contentType = (Array.isArray(res.headers["content-type"]) ? res.headers["content-type"][0] : res.headers["content-type"]) || "";
-          rawBuffer = new Uint8Array(res.rawBody || res.body);
-          locationHeader = typeof res.headers.location === "string" ? res.headers.location : undefined;
-        } catch (gotErr: any) {
-          if (gotErr.name === "AbortError" || combinedSignal.aborted) throw gotErr;
-          responseStatus = 0;
-        }
-      }
-
-      // 2. Secondary fallback path: Native fetch
-      if (responseStatus === 0 || rawBuffer === null) {
-        const fetchRes = await fetch(currentUrl, {
-          method: "GET",
-          signal: combinedSignal,
-          redirect: "manual",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9"
-          }
-        });
-
-        responseStatus = fetchRes.status;
-        locationHeader = fetchRes.headers.get("location") || undefined;
-        contentType = fetchRes.headers.get("content-type") || "";
-
-        if ([301, 302, 303, 307, 308].includes(responseStatus)) {
-          // Handled below in redirect loop
-        } else if (fetchRes.ok) {
-          const arrayBuf = await fetchRes.arrayBuffer();
-          rawBuffer = new Uint8Array(arrayBuf);
-        } else {
-          throw new Error(`HTTP ${fetchRes.status}: ${fetchRes.statusText || "Request failed"}`);
-        }
-      }
-
-      // Handle redirects
-      if ([301, 302, 303, 307, 308].includes(responseStatus)) {
-        if (!locationHeader) throw new Error(`Received redirect ${responseStatus} with no Location header`);
-        if (redirectCount === 5) throw new Error("Too many redirects (exceeded 5 hops)");
-        currentUrl = validateRemoteUrl(new URL(locationHeader, currentUrl));
-        continue;
-      }
-
-      if (responseStatus >= 400) {
-        throw new Error(`HTTP ${responseStatus}: Request failed`);
-      }
-
-      if (!rawBuffer) {
-        rawBuffer = new Uint8Array(0);
-      }
-
-      if (rawBuffer.length > MAX_FETCH_BYTES) {
-        throw new Error(`Response size (${(rawBuffer.length / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
-      }
-
-      return { rawBuffer, contentType, finalUrl: currentUrl.toString() };
-    }
-
-    throw new Error("Too many redirects fetching URL");
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-/**
- * Locates Google Chrome or Edge executable on Windows/macOS/Linux.
- */
-function findChromeExecutable(): string | null {
-  const candidates = [
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/usr/bin/google-chrome",
-    "/usr/bin/chromium-browser",
-    "/usr/bin/chromium"
-  ];
-  for (const p of candidates) {
-    if (fsSync.existsSync(p)) return p;
-  }
-  return null;
-}
-
-/**
- * Returns the dedicated persistent Chrome profile directory for Pi Agent (~/.pi/agent/chrome_profile).
- */
-function getAgentChromeProfileDir(): string {
-  const dir = path.join(os.homedir(), ".pi", "agent", "chrome_profile");
-  if (!fsSync.existsSync(dir)) {
-    fsSync.mkdirSync(dir, { recursive: true });
-  }
-  return dir;
-}
-
-/**
- * Checks whether Chrome Remote Debugging (CDP) is currently active and listening on the given port.
- */
-async function isChromeCDPListening(port: string | number = 9222): Promise<boolean> {
-  try {
-    const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
-      signal: AbortSignal.timeout(1000)
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Launches Google Chrome with a dedicated persistent profile and CDP remote debugging enabled (Burp/ZAP style).
- */
-async function launchAgentChrome(port: string | number = 9222): Promise<{ success: boolean; error?: string }> {
-  if (await isChromeCDPListening(port)) {
-    return { success: true };
-  }
-
-  const chromePath = findChromeExecutable();
-  if (!chromePath) {
-    return { success: false, error: "Google Chrome / Edge executable not found in standard system locations." };
-  }
-
-  const profileDir = getAgentChromeProfileDir();
-
-  try {
-    const child = spawn(chromePath, [
-      `--remote-debugging-port=${port}`,
-      `--user-data-dir=${profileDir}`,
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--remote-allow-origins=*",
-      "about:blank"
-    ], {
-      detached: true,
-      stdio: "ignore",
-      windowsHide: false
-    });
-    child.unref();
-
-    // Poll for CDP readiness (up to 5s)
-    for (let i = 0; i < 10; i++) {
-      await new Promise(r => setTimeout(r, 500));
-      if (await isChromeCDPListening(port)) {
-        return { success: true };
-      }
-    }
-
-    return { success: false, error: `Chrome was started, but CDP port ${port} did not become active within 5 seconds.` };
-  } catch (err: any) {
-    return { success: false, error: err?.message || String(err) };
-  }
-}
-
-/**
- * Browser renderer via Playwright connecting directly to live desktop Chrome via Remote Debugging (CDP port 9222).
- * Automatically launches Chrome with a dedicated persistent profile (~/.pi/agent/chrome_profile) if not already active.
- */
-async function fetchViaChromeCDP(
-  rawUrl: string,
-  signal?: AbortSignal,
-  timeoutMs = DEFAULT_TIMEOUT_MS
-): Promise<{ rawBuffer: Uint8Array; contentType: string; finalUrl: string; pageTitle?: string; links?: Array<{ text: string; href: string }> }> {
-  const chromium = getPlaywright();
-  if (!chromium) {
-    throw new Error("Playwright is not available. Please install playwright-core in ~/.pi/agent/npm/");
-  }
-
-  const validUrl = validateRemoteUrl(rawUrl);
-
-  const cdpPort = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
-  const cdpUrl = `http://127.0.0.1:${cdpPort}`;
-
-  // Auto-launch Agent Chrome if not already running on port
-  const isListening = await isChromeCDPListening(cdpPort);
-  if (!isListening) {
-    const launched = await launchAgentChrome(cdpPort);
-    if (!launched.success) {
-      throw new Error(`Chrome Remote Debugging is unavailable on port ${cdpPort}: ${launched.error}`);
-    }
-  }
-
-  let browser: any;
-  try {
-    browser = await chromium.connectOverCDP(cdpUrl, { timeout: 3000 });
-  } catch (err: any) {
-    throw new Error(`Failed to attach to Chrome Remote Debugging on ${cdpUrl}: ${err.message}`);
-  }
-
-  let page: any = null;
-
-  try {
-    // In CDP mode, use the default active browser context (contains all user logins, cookies, session state)
-    const contexts = browser.contexts();
-    const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
-    page = await context.newPage();
-
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        page?.close().catch(() => {});
-      }, { once: true });
-    }
-
-    await page.goto(validUrl.toString(), {
-      waitUntil: "domcontentloaded",
-      timeout: timeoutMs
-    });
-
-    // 1. Wait for challenge (Vercel/Cloudflare) to resolve
-    try {
-      await page.waitForFunction(() => {
-        const t = document.title || "";
-        return !t.includes("Security Checkpoint") && !t.includes("Just a moment") && !t.includes("Checking your browser");
-      }, { timeout: 10000 });
-    } catch {}
-
-    // 2. Auto-dismiss common consent / age gate buttons if present
-    let dismissedModal = false;
-    try {
-      dismissedModal = await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit']"));
-        const consentBtn = buttons.find(el => {
-          const txt = (el.textContent || (el as HTMLInputElement).value || "").trim();
-          return /^(accept|accept all|i agree|allow all|yes|confirm|enter|agree|continue|ok|proceed)$/i.test(txt);
-        });
-        if (consentBtn) {
-          (consentBtn as HTMLElement).click();
-          return true;
-        }
-        return false;
-      });
-    } catch {}
-
-    // 3. Wait briefly for network idle
-    try {
-      await page.waitForLoadState("networkidle", { timeout: 4000 });
-    } catch {}
-
-    // 4. Stabilization grace period for SPA hydration and post-consent DOM mounting
-    try {
-      await page.waitForTimeout(dismissedModal ? 1500 : 1000);
-    } catch {
-      await new Promise(r => setTimeout(r, 1000));
-    }
-
-    const pageTitle = await page.title();
-    const finalUrl = page.url();
-    const htmlContent = await page.content();
-
-    const links = await page.evaluate(() => {
-      const result: Array<{ text: string; href: string }> = [];
-      const seen = new Set<string>();
-      const anchors = document.querySelectorAll("a[href]");
-      for (const a of anchors) {
-        const anchor = a as HTMLAnchorElement;
-        const href = anchor.href?.trim();
-        const text = anchor.innerText?.trim() || anchor.title?.trim() || "";
-        if (href && href.startsWith("http") && !seen.has(href)) {
-          seen.add(href);
-          result.push({ text, href });
-        }
-      }
-      return result;
-    });
-
-    const rawBuffer = new TextEncoder().encode(htmlContent);
-    return { rawBuffer, contentType: "text/html; charset=utf-8", finalUrl, pageTitle, links };
-  } finally {
-    // Only close the tab, never shut down user's desktop Chrome
-    try {
-      await page?.close().catch(() => {});
-    } finally {
-      await browser?.disconnect?.().catch(() => {});
-    }
-  }
-}
-
-/**
- * Converts raw HTML into clean Markdown via Readability and Turndown, with regex fallback.
- */
-function htmlToMarkdown(html: string, pageUrl: string): { title: string; markdown: string } {
-  const { Readability, parseHTML, turndown } = getParsers();
-
-  if (parseHTML && Readability && turndown) {
-    try {
-      const { document } = parseHTML(html);
-      const docTitle = document.title?.trim() || "";
-
-      const reader = new Readability(document as unknown as Document);
-      const article = reader.parse();
-
-      if (article && article.content) {
-        const md = turndown.turndown(article.content).trim();
-        const title = article.title?.trim() || docTitle || pageUrl;
-        return { title, markdown: md };
-      }
-
-      const bodyHtml = document.body?.innerHTML || html;
-      const basicMd = turndown.turndown(bodyHtml).trim();
-      return { title: docTitle || pageUrl, markdown: basicMd };
-    } catch {}
-  }
-
-  // Regex fallback if DOM parser packages are not available
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : pageUrl;
-
-  const stripped = html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
-    .replace(/<header[\s\S]*?<\/header>/gi, "")
-    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
-    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return { title, markdown: stripped };
 }
 
 /**
  * Resolves Google Grounding API redirect URLs to target destination URLs via HTTP HEAD.
  */
-async function resolveGroundingRedirect(proxyUrl: string, signal?: AbortSignal): Promise<string> {
+export async function resolveGroundingRedirect(proxyUrl: string, signal?: AbortSignal): Promise<string> {
   if (!proxyUrl.includes("vertexaisearch.cloud.google.com/grounding-api-redirect")) {
     return proxyUrl;
   }
   try {
+    const timeoutSignal = AbortSignal.timeout(4000);
+    const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
     const res = await fetch(proxyUrl, {
       method: "HEAD",
       redirect: "manual",
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(4000)]) : AbortSignal.timeout(4000)
+      signal: combinedSignal
     });
     const location = res.headers.get("location");
     return location || proxyUrl;
@@ -851,7 +221,8 @@ async function resolveGroundingRedirect(proxyUrl: string, signal?: AbortSignal):
 async function promptPermission(
   ctx: ExtensionContext,
   title: string,
-  message: string
+  message: string,
+  gateEnabled: boolean
 ): Promise<boolean> {
   if (!gateEnabled) return true;
 
@@ -867,114 +238,62 @@ async function promptPermission(
 }
 
 /**
- * Extension entrypoint registering tools and slash commands.
+ * Extension entrypoint registering web_search and /search-gate.
  */
 export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
-  // 0. CLI Flag Registration
+  // 0. CLI Flag Registration & Gate Initialization
   // ----------------------------------------------------
-  pi.registerFlag("no-web-gate", {
-    description: "Disable confirmation prompts for web search and URL fetch",
+  pi.registerFlag("no-search-gate", {
+    description: "Disable confirmation prompts for web search",
     type: "boolean"
   });
 
-  gateEnabled = isGateInitiallyEnabled("PI_WEB_GATE", "no-web-gate", pi);
+  let gateEnabled = isGateEnabled(pi);
 
   // ----------------------------------------------------
-  // 1. Slash Command: /web-gate
+  // 1. Slash Command: /search-gate
   // ----------------------------------------------------
-  pi.registerCommand("web-gate", {
-    description: "Toggle or inspect web search & URL fetch permission gate (usage: /web-gate [status|on|off|toggle])",
-    handler: async (args, ctx) => {
-      const sub = (args || "").trim().toLowerCase();
+  const gateHandler = async (args: string, ctx: ExtensionContext) => {
+    const sub = (args || "").trim().toLowerCase();
 
-      if (sub === "status" || sub === "info") {
-        ctx.ui.notify(`Web Gate is currently: ${gateEnabled ? "ENABLED (Prompts by default)" : "DISABLED (Auto-approves)"}`, "info");
-        return;
-      }
-
-      if (sub === "on" || sub === "enable") {
-        gateEnabled = true;
-      } else if (sub === "off" || sub === "disable") {
-        gateEnabled = false;
-      } else {
-        gateEnabled = !gateEnabled;
-      }
-
-      const statusDesc = gateEnabled ? "ENABLED (Prompts for confirmation)" : "DISABLED (Bypassed)";
-      ctx.ui.setStatus("web-gate", gateEnabled ? undefined : "🌐 Web-Gate: OFF");
-      ctx.ui.notify(`Web Gate: ${statusDesc}`, gateEnabled ? "info" : "warning");
+    if (sub === "status" || sub === "info") {
+      ctx.ui.notify(`Search Gate is currently: ${gateEnabled ? "ENABLED (Prompts by default)" : "DISABLED (Auto-approves)"}`, "info");
+      return;
     }
+
+    if (sub === "on" || sub === "enable") {
+      gateEnabled = true;
+    } else if (sub === "off" || sub === "disable") {
+      gateEnabled = false;
+    } else {
+      gateEnabled = !gateEnabled;
+    }
+
+    const statusDesc = gateEnabled ? "ENABLED (Prompts for confirmation)" : "DISABLED (Bypassed)";
+    ctx.ui.setStatus("search-gate", gateEnabled ? undefined : "🔍 Search-Gate: OFF");
+    ctx.ui.notify(`Search Gate: ${statusDesc}`, gateEnabled ? "info" : "warning");
+  };
+
+  pi.registerCommand("search-gate", {
+    description: "Toggle or inspect web search permission gate (usage: /search-gate [status|on|off|toggle])",
+    handler: gateHandler
   });
 
   // ----------------------------------------------------
-  // 2. Slash Command: /chrome
-  // ----------------------------------------------------
-  pi.registerCommand("chrome", {
-    description: "Launch or inspect Agent Chrome with persistent profile & remote debugging (usage: /chrome [open|start|status|profile])",
-    handler: async (args, ctx) => {
-      const sub = (args || "").trim().toLowerCase();
-      const port = process.env.PI_CHROME_CDP_PORT?.trim() || "9222";
-      const profileDir = getAgentChromeProfileDir();
-
-      if (sub === "profile") {
-        ctx.ui.notify(`Agent Chrome Profile: ${profileDir}`, "info");
-        return;
-      }
-
-      if (sub === "status") {
-        const active = await isChromeCDPListening(port);
-        ctx.ui.notify(`Agent Chrome (port ${port}): ${active ? "ACTIVE & READY" : "NOT RUNNING"}`, active ? "info" : "warning");
-        return;
-      }
-
-      // Default: open / start Chrome
-      const active = await isChromeCDPListening(port);
-      if (active) {
-        try {
-          const chromium = getPlaywright();
-          if (chromium) {
-            const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-            const contexts = browser.contexts();
-            const ctxB = contexts[0] || await browser.newContext();
-            await ctxB.newPage();
-          }
-        } catch {}
-        ctx.ui.notify(`Agent Chrome is already running on port ${port} (opened tab).`, "info");
-        return;
-      }
-
-      ctx.ui.notify(`Launching Agent Chrome with profile at ${profileDir}...`, "info");
-      const res = await launchAgentChrome(port);
-      if (res.success) {
-        ctx.ui.notify(`✓ Agent Chrome launched on your screen! (Profile: ~/.pi/agent/chrome_profile, port: ${port})`, "info");
-      } else {
-        ctx.ui.notify(`✗ Failed to start Agent Chrome: ${res.error}`, "error");
-      }
-    }
-  });
-
-  // ----------------------------------------------------
-  // 3. Tool: web_search
+  // 2. Tool: web_search
   // ----------------------------------------------------
   pi.registerTool({
     name: "web_search",
     label: "Web Search",
-    description: "Search Google for current information, documentation, and live web sources.",
-
-    promptGuidelines: [
-      "Use web_search for live facts, recent API changes post-cutoff, or active error triage, citing primary sources as markdown links."
-    ],
-
+    description: "Search Google for current facts, live documentation, and API changes (e.g. researching unfamiliar CLI errors or recent framework updates post-cutoff).",
     parameters: WebSearchSchema,
 
-    /**
-     * Pre-validation argument pass-through.
-     */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
+      const rawQuery = args.query ?? args.q ?? args.search ?? "";
       return {
-        query: typeof args.query === "string" ? args.query : ""
+        query: typeof rawQuery === "string" ? rawQuery : ""
       };
     },
 
@@ -983,7 +302,7 @@ export default function (pi: ExtensionAPI) {
       if (!query) {
         return {
           content: [{ type: "text", text: "[Web Search Error]: Query cannot be empty." }],
-          details: { error: "Empty query" } as WebToolDetails
+          details: { error: "Empty query" } as WebSearchToolDetails
         };
       }
 
@@ -992,20 +311,21 @@ export default function (pi: ExtensionAPI) {
       const allowed = await promptPermission(
         ctx,
         "🌐 Web Search Confirmation",
-        `Allow agent to search Google for:\n\n"${query}"\n\n(Auto-cancels in 30s)`
+        `Allow agent to search Google for:\n\n"${query}"\n\n(Auto-cancels in 30s)`,
+        gateEnabled
       );
 
       if (!allowed) {
         return {
           content: [{ type: "text", text: `[Web Search Denied by User]: User declined permission to search the web for "${query}".` }],
-          details: { query, denied: true } as WebToolDetails
+          details: { query, denied: true } as WebSearchToolDetails
         };
       }
 
       if (signal?.aborted) {
         return {
           content: [{ type: "text", text: "[Web Search Aborted]" }],
-          details: { query, error: "Aborted" } as WebToolDetails
+          details: { query, error: "Aborted" } as WebSearchToolDetails
         };
       }
 
@@ -1014,9 +334,9 @@ export default function (pi: ExtensionAPI) {
         return {
           content: [{
             type: "text",
-            text: "[Web Search Error]: Gemini API Key not found. Please configure your Google provider key in ~/.pi/agent/auth.json or via Pi's model registry."
+            text: "[Web Search Error]: Gemini API Key not found. Please set GEMINI_API_KEY or configure google in ~/.pi/agent/auth.json."
           }],
-          details: { query, error: "Missing API Key" } as WebToolDetails
+          details: { query, error: "Missing API Key" } as WebSearchToolDetails
         };
       }
 
@@ -1065,23 +385,30 @@ export default function (pi: ExtensionAPI) {
         }
 
         const rawChunks = candidate?.groundingMetadata?.groundingChunks || [];
-        onUpdate?.({ content: [{ type: "text", text: `Resolving ${rawChunks.length} source citations...` }] });
+        onUpdate?.({ content: [{ type: "text", text: `Resolving citations...` }] });
 
-        const sources: SearchResultItem[] = await Promise.all(
-          rawChunks.map(async (chunk: any) => {
-            const rawUri = chunk.web?.uri || "";
-            const title = chunk.web?.title || "Source";
-            const directUrl = await resolveGroundingRedirect(rawUri, signal);
-            return { title, url: directUrl };
-          })
+        // Pre-deduplicate by raw URI before issuing network HEAD requests
+        const uriToTitle = new Map<string, string>();
+        for (const chunk of rawChunks) {
+          const uri = chunk.web?.uri?.trim();
+          if (uri && !uriToTitle.has(uri)) {
+            uriToTitle.set(uri, chunk.web?.title?.trim() || "Source");
+          }
+        }
+
+        const resolvedUris = await Promise.all(
+          Array.from(uriToTitle.keys()).map(async (uri) => ({
+            resolvedUrl: await resolveGroundingRedirect(uri, signal),
+            title: uriToTitle.get(uri)!
+          }))
         );
 
         const uniqueSources: SearchResultItem[] = [];
         const seenUrls = new Set<string>();
-        for (const s of sources) {
-          if (s.url && !seenUrls.has(s.url)) {
-            seenUrls.add(s.url);
-            uniqueSources.push(s);
+        for (const { resolvedUrl, title } of resolvedUris) {
+          if (resolvedUrl && !seenUrls.has(resolvedUrl)) {
+            seenUrls.add(resolvedUrl);
+            uniqueSources.push({ title, url: resolvedUrl });
           }
         }
 
@@ -1106,15 +433,21 @@ export default function (pi: ExtensionAPI) {
             sources: uniqueSources,
             durationMs,
             fullContent: formattedOutput
-          } as WebToolDetails,
+          } as WebSearchToolDetails,
           usage
         };
 
-      } catch (err) {
+      } catch (err: any) {
+        if (signal?.aborted || err?.name === "AbortError") {
+          return {
+            content: [{ type: "text", text: "[Web Search Aborted]" }],
+            details: { query, error: "Aborted" } as WebSearchToolDetails
+          };
+        }
         const msg = err instanceof Error ? err.message : String(err);
         return {
           content: [{ type: "text", text: `[Web Search Error]: ${msg}` }],
-          details: { query, error: msg } as WebToolDetails
+          details: { query, error: msg } as WebSearchToolDetails
         };
       }
     },
@@ -1131,9 +464,13 @@ export default function (pi: ExtensionAPI) {
         return new Text(theme.fg("warning", `🔍 ${liveText}`), 0, 0);
       }
 
-      const details = result.details as WebToolDetails | undefined;
+      const details = result.details as WebSearchToolDetails | undefined;
       if (details?.denied) {
         return new Text(theme.fg("muted", `⊘ SEARCH DENIED: "${details.query}"`), 0, 0);
+      }
+
+      if (details?.error === "Aborted") {
+        return new Text(theme.fg("muted", `⊘ SEARCH ABORTED: "${details.query}"`), 0, 0);
       }
 
       if (details?.error) {
@@ -1149,7 +486,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
-      const header = theme.fg("success", "✓ SEARCH COMPLETED") + theme.fg("dim", timeStr);
+      const modelStr = details?.model ? ` [${details.model}]` : "";
+      const header = theme.fg("success", "✓ SEARCH COMPLETED") + theme.fg("dim", `${modelStr}${timeStr}`);
       const formattedBody = formatToolOutput(content, theme, options?.expanded, COLLAPSED_PREVIEW_LINES);
 
       return new Text(`${header}\n\n${formattedBody}`, 0, 0);
@@ -1157,337 +495,11 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ----------------------------------------------------
-  // 3. Tool: fetch_url
-  // ----------------------------------------------------
-  pi.registerTool({
-    name: "fetch_url",
-    label: "Fetch URL",
-    description: "Fetch content from a URL on the internet (web pages, text, code, or images).",
-
-    promptGuidelines: [
-      "Use fetch_url to inspect web pages, remote documentation, or online diagrams."
-    ],
-
-    parameters: FetchUrlSchema,
-
-    /**
-     * Pre-validation argument pass-through.
-     */
-    prepareArguments(args: any) {
-      if (!args || typeof args !== "object") return args;
-      return {
-        url: typeof args.url === "string" ? args.url : ""
-      };
-    },
-
-    async execute(_toolCallId, params: FetchUrlParams, signal, onUpdate, ctx) {
-      const targetUrl = (params.url || "").trim();
-      if (!targetUrl) {
-        return {
-          content: [{ type: "text", text: "[Fetch URL Error]: URL parameter is required." }],
-          details: { error: "Empty URL" } as WebToolDetails
-        };
-      }
-
-      const startTime = Date.now();
-
-      const allowed = await promptPermission(
-        ctx,
-        "🌐 Fetch URL Confirmation",
-        `Allow agent to fetch remote content from:\n\n${targetUrl}\n\n(Auto-cancels in 30s)`
-      );
-
-      if (!allowed) {
-        return {
-          content: [{ type: "text", text: `[Fetch URL Denied by User]: User declined permission to fetch "${targetUrl}".` }],
-          details: { url: targetUrl, denied: true } as WebToolDetails
-        };
-      }
-
-      if (signal?.aborted) {
-        return {
-          content: [{ type: "text", text: "[Fetch URL Aborted]" }],
-          details: { url: targetUrl, error: "Aborted" } as WebToolDetails
-        };
-      }
-
-      onUpdate?.({ content: [{ type: "text", text: `Fetching ${targetUrl}...` }] });
-
-      try {
-        let rawBuffer: Uint8Array;
-        let finalUrl = targetUrl;
-        let usedBrowser = false;
-        let viaCDP = false;
-        let pageTitle = "";
-        let discoveredLinks: Array<{ text: string; href: string }> = [];
-
-        // Try primary network fetch (got-scraping with SSRF protection)
-        let fetchSuccess = false;
-        let rawHeaderMime = "";
-        try {
-          const res = await fetchSafeRemote(targetUrl, signal);
-          rawBuffer = res.rawBuffer;
-          finalUrl = res.finalUrl;
-          rawHeaderMime = res.contentType;
-          fetchSuccess = true;
-        } catch (fetchErr) {
-          fetchSuccess = false;
-        }
-
-        // If anti-bot blocked (or empty response), fallback to real Chrome CDP
-        if (!fetchSuccess || !rawBuffer! || rawBuffer!.length === 0) {
-          onUpdate?.({ content: [{ type: "text", text: `Retrying ${targetUrl} via Agent Chrome (CDP fallback)...` }] });
-          try {
-            const browserRes = await fetchViaChromeCDP(targetUrl, { signal });
-            rawBuffer = new TextEncoder().encode(browserRes.html);
-            finalUrl = browserRes.finalUrl;
-            pageTitle = browserRes.title;
-            discoveredLinks = browserRes.links;
-            rawHeaderMime = "text/html; charset=utf-8";
-            usedBrowser = true;
-            viaCDP = true;
-          } catch (cdpErr: any) {
-            throw new Error(`Failed to retrieve page via HTTP and Chrome CDP: ${cdpErr.message}`);
-          }
-        }
-
-        const sniffed = sniffContentType(rawBuffer!, rawHeaderMime);
-
-        // ----------------------------------------------------
-        // ROUTE 1: Multimodal Vision Image (.png, .jpg, .webp)
-        // ----------------------------------------------------
-        if (sniffed.category === "image") {
-          const { resizeImage, formatDimensionNote } = getImageResizer();
-          let processedData = Buffer.from(rawBuffer!).toString("base64");
-          let processedMime = sniffed.mimeType;
-          let dimNote = "";
-          let finalW: number | undefined;
-          let finalH: number | undefined;
-
-          if (resizeImage) {
-            try {
-              const res = await resizeImage({
-                data: processedData,
-                mimeType: sniffed.mimeType,
-                maxDimension: 1568
-              });
-              processedData = res.data;
-              processedMime = res.mimeType;
-              finalW = res.width;
-              finalH = res.height;
-              if (formatDimensionNote && res.originalWidth && res.originalHeight) {
-                dimNote = `\n${formatDimensionNote(res.originalWidth, res.originalHeight, res.width, res.height)}`;
-              }
-            } catch {}
-          }
-
-          const caption = `Image from ${finalUrl} (${sniffed.mimeType})${dimNote}`;
-          return {
-            content: [
-              { type: "image", data: processedData, mimeType: processedMime },
-              { type: "text", text: caption }
-            ],
-            details: {
-              url: finalUrl,
-              isImage: true,
-              contentType: sniffed.mimeType,
-              width: finalW,
-              height: finalH,
-              sizeBytes: rawBuffer!.length,
-              durationMs: Date.now() - startTime
-            } as WebToolDetails,
-            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
-          };
-        }
-
-        // ----------------------------------------------------
-        // ROUTE 2: SVG Vector Graphics
-        // ----------------------------------------------------
-        if (sniffed.category === "svg") {
-          let svgText = "";
-          try {
-            svgText = new TextDecoder(sniffed.charset).decode(rawBuffer!);
-          } catch {
-            svgText = new TextDecoder("utf-8").decode(rawBuffer!);
-          }
-          const formatted = `# SVG Graphic: ${finalUrl}\n**URL**: ${finalUrl}\n\n\`\`\`xml\n${svgText.trim()}\n\`\`\``;
-          const truncation = truncateHead(formatted, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
-          return {
-            content: [{ type: "text", text: truncation.content }],
-            details: { url: finalUrl, contentType: "image/svg+xml", durationMs: Date.now() - startTime } as WebToolDetails,
-            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
-          };
-        }
-
-        // ----------------------------------------------------
-        // ROUTE 3: Binary Non-Text File
-        // ----------------------------------------------------
-        if (sniffed.category === "binary") {
-          const fileName = path.basename(new URL(finalUrl).pathname) || "binary.bin";
-          const sizeKb = (rawBuffer!.length / 1024).toFixed(1);
-          return {
-            content: [{ type: "text", text: `[Binary File Downloaded]: "${fileName}" (${sniffed.mimeType}, ${sizeKb} KB). URL: ${finalUrl}` }],
-            details: {
-              url: finalUrl,
-              contentType: sniffed.mimeType,
-              sizeBytes: rawBuffer!.length,
-              durationMs: Date.now() - startTime
-            } as WebToolDetails,
-            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
-          };
-        }
-
-        // ----------------------------------------------------
-        // ROUTE 4: JSON Data
-        // ----------------------------------------------------
-        if (sniffed.category === "json") {
-          let jsonText = "";
-          try {
-            jsonText = new TextDecoder(sniffed.charset).decode(rawBuffer!);
-          } catch {
-            jsonText = new TextDecoder("utf-8").decode(rawBuffer!);
-          }
-          try {
-            const parsedObj = JSON.parse(jsonText);
-            jsonText = JSON.stringify(parsedObj, null, 2);
-          } catch {}
-          const formatted = `# JSON Data: ${finalUrl}\n**URL**: ${finalUrl}\n\n\`\`\`json\n${jsonText.trim()}\n\`\`\``;
-          const truncation = truncateHead(formatted, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
-          return {
-            content: [{ type: "text", text: truncation.content }],
-            details: { url: finalUrl, contentType: "application/json", durationMs: Date.now() - startTime } as WebToolDetails,
-            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
-          };
-        }
-
-        // ----------------------------------------------------
-        // ROUTE 5 & 6: HTML & Plain Text / Code
-        // ----------------------------------------------------
-        let rawContent = "";
-        try {
-          rawContent = new TextDecoder(sniffed.charset).decode(rawBuffer!);
-        } catch {
-          rawContent = new TextDecoder("utf-8").decode(rawBuffer!);
-        }
-
-        let title = pageTitle || finalUrl;
-        let markdown = "";
-
-        if (sniffed.category === "html") {
-          onUpdate?.({ content: [{ type: "text", text: `Parsing markdown from ${finalUrl}...` }] });
-          const parsed = htmlToMarkdown(rawContent, finalUrl);
-          title = pageTitle || parsed.title;
-          markdown = parsed.markdown;
-        } else {
-          markdown = rawContent.trim();
-        }
-
-        // Append structured navigation links if extracted via browser
-        if (discoveredLinks && discoveredLinks.length > 0) {
-          let linkSection = "\n\n---\n### 🔗 Navigation & Page Links\n";
-          discoveredLinks.forEach((l, idx) => {
-            const label = l.text || "Link";
-            linkSection += `${idx + 1}. [${label}](${l.href})\n`;
-          });
-          markdown += linkSection;
-        }
-
-        markdown = `# ${title}\n**URL**: ${finalUrl}\n\n${markdown}`;
-
-        const truncation = truncateHead(markdown, {
-          maxLines: DEFAULT_MAX_LINES,
-          maxBytes: DEFAULT_MAX_BYTES
-        });
-
-        const durationMs = Date.now() - startTime;
-        const usage = {
-          input: 0,
-          output: 0,
-          cacheRead: 0,
-          cacheWrite: 0,
-          totalTokens: 0,
-          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }
-        };
-
-        return {
-          content: [{ type: "text", text: truncation.content }],
-          details: {
-            url: finalUrl,
-            title,
-            durationMs,
-            usedBrowser,
-            viaCDP,
-            linkCount: discoveredLinks.length,
-            fullContent: markdown
-          } as WebToolDetails,
-          usage
-        };
-
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return {
-          content: [{ type: "text", text: `[Fetch URL Error for ${targetUrl}]: ${msg}` }],
-          details: { url: targetUrl, error: msg } as WebToolDetails
-        };
-      }
-    },
-
-    renderCall(args: any, theme) {
-      const u = typeof args?.url === "string" ? args.url : "Fetching URL...";
-      return new Text(theme.fg("toolTitle", theme.bold("fetch_url")) + ` ${u}`, 0, 0);
-    },
-
-    renderResult(result, options, theme) {
-      if (options?.isPartial) {
-        const textBlock = result.content?.[0];
-        const liveText = textBlock?.type === "text" ? textBlock.text : "Fetching URL...";
-        return new Text(theme.fg("warning", `🌐 ${liveText}`), 0, 0);
-      }
-
-      const details = result.details as WebToolDetails | undefined;
-      if (details?.denied) {
-        return new Text(theme.fg("muted", `⊘ FETCH DENIED: ${details.url}`), 0, 0);
-      }
-
-      if (details?.error) {
-        return new Text(theme.fg("warning", `✗ FETCH FAILED: ${details.error}`), 0, 0);
-      }
-
-      if (details?.isImage) {
-        const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
-        const dimStr = details?.width && details?.height ? ` [${details.width}x${details.height}]` : "";
-        const header = theme.fg("success", "✓ IMAGE FETCHED") + theme.fg("dim", `${dimStr}${timeStr}`);
-        const textBlock = result.content?.find((c: any) => c.type === "text");
-        const caption = textBlock?.text || `Image: ${details.url}`;
-        return new Text(`${header}\n\n${caption}`, 0, 0);
-      }
-
-      const content = (options?.expanded && details?.fullContent)
-        ? details.fullContent
-        : (result.content?.[0]?.type === "text" ? result.content[0].text : "");
-
-      if (!content) {
-        return new Text(theme.fg("dim", "No content retrieved."), 0, 0);
-      }
-
-      const timeStr = details?.durationMs ? ` (${(details.durationMs / 1000).toFixed(1)}s)` : "";
-      const browserTag = details?.viaCDP ? " [Chrome Live CDP]" : "";
-      const header = theme.fg("success", "✓ FETCH COMPLETED") + theme.fg("dim", `${browserTag}${timeStr}`);
-      const formattedBody = formatToolOutput(content, theme, options?.expanded, COLLAPSED_PREVIEW_LINES);
-
-      return new Text(`${header}\n\n${formattedBody}`, 0, 0);
-    }
-  });
-
-  // ----------------------------------------------------
-  // 4. Lifecycle Events
+  // 3. Lifecycle Events
   // ----------------------------------------------------
   pi.on("session_start", async (_event, ctx) => {
-    if (typeof pi.getFlag === "function" && pi.getFlag("no-web-gate") === true) {
-      gateEnabled = false;
-    }
     if (!gateEnabled) {
-      ctx.ui.setStatus("web-gate", "🌐 Web-Gate: OFF");
+      ctx.ui.setStatus("search-gate", "🔍 Search-Gate: OFF");
     }
   });
 }

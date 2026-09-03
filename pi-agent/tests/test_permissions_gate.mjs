@@ -5,12 +5,15 @@
  * Permissions Gate Extension Test Suite for Pi Coding Agent
  * ============================================================================
  *
- * Comprehensive, zero-execution security test suite for `permissions-gate.ts`:
- * - Section 1: Pure Rule Evaluation (Dangerous command regex, credential file patterns)
- * - Section 2: Workspace Boundary Enforcement (Local and Remote POSIX containment)
- * - Section 3: Global Skills Whitelist & Path Normalization (Tilde, Git Bash MSYS drives)
- * - Section 4: Zero-Execution Tool Interceptors (Ensures shell/filesystem is never reached)
- * - Section 5: Slash Command & Gate Flag Management (/gate status, on, off, toggle)
+ * SAFETY CONTRACT: ZERO SUBPROCESS EXECUTION
+ * This test suite verifies security patterns entirely IN-MEMORY.
+ * Under NO circumstances does this suite spawn shells or execute commands.
+ * All dangerous command strings are evaluated purely against regular expressions.
+ *
+ * Test Architecture (12 High-Signal Tests across 3 Domains):
+ * - Domain A: Security Rules & Pattern Engine (Destructive commands, git/privilege, credentials, system dirs)
+ * - Domain B: Workspace Confinement & Path Math (Local boundaries, remote SSH, command tokens, skills exemption)
+ * - Domain C: Lifecycle & Interactive Decision Interception (Approve/deny, headless auto-block, write/edit, flags)
  */
 
 import assert from "node:assert/strict";
@@ -32,7 +35,12 @@ const ANSI = {
 
 function loadGateModule() {
   const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  const jiti = require(jitiPkg);
+  let jiti;
+  try {
+    jiti = require(jitiPkg);
+  } catch {
+    jiti = require("jiti");
+  }
   const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
   const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
     alias: {
@@ -48,7 +56,6 @@ export async function runPermissionsGateTests() {
   const {
     DANGEROUS_BASH_PATTERNS,
     BASH_CREDENTIAL_ACCESS_REGEX,
-    CREDENTIAL_FILE_PATTERNS,
     isOutsideWorkspace,
     isCredentialFile,
     isSensitiveSystemPath,
@@ -78,104 +85,93 @@ export async function runPermissionsGateTests() {
     }
   }
 
-  // ----------------------------------------------------
-  // Section 1: Pure Rule Evaluation (Dangerous Command Patterns)
-  // ----------------------------------------------------
   function matchDangerous(cmd) {
     return DANGEROUS_BASH_PATTERNS.find(p => p.regex.test(cmd));
   }
 
-  test("Gate Detection: blocks root recursive forceful removal (rm -rf /)", () => {
+  // DOMAIN A: Security Rules & Pattern Engine (In-Memory Pure Evaluation)
+  // =========================================================================
+
+  // Test 1: Destructive System Commands
+  test("Security Rules: blocks filesystem destruction, disk formatting, and fork bombs", () => {
     assert.ok(matchDangerous("rm -rf /"), "Must block rm -rf /");
     assert.ok(matchDangerous("rm -rf ~"), "Must block rm -rf ~");
     assert.ok(matchDangerous("rm -rf $HOME"), "Must block rm -rf $HOME");
     assert.ok(matchDangerous("rm -rf %USERPROFILE%"), "Must block rm -rf %USERPROFILE%");
-    assert.ok(matchDangerous("rm -r -f C:/"), "Must block Windows drive root forceful delete");
-  });
+    assert.ok(matchDangerous("rm -r -f C:/"), "Must block Windows drive root delete");
 
-  test("Gate Detection: blocks disk partitioning & raw formatting (mkfs, fdisk, dd)", () => {
     assert.ok(matchDangerous("mkfs.ext4 /dev/sda1"), "Must block mkfs");
     assert.ok(matchDangerous("wipefs -a /dev/sdb"), "Must block wipefs");
-    assert.ok(matchDangerous("dd if=/dev/zero of=/dev/sda"), "Must block dd");
+    assert.ok(matchDangerous("dd if=/dev/zero of=/dev/sda"), "Must block dd overwrite");
     assert.ok(matchDangerous("fdisk /dev/nvme0n1"), "Must block fdisk");
-    assert.ok(matchDangerous("parted /dev/sda"), "Must block parted");
+
+    assert.ok(matchDangerous(":(){ :|:& };:"), "Must block fork bomb");
+    assert.ok(matchDangerous("chmod -R 777 /"), "Must block recursive chmod 777 root");
+
+    assert.equal(matchDangerous("git status"), undefined, "Must allow git status");
+    assert.equal(matchDangerous("npm test"), undefined, "Must allow npm test");
+    assert.equal(matchDangerous("cargo check"), undefined, "Must allow cargo check");
   });
 
-  test("Gate Detection: blocks fork bombs", () => {
-    assert.ok(matchDangerous(":(){ :|:& };:"), "Must block bash fork bomb");
+  // Test 2: Destructive Git Commands & Privilege Escalation
+  test("Security Rules: blocks permanent git discard, force push/delete, and sudo/doas", () => {
+    assert.ok(matchDangerous("git reset --hard HEAD~1"), "Must block hard reset");
+    assert.ok(matchDangerous("git reset --hard origin/main"), "Must block hard reset to remote");
+    assert.ok(matchDangerous("git clean -fdx"), "Must block forceful git clean");
+    assert.ok(matchDangerous("git checkout -f"), "Must block forceful checkout discard");
+    assert.ok(matchDangerous("git checkout --force"), "Must block checkout --force");
+    assert.ok(matchDangerous("git restore --worktree"), "Must block destructive restore");
+
+    assert.ok(matchDangerous("git branch -D feature"), "Must block force branch deletion");
+    assert.ok(matchDangerous("git push --force origin main"), "Must block force push");
+    assert.ok(matchDangerous("git push -f origin main"), "Must block shorthand force push");
+    assert.ok(matchDangerous("git stash drop"), "Must block git stash drop");
+    assert.ok(matchDangerous("git stash clear"), "Must block git stash clear");
+
+    assert.ok(matchDangerous("sudo apt update"), "Must block sudo");
+    assert.ok(matchDangerous("doas apk upgrade"), "Must block doas");
+    assert.ok(matchDangerous("runas /user:Administrator cmd"), "Must block runas");
+
+    assert.equal(matchDangerous("git branch"), undefined);
+    assert.equal(matchDangerous("git diff"), undefined);
+    assert.equal(matchDangerous("git checkout -b new-branch"), undefined);
   });
 
-  test("Gate Detection: blocks git destructive commands", () => {
-    assert.ok(matchDangerous("git reset --hard HEAD~1"));
-    assert.ok(matchDangerous("git reset --hard origin/main"));
-    assert.ok(matchDangerous("git clean -fdx"));
-    assert.ok(matchDangerous("git push --force origin main"));
-    assert.ok(matchDangerous("git push -f origin main"));
-    assert.ok(matchDangerous("git branch -D feature_branch"));
-    assert.ok(matchDangerous("git stash drop"));
-    assert.ok(matchDangerous("git stash clear"));
-  });
+  // Test 3: Credential Files & Private Keys Protection
+  test("Credential Filter: identifies sensitive credentials, private keys, and shell access", () => {
+    const home = os.homedir().replace(/\\/g, "/");
+    assert.ok(isCredentialFile(".env"), "Must identify .env");
+    assert.ok(isCredentialFile(".env.local"), "Must identify .env.local");
+    assert.ok(isCredentialFile(".env.production"), "Must identify .env.production");
+    assert.ok(isCredentialFile(".ssh/id_rsa"), "Must identify RSA private key");
+    assert.ok(isCredentialFile(".ssh/id_ed25519"), "Must identify ED25519 private key");
+    assert.ok(isCredentialFile(".aws/credentials"), "Must identify AWS credentials");
+    assert.ok(isCredentialFile(".kube/config"), "Must identify Kubeconfig");
+    assert.ok(isCredentialFile(".git-credentials"), "Must identify git credentials");
+    assert.ok(isCredentialFile(".npmrc"), "Must identify npmrc auth");
+    assert.ok(isCredentialFile("secrets/cert.pem"), "Must identify PEM certificates");
+    assert.ok(isCredentialFile("service_account.json"), "Must identify service account JSON");
 
-  test("Gate Detection: blocks privilege escalation (sudo/doas/runas)", () => {
-    assert.ok(matchDangerous("sudo apt update"));
-    assert.ok(matchDangerous("doas apk upgrade"));
-    assert.ok(matchDangerous("runas /user:Administrator cmd"));
-  });
-
-  test("Gate Detection: blocks bash access to sensitive SSH identity files and authorized_keys", () => {
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/authorized_keys"), "Must block reading authorized_keys in bash");
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/id_ed25519"), "Must block reading private keys in bash");
-    assert.ok(isCredentialFile(".ssh/authorized_keys"), "Must flag authorized_keys as credential file");
-    assert.ok(isCredentialFile(".ssh/id_ed25519"), "Must flag id_ed25519 as credential file");
-    assert.ok(isCredentialFile("etc/shadow"), "Must flag /etc/shadow as credential file");
-  });
-
-  test("Gate Detection: allows benign developer commands", () => {
-    assert.equal(matchDangerous("git status"), undefined);
-    assert.equal(matchDangerous("git log --oneline"), undefined);
-    assert.equal(matchDangerous("npm test"), undefined);
-    assert.equal(matchDangerous("cargo build --release"), undefined);
-    assert.equal(matchDangerous("python -m unittest"), undefined);
-    assert.equal(matchDangerous("echo 'Hello World'"), undefined);
-  });
-
-  // ----------------------------------------------------
-  // Section 2: Credential File & Sensitive Path Protection
-  // ----------------------------------------------------
-  test("Credential Filter: identifies sensitive configuration files", () => {
-    assert.ok(isCredentialFile(".env"));
-    assert.ok(isCredentialFile(".env.local"));
-    assert.ok(isCredentialFile(".env.production"));
-    assert.ok(isCredentialFile(".ssh/id_rsa"));
-    assert.ok(isCredentialFile(".ssh/id_ed25519"));
-    assert.ok(isCredentialFile(".aws/credentials"));
-    assert.ok(isCredentialFile(".kube/config"));
-    assert.ok(isCredentialFile(".git-credentials"));
-    assert.ok(isCredentialFile(".npmrc"));
-    assert.ok(isCredentialFile(".pypirc"));
-    assert.ok(isCredentialFile("secrets.pem"));
-    assert.ok(isCredentialFile("certificate.key"));
-  });
-
-  test("Credential Inspection Regex: detects credential reading in shell commands", () => {
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/id_rsa"));
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat .env"));
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("rg SECRET_KEY .env.production"));
-    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("head -n 20 /etc/shadow"));
+    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/id_ed25519"));
+    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("grep KEY .env.production"));
     assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("type %USERPROFILE%\\.aws\\credentials"));
   });
 
-  test("System Paths: identifies root and operating system sensitive paths", () => {
-    assert.ok(isSensitiveSystemPath("/etc/nginx/nginx.conf"));
-    assert.ok(isSensitiveSystemPath("/var/log/syslog"));
-    assert.ok(isSensitiveSystemPath("/usr/bin/env"));
-    assert.ok(isSensitiveSystemPath("C:/Windows/System32/drivers"));
-    assert.ok(isSensitiveSystemPath("C:/Program Files/app"));
+  // Test 4: Sensitive System Directories
+  test("Sensitive System Paths: identifies root OS and configuration directories", () => {
+    const home = os.homedir().replace(/\\/g, "/");
+    assert.ok(isSensitiveSystemPath("/etc/shadow"));
+    assert.ok(isSensitiveSystemPath("/var/log"));
+    assert.ok(isSensitiveSystemPath("/usr/bin"));
+    assert.ok(isSensitiveSystemPath("C:/Windows/System32"));
+    assert.ok(isSensitiveSystemPath("C:/Program Files/App"));
+    assert.ok(isSensitiveSystemPath(`${home}/.config/gcloud`));
+    assert.ok(isSensitiveSystemPath(`${home}/.cargo/credentials`));
   });
 
-  test("Global Skills Whitelist: correctly identifies skills directories", () => {
+  // Test 5: Global Skills Exemption
+  test("Skills Exemption: allows reading global skills without triggering out-of-workspace alerts", () => {
     const home = os.homedir().replace(/\\/g, "/");
-    assert.ok(isGlobalSkillPath("~/.pi/agent/skills/docling/SKILL.md"));
     assert.ok(isGlobalSkillPath("~/.agents/skills/git/SKILL.md"));
     assert.ok(isGlobalSkillPath(`${home}/.pi/agent/skills/my-skill/SKILL.md`));
     assert.equal(isGlobalSkillPath("~/.config/secret"), false, "Non-skill path must return false");

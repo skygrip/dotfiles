@@ -3,22 +3,20 @@ import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 
 /**
- * Default timeout for interactive UI dialogs in milliseconds (60 seconds).
- * Overridable via environment variable PI_ASK_QUESTION_TIMEOUT_MS or PI_ASK_TIMEOUT_MS.
+ * Default timeout for interactive UI dialogs in milliseconds (30 seconds).
  */
-export const DEFAULT_TIMEOUT_MS = Number(process.env.PI_ASK_QUESTION_TIMEOUT_MS || process.env.PI_ASK_TIMEOUT_MS) || 60000;
+export const DEFAULT_TIMEOUT_MS = 30000;
 
 /**
  * Streamlined TypeBox Schema for `ask_question`.
  * Designed with 2 straightforward fields (question + optional options).
- * Eliminates mode enums and conditional constraints for 12B/local models.
  */
 export const AskQuestionSchema = Type.Object({
   question: Type.String({
-    description: "The question or prompt to display to the user."
+    description: "The question or decision prompt to display to the user."
   }),
   options: Type.Optional(Type.Array(Type.String(), {
-    description: "Optional list of choices for multiple choice selection. Omit for freeform text or confirmation."
+    description: "List of choices for selection. Provide 2 or more options for multi-choice; defaults to ['Yes', 'No'] if omitted."
   }))
 });
 
@@ -127,16 +125,11 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ask_question",
     label: "Ask Question",
-    description: "Prompt user for input, menu selection, or yes/no confirmation.",
-
-    promptGuidelines: [
-      "Use ask_question with 'options' for design trade-offs, menus, or approvals; omit 'options' for open-ended text input or yes/no confirmation."
-    ],
-
+    description: "Prompt the user with an interactive decision menu, choice selection, or yes/no confirmation dialog (e.g. when there is ambiguity on an architectural decision or confirming destructive operations).",
     parameters: AskQuestionSchema,
 
     /**
-     * Pre-validation argument normalizer to withstand 12B model parameter aliases.
+     * Pre-validation argument normalizer to withstand model parameter aliases.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
@@ -168,119 +161,60 @@ export default function (pi: ExtensionAPI) {
 
       // Fallback default question if completely empty
       if (!copy.question) {
-        copy.question = copy.options && copy.options.length > 0 ? "Select an option:" : "Please provide input:";
+        copy.question = copy.options && copy.options.length > 0 ? "Select an option:" : "Please make a decision:";
       }
 
       return copy;
     },
 
     async execute(_toolCallId, params: AskQuestionParams, signal, _onUpdate, ctx) {
-      const question = (params.question || "").trim() || "Please provide input:";
-      const options = normalizeOptions(params.options);
+      const question = (params.question || "").trim() || "Please make a decision:";
+      let options = normalizeOptions(params.options);
+
+      // Mode 2: If fewer than 2 options provided, default to binary confirmation ["Yes", "No"]
+      if (options.length < 2) {
+        options = ["Yes", "No"];
+      }
 
       // ----------------------------------------------------
-      // 1. Headless Fallback Mode
+      // 1. Headless Mode Fallback -> Unified Error
       // ----------------------------------------------------
       if (!ctx.hasUI || !ctx.ui) {
-        const fallback = options.length > 0 ? options[0] : "No response";
         return {
-          content: [{ type: "text", text: `[Headless Mode Fallback]: ${fallback}` }],
-          details: { answer: fallback, headless: true } as AskQuestionDetails
+          content: [{ type: "text", text: "Error: No selection made." }],
+          details: { cancelled: true, error: "No selection made", headless: true } as AskQuestionDetails
         };
       }
 
       const dialogOptions = { timeout: DEFAULT_TIMEOUT_MS };
 
       // ----------------------------------------------------
-      // 2. Interactive TUI Modes
+      // 2. Interactive TUI Selection via Arrow Keys
       // ----------------------------------------------------
       try {
-        // Mode A: Multiple Choice Selection (When 2+ options provided)
-        if (options.length >= 2) {
-          const selection = await withTimeoutAndSignal(
-            ctx.ui.select(question, options, dialogOptions),
-            DEFAULT_TIMEOUT_MS,
-            signal
-          );
-
-          if (selection === undefined) {
-            return {
-              content: [{ type: "text", text: `[User Cancelled Prompt]: No selection made.` }],
-              details: { answer: "", cancelled: true } as AskQuestionDetails
-            };
-          }
-
-          return {
-            content: [{ type: "text", text: `User selected: "${selection}". Decision confirmed — proceed with implementation using this direction.` }],
-            details: { answer: selection, cancelled: false } as AskQuestionDetails
-          };
-        }
-
-        // Mode B: Binary Confirmation (Detect question asking for Yes/No confirmation)
-        const lowerQ = question.toLowerCase();
-        const isConfirmQuestion =
-          lowerQ.includes("(y/n)") ||
-          lowerQ.includes("yes/no") ||
-          lowerQ.startsWith("confirm") ||
-          lowerQ.startsWith("proceed") ||
-          lowerQ.startsWith("are you sure") ||
-          (lowerQ.endsWith("?") && (lowerQ.includes("delete") || lowerQ.includes("restart") || lowerQ.includes("overwrite") || lowerQ.includes("proceed")));
-
-        if (isConfirmQuestion) {
-          const confirmed = await withTimeoutAndSignal(
-            ctx.ui.confirm("Confirmation", question, dialogOptions),
-            DEFAULT_TIMEOUT_MS,
-            signal
-          );
-          const answer = confirmed ? "Yes" : "No";
-          return {
-            content: [{ type: "text", text: `User selected: "${answer}". Decision confirmed — proceed with implementation using this direction.` }],
-            details: { answer, cancelled: false } as AskQuestionDetails
-          };
-        }
-
-        // Mode C: Freeform Text Input
-        const response = await withTimeoutAndSignal(
-          ctx.ui.input(question, "", dialogOptions),
+        const selection = await withTimeoutAndSignal(
+          ctx.ui.select(question, options, dialogOptions),
           DEFAULT_TIMEOUT_MS,
           signal
         );
 
-        if (response === undefined) {
+        if (selection === undefined) {
           return {
-            content: [{ type: "text", text: `[User Cancelled Prompt]: No input entered.` }],
-            details: { answer: "", cancelled: true } as AskQuestionDetails
+            content: [{ type: "text", text: "Error: No selection made." }],
+            details: { cancelled: true, error: "No selection made" } as AskQuestionDetails
           };
         }
 
-        const finalResponse = response.trim();
         return {
-          content: [{ type: "text", text: `User response: "${finalResponse}". Decision confirmed — proceed with implementation using this direction.` }],
-          details: { answer: finalResponse, cancelled: false } as AskQuestionDetails
+          content: [{ type: "text", text: `User selected: "${selection}". Decision confirmed — proceed with implementation using this direction.` }],
+          details: { answer: selection, cancelled: false } as AskQuestionDetails
         };
-
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        const isAbort = errMsg.toLowerCase().includes("aborted");
         const isTimeout = errMsg.toLowerCase().includes("timed out");
-
-        if (isAbort) {
-          return {
-            content: [{ type: "text", text: `[Prompt Aborted]: Execution was interrupted by user.` }],
-            details: { cancelled: true, error: "Aborted" } as AskQuestionDetails
-          };
-        }
-
-        if (isTimeout) {
-          return {
-            content: [{ type: "text", text: `[Prompt Timed Out]: No user interaction within timeout.` }],
-            details: { answer: "", timedOut: true, cancelled: true } as AskQuestionDetails
-          };
-        }
-
         return {
-          content: [{ type: "text", text: `[Prompt Error]: ${errMsg}` }],
-          details: { answer: "", error: errMsg, cancelled: true } as AskQuestionDetails
+          content: [{ type: "text", text: "Error: No selection made." }],
+          details: { cancelled: true, error: "No selection made", timedOut: isTimeout } as AskQuestionDetails
         };
       }
     },
@@ -317,20 +251,12 @@ export default function (pi: ExtensionAPI) {
         return new Text(text?.type === "text" ? text.text : "", 0, 0);
       }
 
-      if (details.error && !details.cancelled) {
-        return new Text(theme.fg("warning", `✗ ERROR: ${details.error}`), 0, 0);
-      }
-
-      if (details.headless) {
-        return new Text(theme.fg("dim", `⚡ HEADLESS: "${details.answer ?? "No response"}"`), 0, 0);
-      }
-
-      if (details.timedOut) {
-        return new Text(theme.fg("warning", `⏱ TIMED OUT`), 0, 0);
+      if (details.error) {
+        return new Text(theme.fg("warning", `✗ ${details.error.toUpperCase()}`), 0, 0);
       }
 
       if (details.cancelled) {
-        return new Text(theme.fg("muted", `⊘ CANCELLED`), 0, 0);
+        return new Text(theme.fg("muted", `⊘ NO SELECTION MADE`), 0, 0);
       }
 
       const answer = details.answer !== undefined ? String(details.answer) : "";

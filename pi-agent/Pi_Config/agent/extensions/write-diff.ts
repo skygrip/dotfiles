@@ -38,7 +38,7 @@ import {
   renderDiff,
 } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Container, Text } from "@earendil-works/pi-tui";
+import { Text } from "@earendil-works/pi-tui";
 import * as fsSync from "node:fs";
 import * as path from "node:path";
 
@@ -141,6 +141,8 @@ export default function (pi: ExtensionAPI) {
 
       // Check if target file already exists on disk before performing write
       const absPath = path.isAbsolute(rawPath) ? rawPath : path.resolve(localCwd, rawPath);
+      const relPath = path.relative(localCwd, absPath);
+
       if (fsSync.existsSync(absPath)) {
         try {
           oldContent = fsSync.readFileSync(absPath, "utf-8");
@@ -157,15 +159,12 @@ export default function (pi: ExtensionAPI) {
       if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
         // State 1: Modified overwrite -> compute native diff
         const diffObj = generateDiffString(oldContent, content);
-        const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: true, diff: diffObj.diff, filePath: relPath, content };
       } else if (isOverwrite && oldContent === content && !result.isError) {
         // State 2: No-op overwrite -> identical content
-        const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: true, noChanges: true, filePath: relPath };
       } else if (!isOverwrite && !result.isError) {
         // State 3: Brand new file -> syntax preview with line counts
-        const relPath = path.relative(localCwd, absPath);
         result.details = { isOverwrite: false, content, lineCount: content.split(/\r?\n/).length, filePath: relPath };
       }
 
@@ -218,10 +217,7 @@ export default function (pi: ExtensionAPI) {
         return new Text(body, 0, 0);
       }
 
-      // Fallback empty container
-      const component = renderCtx?.lastComponent instanceof Container ? renderCtx.lastComponent : new Container();
-      component.clear();
-      return component;
+      return new Text("", 0, 0);
     }
   });
 }

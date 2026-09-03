@@ -21,7 +21,8 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
 *   **Custom TypeScript Extensions (`extensions/`)**: Tools that expand Pi's capabilities.
     *   *Source Directory*: [Pi_Config/agent/extensions/](./Pi_Config/agent/extensions/)
     *   `permissions-gate.ts`: Restricts dangerous commands, secret credential leaks, and out-of-workspace writes.
-    *   `gemini-web-search.ts`: Grounded web search and URL content fetcher powered by Google Gemini with SSRF guards.
+    *   `gemini-web-search.ts`: Grounded Google web search powered by Gemini API with source citations.
+    *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, Readability, and Turndown markdown parsing.
     *   `critic-review.ts`: Objective auditing sandbox for code drafts, refactors, and markdown slices.
     *   `ask-question.ts`: Interactive TUI-based user prompts, select menus, and confirmation dialogs.
     *   `ssh.ts`: Enables remote Linux management via multiplexed in-memory SSH/SFTP sessions.
@@ -64,11 +65,11 @@ echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
 
 #### Install Extension Dependencies & Plugins
 
-Install runtime packages required by custom extensions (`ssh2` for `ssh.ts`, `turndown` for `gemini-web-search.ts`) and global plugins:
+Install runtime packages required by custom extensions (`ssh2` for `ssh.ts`, `turndown` and `got-scraping` for `fetch-url.ts`) and global plugins:
 
 ```bash
 cd ~/.pi/agent/npm
-npm install ssh2 turndown
+npm install ssh2 turndown got-scraping
 pi install npm:pi-subagents
 ```
 

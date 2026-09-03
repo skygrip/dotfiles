@@ -368,6 +368,89 @@ In addition to the tools above, you may use external utilities.
     assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
   });
 
+  await asyncTest("System Prompt Hygiene: normalizes Windows backslashes in documentation, context, and skills (Issue #8841)", async () => {
+    const registeredEvents = new Map();
+    const mockPi = {
+      on(event, handler) { registeredEvents.set(event, handler); }
+    };
+    extensionFactory(mockPi);
+
+    const beforeAgentStartHook = registeredEvents.get("before_agent_start");
+    assert.ok(beforeAgentStartHook, "before_agent_start hook must be registered");
+
+    const rawWindowsPrompt = `Pi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):
+- Main documentation: C:\\Users\\username\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\README.md
+- Additional docs: C:\\Users\\username\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\docs
+- Examples: C:\\Users\\username\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\examples (extensions, custom tools, SDK)
+
+<project_instructions path="C:\\Users\\username\\.pi\\agent\\AGENTS.md">
+## Quality & Safety Gates
+</project_instructions>
+
+<available_skills>
+  <skill>
+    <name>agent-config</name>
+    <location>C:\\Users\\username\\.pi\\agent\\skills\\agent-config\\SKILL.md</location>
+  </skill>
+</available_skills>`;
+
+    const result = await beforeAgentStartHook({ systemPrompt: rawWindowsPrompt });
+
+    assert.ok(
+      result.systemPrompt.includes("Main documentation: C:/Users/username/AppData/Roaming/npm/node_modules/@earendil-works/pi-coding-agent/README.md"),
+      "Main documentation path must have forward slashes"
+    );
+    assert.ok(
+      result.systemPrompt.includes("Additional docs: C:/Users/username/AppData/Roaming/npm/node_modules/@earendil-works/pi-coding-agent/docs"),
+      "Docs path must have forward slashes"
+    );
+    assert.ok(
+      result.systemPrompt.includes("Examples: C:/Users/username/AppData/Roaming/npm/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)"),
+      "Examples path must have forward slashes and retain trailing metadata"
+    );
+    assert.ok(
+      result.systemPrompt.includes('<project_instructions path="C:/Users/username/.pi/agent/AGENTS.md">'),
+      "Project instructions path attribute must have forward slashes"
+    );
+    assert.ok(
+      result.systemPrompt.includes("<location>C:/Users/username/.pi/agent/skills/agent-config/SKILL.md</location>"),
+      "Skill location tag must have forward slashes"
+    );
+    assert.ok(!result.systemPrompt.includes("C:\\"), "No unnormalized C:\\ Windows drive paths should remain");
+  });
+
+  test("Provider Request Hygiene: normalizes Windows backslashes in developer / system message payloads (Issue #8841)", () => {
+    const registeredEvents = new Map();
+    const mockPi = {
+      on(event, handler) { registeredEvents.set(event, handler); }
+    };
+    extensionFactory(mockPi);
+
+    const beforeReqHook = registeredEvents.get("before_provider_request");
+    assert.ok(beforeReqHook, "before_provider_request hook must be registered");
+
+    const payload = {
+      model: "gemma4-12b",
+      messages: [
+        {
+          role: "developer",
+          content: 'Notice <location>C:\\Users\\username\\.pi\\agent\\skills\\duckdb\\SKILL.md</location> and <project_instructions path="C:\\Users\\username\\.pi\\agent\\AGENTS.md">'
+        }
+      ]
+    };
+
+    beforeReqHook({ type: "before_provider_request", payload });
+
+    assert.ok(
+      payload.messages[0].content.includes("<location>C:/Users/username/.pi/agent/skills/duckdb/SKILL.md</location>"),
+      "Developer role message skill location must be normalized to forward slashes"
+    );
+    assert.ok(
+      payload.messages[0].content.includes('<project_instructions path="C:/Users/username/.pi/agent/AGENTS.md">'),
+      "Developer role message project_instructions path must be normalized to forward slashes"
+    );
+  });
+
   // ----------------------------------------------------
   // Section 4: In-Context Induction Head Alignment
   // ----------------------------------------------------
