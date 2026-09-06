@@ -53,11 +53,14 @@ macros:
   # SHARED BASELINE CONFIGURATION
   # ============================================================================
   ctx: 131072
+  maxTokens: 32768
   ctk: q8_0
   ctv: q8_0
   fa: on
 
-  default_args: "--ctx-size ${ctx} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${hw_args} ${kv_args} --jinja"
+  #dry_args: "--dry-multiplier 0.8 --dry-base 1.75 --dry-allowed-length 4 --dry-penalty-last-n 4096 --dry-sequence-breaker none"
+
+  default_args: "--ctx-size ${ctx} -n ${maxTokens} -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${hw_args} ${kv_args} --jinja"
   
 # ==============================================================================
 # INFERENCE ROUTINGS & BACKENDS

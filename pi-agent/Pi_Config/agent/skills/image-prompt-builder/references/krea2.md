@@ -63,28 +63,26 @@ To maximize Qwen3-VL token-attention efficiency, structure all natural language 
 
 ## 4. Emotional Context & FACS Micro-Facial Guidance in Krea 2
 
-Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to natural language descriptions of **FACS Action Units** (e.g. `AU1+AU4 inner brow pinch`, `AU7 lower eyelid tension`, `AU31 jaw clench`) without needing booru tags.
-- For the full universal micro-expression taxonomy and natural language body vocabulary, see [**`SKILL.md` §1: Emotional Context & FACS Micro-Facial Mechanics**](SKILL.md#1-emotional-context--facs-micro-facial-mechanics).
+Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to natural language descriptions of physical muscle tensions and **FACS Action Units** without needing booru tags.
+- For universal FACS muscle mechanics, catchlight rules, and anti-plasticity dermal anchors (micro-pores, goosebumps, skin folds), see [**`SKILL.md` §2.E**](SKILL.md#e-facs-facial-mechanics--anti-plasticity-dermal-topography).
 
-### Krea 2 Specific Facial & Optical Rules:
-1. **Ocular Mechanics & Catchlights:** Always define the light source reflection within the cornea (*"a single 3200K tungsten pin-light reflects in the upper crescent of her dark iris"*).
-2. **Natural Asymmetry:** State subtle facial asymmetry (*"left eyebrow lifts slightly higher than right"*, *"unilateral smirk pulls the right corner of her mouth"*).
-3. **Skin Micro-Textures:** Emphasize unretouched physical texture (*"matte unglazed skin texture with visible micro-pores, fine vellus hair along jawline, no smoothing"*). To maximize pore and expression fidelity, use the **Portrait & Micro-Emotion KGW preset** (boosting Band 4: `w9–w11`).
+### Krea 2 Specific Hardware & Encoder Rules:
+* **Encoder Rebalancing for Facial Nuance & Pores:** To maximize pore and expression fidelity in diffusion nodes, use the **Portrait & Micro-Emotion KGW preset** (boosting Band 4: `w9–w11`). The default learned projector suppresses deep layers `L23–L32`; rebalancing re-inflates these layers to capture high-frequency facial micro-geometry.
 
 ---
 
 ## 5. Kinetic Posing, Tactile Actions & Optical Staging in Krea 2
 
-Krea 2 excels at continuous physical prose describing spatial relationships, weight transfer, and tactile grip mechanics without stiff mannequin artifacts.
-- For the universal 3-plane optical depth staging framework, DoF matrix, contrapposto rules, and tactile interaction blueprints, see [**`SKILL.md` §2–§4**](SKILL.md#2-kinetic-posing-mechanics--anti-stiffness).
+Krea 2 excels at continuous natural language prose describing spatial relationships, weight transfer, and camera perspectives without stiff mannequin artifacts.
+- For the universal 3-plane optical depth staging framework, camera angle matrix, DoF guidelines, contrapposto rules, and tactile blueprints, see [**`SKILL.md` §2**](SKILL.md#2-core-physical-pillars--optical-staging).
 
 ### Krea 2 Specific Staging Schema:
-* **The "Core Four" Biomechanical Flow:** When constructing prose for Block 7 of the 8-block sequence, weave together:
+* **The "Core Four" Biomechanical Flow:** When constructing Block 7 of Krea 2's 8-block canonical sequence, weave together:
   1. `silhouette` (*broad asymmetric triangular silhouette*)
   2. `weight_distribution` (*80% bodyweight planted on right heel in deep contrapposto*)
   3. `torso_orientation` (*hips angled 45° camera-left with shoulders twisted back toward lens*)
   4. `movement_quality` (*secondary coat and hair billowing*)
-* **Layer Boost for Complex Anatomy:** When generating extreme acrobatic poses or complex hand grips, use the **Kinetic Pose & Anatomy Lock KGW preset** (boosting Bands 1 & 2: `w0–w5`).
+* **Layer Boost for Complex Anatomy:** When generating extreme acrobatic poses, dynamic perspective foreshortening, or complex hand grips, use the **Kinetic Pose & Anatomy Lock KGW preset** (boosting Bands 1 & 2: `w0–w5`).
 
 ---
 

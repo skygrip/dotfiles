@@ -11,7 +11,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -20,7 +20,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -29,7 +29,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -38,7 +38,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -47,7 +47,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -56,7 +56,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -65,7 +65,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -74,7 +74,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -83,7 +83,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -92,7 +92,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -101,7 +101,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65536,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -110,7 +110,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65535,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -119,7 +119,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65535,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         },
         {
@@ -128,7 +128,7 @@
           "reasoning": false,
           "input": ["text", "image"],
           "contextWindow": 131072,
-          "maxTokens": 65535,
+          "maxTokens": 32768,
           "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 }
         }
       ]

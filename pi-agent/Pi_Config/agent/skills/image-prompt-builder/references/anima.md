@@ -235,24 +235,14 @@ To achieve deep emotion in Anima, avoid flat labels like `sad` or `happy`. Use A
 Anima combines Danbooru perspective tags with rich narrative prose. For universal contrapposto rules, tactile blueprints, Kelvin lighting, and 3-plane optical staging, see [**`SKILL.md` §2–§4**](SKILL.md#2-kinetic-posing-mechanics--anti-stiffness).
 
 ### Danbooru Dynamic Posing Anchors (Anti-Stiffness)
-* **Perspective & Camera Angles:** `dynamic angle`, `dutch angle`, `from below`, `from above`, `dynamic foreshortening`.
-* **Kinetic Weight & Stance:** `contrapposto`, `twisted torso`, `reaching towards viewer`, `combat stance`, `mid-stride`.
+* **Perspective & Camera Angles:** `dynamic angle`, `dutch angle`, `from below`, `from above`, `worm's-eye view`, `pov`, `first-person view`, `selfie`, `dynamic foreshortening`.
+* **Kinetic Weight & Stance:** `contrapposto`, `twisted torso`, `reaching towards viewer`, `combat stance`, `mid-stride`, `unposed`, `candid`.
 * **Action Pose Asymmetry:** Always specify single-arm dominance in prose (*"single-arm spike, left arm dropped to waist for counterbalance"*) and pair with negative terms (*"two hands on ball, symmetrical pose"*) to prevent models from defaulting to symmetrical two-handed poses.
 * **Secondary Wind Physics:** `hair flowing`, `wind blown clothing`, `floating ribbons`, `flying petals`, `sparks drifting`.
+* **Lo-Fi & Retro Aesthetics vs. Clean Cel:** While `chromatic aberration` is standard in negative prompts for pristine modern cel animation, when deliberately generating gritty 1980s/90s retro OVA, cyberpunk, or found-footage anime, move `chromatic aberration` to positive tags (`retro anime screencap, vhs effect, subtle chromatic aberration, 1990s anime aesthetic`) and prune it from the negative prompt.
 
-### Contrastive Relational Phrasing for Depth of Field (DoF) & Optical Binding
-
-In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` create ambiguous cross-attention binding in Qwen3's LLM text encoder. The model may indiscriminately blur the primary character, misapply bokeh to key action props, or blur the entire frame.
-
-To lock optical focus strictly onto the intended subject while defocusing foreground occlusion or background elements, use **longer contrastive sentence fragments** that explicitly contrast sharp subjects against blurred spatial planes using coordinating relational clauses (`while`, `as`, `against`, `in contrast to`):
-
-* ❌ **Ambiguous Tag Stacking (High Misfocus Risk):**
-  `1girl, mecha, ruined city, depth of field, blurry background, out of focus, bokeh`
-  *(Causes random blurring across the character, the robot, or the overall linework).*
-* ✅ **Contrastive Relational Binding (Guaranteed Spatial Separation):**
-  `"Foreground: an out-of-focus iron girder frames the lower left edge. In the midground, the pilot stands in tack-sharp crisp focus with razor-sharp linework, while the massive deactivated mecha and crumbling skyscrapers dissolve into soft atmospheric bokeh discs behind her."`
-* ✅ **Multi-Actor Action Contrast:**
-  `"The swordswoman lunges forward in razor-sharp focus with glinting katana in the midground, while the lunging adversary passes through soft foreground motion blur and distant pagoda silhouettes melt into gentle bokeh."`
+### Contrastive Relational Phrasing for Depth of Field (DoF)
+In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` cause ambiguous cross-attention blur across characters and linework. Always bind focus using **contrastive sentence fragments** with coordinating relational clauses (`while`, `as`, `against`) as detailed in [**`SKILL.md` §2.A: Contrastive Relational Phrasing**](SKILL.md#a-3-plane-optical-depth-staging--lens-physics).
 
 ---
 

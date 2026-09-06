@@ -71,12 +71,20 @@ $$\text{[Camera Lens]} \longrightarrow \text{[Foreground (15–30\% Defocus Blur
   - ❌ *Ambiguous tags:* `1girl, robot, ruined city, depth of field, blurry background` *(causes cross-attention bleed, misfocusing the character or whole scene).*
   - ✅ *Contrastive fragment:* `"Foreground: an out-of-focus metal rack of spanners frames the lower edge, while the youth in the midground remains in tack-sharp crisp focus as distant grandstands dissolve into soft circular bokeh discs."`
 
-### B. Kelvin Lighting Physics & Two-Tone Color Contrast
+### B. Camera Angles, Perspectives & POV Matrix
+Avoid static eye-level snapshots by anchoring deliberate viewpoint geometry:
+* **POV (First-Person Perspective):** Shot from the viewer/protagonist's direct ocular line of sight (`first-person view, pov`). Anchor the frame by describing the viewer's own hands, wrists, or steering gear entering from the bottom corners (*"POV perspective looking down at hands gripping leather steering wheel"*, *"first-person view of fingers turning a brass dial"*).
+* **Worm's-Eye View (Extreme Low-Angle):** Camera placed flush to the floor or ground plane looking sharply upward at 60°–85° tilt (`worm's-eye view, from below, extreme low angle`). Ground surface micro-textures (gravel grit, wet pavement reflections, floorboard grain) dominate the foreground while subjects and structures loom monumental in converging vertical lines.
+* **High-Angle Selfie / Handheld Self-Capture:** Mobile front-camera perspective held 30°–45° above eye level angled downward (`selfie, high angle, from above`). Incorporate natural forearm foreshortening extending into the lower corner of the frame, slight 24mm–28mm wide-angle barrel distortion widening the upper forehead/crown, and casual off-center framing.
+* **Dutch Tilt (Canting):** Canted horizon tilted 15°–25° off-horizontal (`dutch angle, slanted perspective`) to infuse psychological vertigo, mechanical instability, or frantic kinetics.
+* **Over-the-Shoulder (OTS):** Foreground subject's back/shoulder occludes 25–35% of the frame side in soft defocus, anchoring interpersonal depth and dialogue focus.
+
+### C. Kelvin Lighting Physics & Two-Tone Color Contrast
 Define exact Correlated Color Temperature (CCT) in Kelvin:
 * `2000K–2700K` (Candlelight, warm tungsten key) $\vert$ `3200K` (Golden hour sun) $\vert$ `5500K` (Direct neutral daylight) $\vert$ `6500K–8000K` (Overcast / deep twilight shadow fill).
 * **Two-Tone Lighting Blueprint:** Combine opposing Kelvin sources: *"A 2800K warm tungsten desk lamp illuminates the workbench from the left while cool 6500K overcast twilight fills shadow contours from the right."*
 
-### C. Immediate Demographic, Adult Age (21+) & Skeletal Build Anchoring
+### D. Immediate Demographic, Adult Age (21+) & Skeletal Build Anchoring
 * **Strict Adult Age Policy (21+ Years):**
   All human subject generations must be comfortably adult (e.g., `24-year-old`, `38-year-old`, `62-year-old`). When in doubt or unspecified, default strictly to adult ages.
 * **Immediate Demographic Anchoring:**
@@ -87,7 +95,7 @@ Define exact Correlated Color Temperature (CCT) in Kelvin:
   Anchor physical frame and build to eliminate cookie-cutter body shapes:
   - `slender athletic runner's build`, `broad-shouldered heavyweight frame`, `tall long-limbed silhouette`, `compact stocky build`, `delicate angular collarbones`.
 
-### D. FACS Facial Mechanics & Anti-Plasticity Dermal Topography
+### E. FACS Facial Mechanics & Anti-Plasticity Dermal Topography
 Never use abstract emotion words (*"she looks sad"*, *"he is furious"*). Describe physical muscle contractions in plain English (**never output raw `AU` code strings in final prompt text**):
 
 | Emotion / State | FACS Action Units | Natural English Prompt Phrasing |
@@ -100,14 +108,22 @@ Never use abstract emotion words (*"she looks sad"*, *"he is furious"*). Describ
 | **Subtle Skepticism** | Unilateral AU12 + AU14 | One mouth corner lifted in an asymmetric smirk, single raised eyebrow, eyes slightly narrowed. |
 
 * **🚫 Banned Quality Buzzwords (Zero Tolerance):** `photorealistic`, `hyperrealistic`, `8K`, `4K`, `UHD`, `masterpiece` *(except anime tag prefixes)*, `trending on artstation`, `flawless skin`, `smooth skin`, `airbrushed`, `stunning`, `award winning`.
-* **✅ Physical Dermal Anchors:**
+* **✅ Physical Dermal Anchors & Micro-Realism:**
   - **Micro-Pores & Follicular Relief:** Unretouched micro-pores visible across the T-zone and nose bridge (no digital smoothing).
   - **Translucent Vellus Hair:** Fine peach fuzz along the jawline catching raking rim light.
   - **Natural Sebum & Capillary Flush:** Subtle natural sebum sheen on the forehead/bridge of nose; subsurface scattering (SSS) yielding warm capillary redness through the ears and fingertips.
   - **Corneal Catchlights:** Single directional pinpoint reflection in the upper iris (*"a single 3200K tungsten pin-light reflects in the upper iris crescent; gaze deflected 15° off-camera"*).
-  - **Lo-Fi Anti-Perfection Toolkit:** Direct on-axis camera flash, raw high-ISO luminance noise in shadows, and 24mm wide-angle barrel distortion immediately shatter synthetic AI artifacts.
+  - **Cutis Anserina (Goosebumps):** Fine goosebumps raised along bare forearms, neck, or shoulders from chill air, immersion, or goosebump-inducing shivers.
+  - **Dynamic Skin Folding & Creasing:** Natural skin folding along the flank and waist during seated compression or contrapposto torsion; soft lateral neck creases when glancing back over shoulder; anatomical compression lines at knuckles and inner elbows (prevents smooth plastic doll joints).
 
-### E. Biomechanical Kinematics, Tactile Friction & Garment Architecture
+### F. Lo-Fi & Amateur Aesthetic Toolkit (Shattering AI Perfectionism)
+Modern diffusion models tend to over-render clinical commercial lighting and plastic airbrushed perfection. To force raw authenticity, deploy the Lo-Fi Amateur toolkit:
+* **Smartphone Flash:** Direct, harsh on-axis mobile LED flash illuminating the subject straight-on; creates crisp specular hotspots on oily skin T-zones, pronounced contrast, and hard drop-shadows cast immediately onto walls or surfaces directly behind.
+* **Digital Sensor Noise & High-ISO Grit:** Specify high-ISO sensor noise (`high-ISO sensor noise`, `chrominance noise in underexposed shadows`) simulating small mobile phone CMOS sensors in dim light, distinct from organic chemical film grain.
+* **Chromatic Aberration & Edge Fringing:** Subtle lateral chromatic aberration and high-contrast optical dispersion (`subtle chromatic aberration`, `purple fringing along backlit edges`), typical of uncorrected smartphone wide lenses.
+* **Candid / Unposed Snapshots:** Break stiff studio posing by commanding unposed capture (`candid unposed snapshot`, `mid-sentence laughter`, `glancing away mid-motion`). Allow asymmetric, casual framing that breaks rigid rule-of-thirds symmetry.
+
+### G. Biomechanical Kinematics, Tactile Friction & Garment Architecture
 * **Classical Contrapposto & Lumbar Arching:** Break parallel lines: *"Rests full weight onto the ball of her right foot, arching the lower spine in deep lumbar S-curve while left knee bends inward and right hip tilts upward."*
 * **Torso Torsion & Look-Back Angles:** Rotate upper body relative to hips (*"hips angled 45° camera-left while shoulders and head twist back toward the lens over the shoulder"*).
 * **Tactile Grip Dynamics:** Specify knuckle whitening, thumb lock, downward palm pressure, and material deformation (*"fingertips press firmly into frosted glass, wiping clear streaks through condensation"*).
@@ -301,4 +317,11 @@ When generating prompts, assistants must emit this structured schema:
 
 ```text
 Place the subject from reference image2 into the ancient sunlit greenhouse in reference image1. Extract only the subject from image2, strictly preserving their 28-year-old facial bone structure and khaki field shirt. The subject stands in the midground, left palm pressing downward onto the wrought-iron planter table. Relight with warm 5500K sunbeams and match f/2.8 optical depth of field with soft bokeh across background ferns.
+```
+
+### Exemplar 4: Candid Lo-Fi Smartphone Snapshot (FLUX.1 Dev / Krea 2 RAW)
+* **Configuration:** Aspect Ratio `4:5` ($896 \times 1152$) | 28 steps | CFG 3.5 | `euler`
+
+```text
+26mm f/1.8 smartphone wide-angle lens with subtle edge chromatic aberration. Harsh on-axis direct smartphone LED flash casting a sharp dark drop-shadow against vinyl diner wall tiles. A 24-year-old Korean woman with an unposed mid-laughter smile, crinkled eye corners, and natural goosebumps on bare shoulders leans forward across a laminate table. Subtle high-ISO sensor noise in underexposed shadow corners, unretouched micro-pores, and melting milkshake condensation in foreground. Candid handheld snapshot.
 ```
