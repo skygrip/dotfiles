@@ -1,7 +1,6 @@
 ## Tool Calling & Execution
 - WORKING DIR: Never run `cd` (e.g. run `npm test` directly, not `cd /project && npm test`).
 - PATHS: Always use Unix forward slashes (`/`). Prefer relative paths over absolute.
-- DIRECTORIES: `read` is strictly for files; use `fd` or `ls` via bash to explore folders (avoids EISDIR).
 - SHELL: Commands run in Git Bash. For PowerShell, invoke via bash with `powershell -Command "..."`.
 - LARGE DATA FILES: For data & log files, sample structure first via `head`, `read` offset/limit, or `jq` (e.g. `jq 'keys'`).
 - SCRATCH: Use `./.scratch/` for temporary fixtures, scripts, or debug dumps.
