@@ -31,10 +31,10 @@ macros:
   kv_args: "--kv-unified --parallel ${parallel_slots}"
 
   # ============================================================================
-  # PROFILE: Apple Silicon Mac Studio (Unified Memory & Metal)
+  # PROFILE: Apple Silicon Mac Studio 128GB (Unified Memory & Metal)
   # ============================================================================
   # llama-server: "/opt/homebrew/bin/llama-server --port ${PORT}"
-  # threads: 12           # 12 Performance Cores
+  # threads: 10           # 12 Performance Cores - 2 unloaded cores
   # threads_batch: 12     # Symmetrical prefill threads on M-series
   # batch: 2048
   # ubatch: 2048
@@ -72,10 +72,7 @@ models:
     name: "Unsloth Gemma 4 12B"
     description: "unsloth/gemma-4-12b-it-qat-GGUF:UD-Q4_K_XL"
     capabilities:
-      in:
-        - text
-        - audio
-        - image
+      in: ["text", "image", "audio"]
       out: ["text"]
       tools: true
       context: ${ctx}
@@ -211,6 +208,43 @@ models:
             enable_thinking: false
 
 # ==============================================================================
+# HEAVY WEIGHT MODELS
+# ==============================================================================
+
+# --- QWEN 3.8 FLASH NEXT 125B ---
+  qwen3.8-flash-next:
+    name: "Unsloth Qwen 3.8 Flash Next"
+    description: "unsloth/Qwen3.8-Flash-Next-GGUF:UD-IQ4_XS"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: ${ctx}
+    cmd: |
+      ${llama-server}
+      ${default_args}
+      --cache-ram 10240
+      -lm mmap
+      -hf unsloth/Qwen3.8-Flash-Next-GGUF:UD-IQ4_XS
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:no_think":
+          temperature: 0.7
+          top_p: 0.80
+          top_k: 20
+          min_p: 0.0
+          presence_penalty: 1.5
+          chat_template_kwargs:
+            enable_thinking: false
+            reasoning_effort: "none"
+        "${MODEL_ID}:think_medium":
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          chat_template_kwargs:
+            reasoning_effort: "medium"
+
+# ==============================================================================
 # RESEARCH & ABLITERATED MODELS
 # ==============================================================================
 
@@ -219,10 +253,7 @@ models:
     name: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     description: "HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M"
     capabilities:
-      in:
-        - text
-        - audio
-        - image
+      in: ["text", "image", "audio"]
       out: ["text"]
       tools: true
       context: ${ctx}
@@ -283,9 +314,11 @@ models:
 #     q35:  qwen3.6-35ba3b
 #     g31:  gemma4-31b
 #     q27:  qwen3.8-27b
+#     qfn:  qwen3.8-flash-next
 #
 #   # evict_costs: Relative weight protecting heavy models from premature eviction
 #   evict_costs:
+#     qfn:  90  # Qwen 3.8 Flash Next (~100 GB)
 #     q35:  50  # Qwen 3.6 35B MoE + MTP (~22 GB)
 #     g31:  45  # Gemma 4 31B Dense (~18 GB)
 #     q27:  45  # Qwen 3.8 27B Dense (~16 GB)
