@@ -39,40 +39,30 @@ By default, **all skills** in `pi-agent/Pi_Config/agent/skills/` are portable an
 
 ---
 
-## 💻 Automated Sync Scripts
+## 💻 Direct Sync Commands
 
-The root of this repository includes automated synchronization scripts that sync skills, extensions, and configurations across both **Pi Agent** (`~/.pi/agent`) and **Antigravity** (`~/.gemini/config/skills`):
+Whenever you modify skills, extensions, prompts, or configurations, run the direct synchronization commands below from the repository root:
 
 ### 1. Windows (PowerShell)
 
-Run from the root of your `dotfiles` repository:
-
 ```powershell
-# Sync everything (Pi Agent configs + Antigravity skills)
-.\Sync-AgentConfigs.ps1
+# 1. Sync everything to Pi Agent
+Copy-Item -Path ".\pi-agent\Pi_Config\agent\*" -Destination (Join-Path $HOME ".pi\agent") -Recurse -Force
 
-# Optional flags:
-.\Sync-AgentConfigs.ps1 -Target Antigravity   # Sync only Antigravity
-.\Sync-AgentConfigs.ps1 -Target Pi            # Sync only Pi Agent
-.\Sync-AgentConfigs.ps1 -DryRun               # Preview changes without modifying files
+# 2. Sync portable skills to Antigravity (excluding Pi-only batch/config skills)
+Copy-Item -Path ".\pi-agent\Pi_Config\agent\skills\*" -Destination (Join-Path $HOME ".gemini\config\skills") -Exclude @("agent-config", "batch-automator") -Recurse -Force
 ```
 
 ---
 
 ### 2. Linux / macOS (Bash)
 
-Run from the root of your `dotfiles` repository:
-
 ```bash
-# Make executable (first time only)
-chmod +x ./sync-agent-configs.sh
+# 1. Sync everything to Pi Agent
+rsync -av --delete ./pi-agent/Pi_Config/agent/ "$HOME/.pi/agent/"
 
-# Sync everything
-./sync-agent-configs.sh
-
-# Target specific environment:
-./sync-agent-configs.sh antigravity
-./sync-agent-configs.sh pi
+# 2. Sync portable skills to Antigravity (excluding Pi-only batch/config skills)
+rsync -av --exclude="agent-config" --exclude="batch-automator" ./pi-agent/Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
 ```
 
 ---

@@ -133,7 +133,7 @@ Create a dedicated systemd service to manage `llama-swap`.
 
    [Service]
    Type=simple
-   User=$USER
+   User=YOUR_LINUX_USERNAME
    ExecStart=/usr/local/bin/llama-swap --config /etc/llama-swap/config.yaml --listen 127.0.0.1:8080
    Restart=always
    RestartSec=5
@@ -144,6 +144,7 @@ Create a dedicated systemd service to manage `llama-swap`.
    [Install]
    WantedBy=multi-user.target
    ```
+   *(Note: Replace `YOUR_LINUX_USERNAME` with your actual username, as systemd does not expand `$USER`)*
 2. Create the configuration directory and copy your configuration:
    ```bash
    sudo mkdir -p /etc/llama-swap/
@@ -177,7 +178,8 @@ On macOS, configure a LaunchAgent so that the service runs under your user sessi
        <string>com.mostlygeek.llama-swap</string>
        <key>ProgramArguments</key>
        <array>
-           <string>/usr/local/bin/llama-swap</string>
+           <!-- Use /opt/homebrew/bin/llama-swap on Apple Silicon, or /usr/local/bin/llama-swap on Intel -->
+           <string>/opt/homebrew/bin/llama-swap</string>
            <string>--config</string>
            <string>/etc/llama-swap/config.yaml</string>
            <string>--listen</string>

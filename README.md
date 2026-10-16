@@ -4,27 +4,27 @@ A collection of light build guides and configuration files stored here for conve
 
 ## Operating System Setup
 
-[Windows Desktop Setup](Windows_Desktop.md)
-
-[Linux Setup](Linux.md)
-
-[MacOS Setup](MacOS.md)
-
-[Android TV](Android_TV.md)
+- [Windows Desktop Setup](Windows_Desktop.md)
+- [Windows Server Setup](Windows_Server.md)
+- [Linux Setup](Linux.md)
+- [Linux Desktop Setup](Linux%20Desktop.md)
+- [MacOS Setup](MacOS.md)
+- [Android TV](Android_TV.md)
 
 ## Application Specific
 
-[VS Code Setup](VSCode.md)
-
-[Pi Coding Agent](pi-agent/README.md)
-
-[LLama Swap](llama-swap/README.md)
+- [Google Antigravity Setup](Antigravity.md)
+- [VS Code Setup](VSCode.md)
+- [Pi Coding Agent](pi-agent/README.md)
+- [LLama Swap](llama-swap/README.md)
 
 ### AWS CLI Config
 
-Enable auto prompt mode
+Enable auto prompt mode:
 
-    aws configure set cli_auto_prompt on
+```bash
+aws configure set cli_auto_prompt on
+```
 
 ### Firefox Setup
 
@@ -38,34 +38,42 @@ Make the following configuration changes in the settings:
 - Disable Firefox Data Collection
 - Enable HTTPS mode for all windows
 
-Enable the following general settings
+Enable the following general settings in `about:config`:
 
-    browser.cache.disk.enable = False
-    extensions.pocket.enabled = False
+```ini
+browser.cache.disk.enable = false
+extensions.pocket.enabled = false
+```
 
-Enable the following settings for increased security with minimal user impact
+Enable the following settings for increased security with minimal user impact:
 
-    geo.enabled = False
-    network.captive-portal-service.enabled = False
-    media.peerconnection.enabled = False
-    media.navigator.enabled = False
-    #webgl.enable-debug-renderer-info = False (looks to be masked anyway)
-    #dom.battery.enabled =  False
-    #dom.vibrator.enabled = False
-    #device.sensors.enabled = False
-    #dom.enable_performance = False
-    #browser.safebrowsing.downloads.remote.enabled = False
+```ini
+geo.enabled = false
+network.captive-portal-service.enabled = false
+media.peerconnection.enabled = false
+media.navigator.enabled = false
+#webgl.enable-debug-renderer-info = false (looks to be masked anyway)
+#dom.battery.enabled = false
+#dom.vibrator.enabled = false
+#device.sensors.enabled = false
+#dom.enable_performance = false
+#browser.safebrowsing.downloads.remote.enabled = false
+```
 
-Optionally enable the following settings for increased security at expense of user experience
+Optionally enable the following settings for increased security at expense of user experience:
 
-    privacy.resistFingerprinting = true
+```ini
+privacy.resistFingerprinting = true
+```
 
-Optionally enable the following settings for different User experience
+Optionally enable the following settings for different user experience:
 
-    keyword.enabled = False
-    browser.urlbar.trimURLs = False
-    dom.webnotifications.enabled = False
-    browser.formfill.enable = False
+```ini
+keyword.enabled = false
+browser.urlbar.trimURLs = false
+dom.webnotifications.enabled = false
+browser.formfill.enable = false
+```
 
 #### Firefox Addons
 
@@ -79,21 +87,24 @@ The following Firefox addons are also installed for security:
 
 ### Darktable Setup
 
-Recursively import only folders that contain a Camera RAW file.
+Recursively generate import commands for folders that contain a Camera RAW file:
 
-    $darktable = 'C:\Program Files\darktable\bin\darktable.exe'
-    $delayPerImage = 0.1
+```powershell
+$darktable = 'C:\Program Files\darktable\bin\darktable.exe'
+$delayPerImage = 0.1
 
-    foreach ($folder in Get-ChildItem | Sort) {
-        $rawCount = (Get-ChildItem -Path $folder -Force | Where-Object {$_.Extension -in ('.CR2','.CR3')}).Count
-        if ($rawCount -gt 0) {
-            Write-Host "& '$darktable' '$folder'"
-            $totalDelay = [math]::Ceiling($rawCount * $delayPerImage)
-            Write-Host "Start-Sleep -Seconds $totalDelay"
-        }
+foreach ($folder in Get-ChildItem -Directory | Sort-Object Name) {
+    $rawCount = (Get-ChildItem -Path $folder.FullName -Force | Where-Object {$_.Extension -in ('.CR2','.CR3')}).Count
+    if ($rawCount -gt 0) {
+        Write-Host "& '$darktable' '$($folder.FullName)'"
+        $totalDelay = [math]::Ceiling($rawCount * $delayPerImage)
+        Write-Host "Start-Sleep -Seconds $totalDelay"
     }
+}
+```
 
-Generate Cache files.
-Cache lives in C:\Users\[USERNAME]\AppData\Local\Microsoft\Windows\INetCache\darktable
+Generate Cache files (cache lives in `C:\Users\[USERNAME]\AppData\Local\Microsoft\Windows\INetCache\darktable`):
 
-    & 'C:\Program Files\darktable\bin\darktable-generate-cache.exe' -m 4
+```powershell
+& 'C:\Program Files\darktable\bin\darktable-generate-cache.exe' -m 4
+```
