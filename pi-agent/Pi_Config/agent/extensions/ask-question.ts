@@ -125,6 +125,11 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ask_question",
     label: "Ask Question",
+    exposure: "model-only",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    },
     description: "Prompt the user with an interactive decision menu, choice selection, or yes/no confirmation dialog (e.g. when there is ambiguity on an architectural decision or confirming destructive operations).",
     parameters: AskQuestionSchema,
 

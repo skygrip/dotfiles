@@ -18,6 +18,7 @@
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
+import * as fs from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -45,13 +46,14 @@ function loadSequentialThinkingModule() {
   const piNodeModules = path.join(globalBase, "node_modules");
 
   const localNpmNodeModules = path.join(os.homedir(), ".pi/agent/npm/node_modules");
+  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
 
   const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
     alias: {
       "@earendil-works/pi-coding-agent": globalBase,
       "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
-      "typebox": path.join(localNpmNodeModules, "typebox", "build", "index.mjs"),
-      "typebox/type": path.join(localNpmNodeModules, "typebox", "build", "type", "index.mjs")
+      "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs"),
+      "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs")
     }
   });
 

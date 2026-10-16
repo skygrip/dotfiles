@@ -287,6 +287,11 @@ export default function (pi: ExtensionAPI) {
     name: "web_search",
     label: "Web Search",
     description: "Search Google for current facts, live documentation, and API changes (e.g. researching unfamiliar CLI errors or recent framework updates post-cutoff).",
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: true
+    },
     parameters: WebSearchSchema,
 
     prepareArguments(args: any) {

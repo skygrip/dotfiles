@@ -17,6 +17,7 @@
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
+import * as fs from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -36,6 +37,7 @@ function loadAskModule() {
   const piCodingAgentDir = path.join(globalNodeModules, "@earendil-works", "pi-coding-agent");
   const piNodeModules = path.join(piCodingAgentDir, "node_modules");
   const localNpm = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules");
+  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpm;
 
   const jitiRequire = createRequire(path.join(piCodingAgentDir, "dist", "index.js"));
   const createJiti = jitiRequire("jiti");
@@ -45,15 +47,15 @@ function loadAskModule() {
       "@earendil-works/pi-coding-agent": piCodingAgentDir,
       "@earendil-works/pi-ai": path.join(piNodeModules, "@earendil-works", "pi-ai", "dist", "index.js"),
       "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
-      "typebox/compile": path.join(localNpm, "typebox", "build", "compile", "index.mjs"),
-      "typebox/value": path.join(localNpm, "typebox", "build", "value", "index.mjs"),
-      "typebox/guard": path.join(localNpm, "typebox", "build", "guard", "index.mjs"),
-      "typebox/error": path.join(localNpm, "typebox", "build", "error", "index.mjs"),
-      "typebox/system": path.join(localNpm, "typebox", "build", "system", "index.mjs"),
-      "typebox/format": path.join(localNpm, "typebox", "build", "format", "index.mjs"),
-      "typebox/type": path.join(localNpm, "typebox", "build", "type", "index.mjs"),
-      "typebox/schema": path.join(localNpm, "typebox", "build", "schema", "index.mjs"),
-      "typebox": path.join(localNpm, "typebox", "build", "index.mjs")
+      "typebox/compile": path.join(typeboxBase, "typebox", "build", "compile", "index.mjs"),
+      "typebox/value": path.join(typeboxBase, "typebox", "build", "value", "index.mjs"),
+      "typebox/guard": path.join(typeboxBase, "typebox", "build", "guard", "index.mjs"),
+      "typebox/error": path.join(typeboxBase, "typebox", "build", "error", "index.mjs"),
+      "typebox/system": path.join(typeboxBase, "typebox", "build", "system", "index.mjs"),
+      "typebox/format": path.join(typeboxBase, "typebox", "build", "format", "index.mjs"),
+      "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs"),
+      "typebox/schema": path.join(typeboxBase, "typebox", "build", "schema", "index.mjs"),
+      "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs")
     }
   });
 

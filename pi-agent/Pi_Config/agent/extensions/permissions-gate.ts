@@ -67,18 +67,23 @@ export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   },
   {
     name: "Filesystem Destruction",
-    regex: /\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r|-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r[a-zA-Z]*)\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])/i,
+    regex: /(?:\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r|-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r[a-zA-Z]*)\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])|\b(?:Remove-Item|ri|rmdir)\b(?=.*(?:-(?:recurse|r)\b|\/s\b))(?=.*(?:-(?:force|f)\b|\/q\b))(?=.*(?:[a-zA-Z]:[\\\/]?$|[a-zA-Z]:[\\\/](?:\*|\s|$)|~(?:\s|$|[\\\/]\*)|[\/\\](?:\s|$|\*)|\$env:(?:SystemDrive|USERPROFILE|HOME)|\%(?:SystemDrive|USERPROFILE)\%|\$HOME)).*)/i,
     reason: "Root or home directory recursive forceful removal is forbidden."
   },
   {
     name: "Disk Partitioning & Formatting",
-    regex: /\b(?:mkfs|wipefs|fdisk|parted|gdisk)\b|\bdd\s+if=/i,
+    regex: /\b(?:mkfs|wipefs|fdisk|parted|gdisk|diskpart|Format-Volume|Clear-Disk|Initialize-Disk)\b|\bdd\s+if=|\bformat\s+[a-zA-Z]:/i,
     reason: "Low-level disk format/write operations are blocked."
   },
   {
     name: "Unsafe Permission Modification",
     regex: /\bchmod\s+-[a-zA-Z]*R\s+777\s+(?:[\/\\]|~|\$HOME)/i,
     reason: "Unrestricted global recursive permission modification is blocked."
+  },
+  {
+    name: "Unsafe Execution Policy",
+    regex: /\bSet-ExecutionPolicy\b[\s\S]*?\b(?:Unrestricted|Bypass)\b/i,
+    reason: "Unrestricted PowerShell execution policy change is blocked."
   },
   {
     name: "Fork Bomb",
@@ -107,7 +112,7 @@ export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   },
   {
     name: "Elevated Privileges",
-    regex: /(?:^|\s|;|&&|\|\|)(?:sudo|doas|runas)\s+/i,
+    regex: /(?:^|\s|;|&&|\|\|)(?:sudo|doas|runas|gsudo)\s+|\bStart-Process\b[\s\S]*?-Verb\s+RunAs/i,
     reason: "Command requests elevated/root privileges."
   }
 ];
@@ -348,10 +353,10 @@ export default function (pi: ExtensionAPI) {
     if (!gateEnabled) return;
 
     // --------------------------------------------------
-    // A. Bash Tool Safety Inspection
+    // A. Bash & PowerShell Tool Safety Inspection
     // --------------------------------------------------
-    if (isToolCallEventType("bash", event)) {
-      const command = event.input.command || "";
+    if (isToolCallEventType("bash", event) || (event as any).toolName === "powershell") {
+      const command = (event.input as any).command || "";
 
       // 1. Dangerous Command Regex Patterns
       for (const pattern of DANGEROUS_BASH_PATTERNS) {
@@ -454,54 +459,59 @@ export default function (pi: ExtensionAPI) {
     }
 
     // --------------------------------------------------
-    // B. Read Tool Secret, System Path & Workspace Inspection
+    // B. Read, Grep, Find & Ls Tool Inspection
     // --------------------------------------------------
-    if (isToolCallEventType("read", event)) {
-      const targetPath = event.input.path || "";
+    if (
+      isToolCallEventType("read", event) ||
+      (event as any).toolName === "grep" ||
+      (event as any).toolName === "find" ||
+      (event as any).toolName === "ls"
+    ) {
+      const targetPath = (event.input as any).path || "";
 
       // 1. Sensitive file / credential protection
-      if (isCredentialFile(targetPath) || isSensitiveSystemPath(targetPath)) {
+      if (targetPath && (isCredentialFile(targetPath) || isSensitiveSystemPath(targetPath))) {
         if (!ctx.hasUI || !ctx.ui) {
           return {
             block: true,
-            reason: `[SECRET PROTECTION]: Read access to sensitive file "${targetPath}" is blocked in headless mode.`
+            reason: `[SECRET PROTECTION]: Access to sensitive path "${targetPath}" is blocked in headless mode.`
           };
         }
 
         const approved = await ctx.ui.confirm(
           "🔒 Sensitive File Access",
-          `The agent wants to read sensitive file:\n\n${targetPath}\n\nAllow read access?`,
+          `The agent wants to access sensitive path:\n\n${targetPath}\n\nAllow access?`,
           { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
           return {
             block: true,
-            reason: `[SECRET PROTECTION BLOCKED BY USER]: Reading "${targetPath}" was denied by user.`
+            reason: `[SECRET PROTECTION BLOCKED BY USER]: Accessing "${targetPath}" was denied by user.`
           };
         }
       }
 
       // 2. Out of Workspace Read Confinement
-      if (isOutsideWorkspace(targetPath) && !isGlobalSkillPath(targetPath)) {
+      if (targetPath && isOutsideWorkspace(targetPath) && !isGlobalSkillPath(targetPath)) {
         const workspace = getWorkspaceRoot();
         if (!ctx.hasUI || !ctx.ui) {
           return {
             block: true,
-            reason: `[WORKSPACE CONFINEMENT]: Reading file "${targetPath}" outside active workspace "${workspace}". Blocked in headless mode.`
+            reason: `[WORKSPACE CONFINEMENT]: Accessing path "${targetPath}" outside active workspace "${workspace}". Blocked in headless mode.`
           };
         }
 
         const approved = await ctx.ui.confirm(
-          "⚠️ Out-of-Workspace Read Access",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to read a file outside the project workspace.\n\nAllow read access?`,
+          "⚠️ Out-of-Workspace Access",
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to access a path outside the project workspace.\n\nAllow access?`,
           { timeout: CONFIRM_TIMEOUT_MS }
         );
 
         if (!approved) {
           return {
             block: true,
-            reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Reading outside workspace "${workspace}" was denied.`
+            reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Access outside workspace "${workspace}" was denied.`
           };
         }
       }

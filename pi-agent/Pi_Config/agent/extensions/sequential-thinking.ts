@@ -29,6 +29,11 @@ export default function initExtension(pi: ExtensionAPI) {
     name: "sequential_thinking",
     label: "Sequential Thinking",
     description: "For Step-by-step reasoning, test hypotheses, or to plan multi-file changes before editing code or executing actions (e.g. diagnosing subtle race conditions or planning complex refactors).",
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: false
+    },
     parameters: SequentialThinkingSchema,
 
     /**

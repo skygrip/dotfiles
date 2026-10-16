@@ -50,10 +50,10 @@
 
 import {
   type BashOperations,
-  createBashTool,
-  createEditTool,
-  createReadTool,
-  createWriteTool,
+  createBashToolDefinition,
+  createEditToolDefinition,
+  createReadToolDefinition,
+  createWriteToolDefinition,
   type EditOperations,
   generateDiffString,
   highlightCode,
@@ -681,10 +681,10 @@ export default function (pi: ExtensionAPI) {
   const session = new SshSessionManager();
   const localCwd = process.cwd();
 
-  const localRead = createReadTool(localCwd);
-  const localWrite = createWriteTool(localCwd);
-  const localEdit = createEditTool(localCwd);
-  const localBash = createBashTool(localCwd);
+  const localRead = createReadToolDefinition(localCwd);
+  const localWrite = createWriteToolDefinition(localCwd);
+  const localEdit = createEditToolDefinition(localCwd);
+  const localBash = createBashToolDefinition(localCwd);
 
   // ----------------------------------------------------
   // 1. Slash Command: /ssh
@@ -729,15 +729,15 @@ export default function (pi: ExtensionAPI) {
         limit: args.limit
       };
     },
-    async execute(id, params: any, signal, onUpdate, _ctx) {
+    async execute(id, params: any, signal, onUpdate, ctx) {
       const rawPath = params.path ?? "";
       if (session.isConnected() && session.targetInfo) {
-        const tool = createReadTool(localCwd, {
+        const tool = createReadToolDefinition(localCwd, {
           operations: createRemoteReadOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, { ...params, path: rawPath }, signal, onUpdate);
+        return tool.execute(id, { ...params, path: rawPath }, signal, onUpdate, ctx);
       }
-      return localRead.execute(id, { ...params, path: rawPath }, signal, onUpdate);
+      return localRead.execute(id, { ...params, path: rawPath }, signal, onUpdate, ctx);
     }
   });
 
@@ -754,7 +754,7 @@ export default function (pi: ExtensionAPI) {
       const rawPath = args?.path ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
-    async execute(id, params: any, signal, onUpdate, _ctx) {
+    async execute(id, params: any, signal, onUpdate, ctx) {
       const rawPath = params.path ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
@@ -770,10 +770,10 @@ export default function (pi: ExtensionAPI) {
           oldContent = null;
         }
 
-        const tool = createWriteTool(localCwd, {
+        const tool = createWriteToolDefinition(localCwd, {
           operations: createRemoteWriteOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        const result: any = await tool.execute(id, { path: rawPath, content }, signal, onUpdate);
+        const result: any = await tool.execute(id, { path: rawPath, content }, signal, onUpdate, ctx);
 
         if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
           const diffObj = generateDiffString(oldContent, content);
@@ -796,7 +796,7 @@ export default function (pi: ExtensionAPI) {
         }
       }
 
-      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate);
+      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate, ctx);
 
       if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
         const diffObj = generateDiffString(oldContent, content);
@@ -859,40 +859,29 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     ...localEdit,
-    prepareArguments(args: any) {
-      if (!args || typeof args !== "object") return args;
-      return {
-        path: args.path ?? "",
-        edits: Array.isArray(args.edits) ? args.edits : []
-      };
-    },
-    renderCall(args: any, theme: any, _renderCtx: any) {
-      const rawPath = args?.path ?? "file";
-      return new Text(theme.fg("toolTitle", theme.bold("edit")) + " " + theme.fg("accent", rawPath), 0, 0);
-    },
-    async execute(id, params: any, signal, onUpdate, _ctx) {
+    async execute(id, params: any, signal, onUpdate, ctx) {
       const rawPath = params.path ?? "";
       const edits = params.edits ?? [];
       if (session.isConnected() && session.targetInfo) {
-        const tool = createEditTool(localCwd, {
+        const tool = createEditToolDefinition(localCwd, {
           operations: createRemoteEditOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, { path: rawPath, edits }, signal, onUpdate);
+        return tool.execute(id, { path: rawPath, edits }, signal, onUpdate, ctx);
       }
-      return localEdit.execute(id, { path: rawPath, edits }, signal, onUpdate);
+      return localEdit.execute(id, { path: rawPath, edits }, signal, onUpdate, ctx);
     }
   });
 
   pi.registerTool({
     ...localBash,
-    async execute(id, params, signal, onUpdate, _ctx) {
+    async execute(id, params, signal, onUpdate, ctx) {
       if (session.isConnected() && session.targetInfo) {
-        const tool = createBashTool(localCwd, {
+        const tool = createBashToolDefinition(localCwd, {
           operations: createRemoteBashOps(session, session.targetInfo.remoteCwd, localCwd)
         });
-        return tool.execute(id, params, signal, onUpdate);
+        return tool.execute(id, params, signal, onUpdate, ctx);
       }
-      return localBash.execute(id, params, signal, onUpdate);
+      return localBash.execute(id, params, signal, onUpdate, ctx);
     }
   });
 
@@ -936,10 +925,20 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event) => {
     if (session.isConnected() && session.targetInfo) {
       const target = session.targetInfo;
-      const modified = event.systemPrompt.replace(
-        `Current working directory: ${localCwd}`,
-        `Current working directory: ${target.remoteCwd} (Remote SSH: ${target.username}@${target.host})`
-      );
+      const remoteCwdLabel = `${target.remoteCwd} (Remote SSH: ${target.username}@${target.host})`;
+      let modified = event.systemPrompt;
+
+      if (modified.includes("<cwd>")) {
+        modified = modified.replace(
+          /<cwd>[\s\S]*?<\/cwd>/,
+          `<cwd>\n${remoteCwdLabel}\n</cwd>`
+        );
+      } else {
+        modified = modified.replace(
+          `Current working directory: ${localCwd}`,
+          `Current working directory: ${remoteCwdLabel}`
+        );
+      }
 
       const sshHint = `\n\n# Remote SSH Environment (Overrides Local Host OS Rules)\nYou are working directly on a remote Linux or macOS server via SSH (${target.username}@${target.host}:${target.port}).\n- The remote environment is Unix-like (POSIX): do NOT use PowerShell or Windows-specific commands.\n- The remote working directory is \`${target.remoteCwd}\`.\n- Standard tools (read, write, edit, bash) execute remotely on this server.\n- Do NOT run nested \`ssh\` commands within \`bash\`.\n- All file modifications and shell commands affect the remote host.`;
 

@@ -1111,6 +1111,11 @@ export default function (pi: ExtensionAPI) {
     name: "fetch_url",
     label: "Fetch URL",
     description: "Fetch and extract clean markdown from web pages, or view and visually analyze online image URLs (e.g. inspecting online documentation, visual flowcharts, or reference photos).",
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: true
+    },
     parameters: FetchUrlSchema,
 
     prepareArguments(args: any) {

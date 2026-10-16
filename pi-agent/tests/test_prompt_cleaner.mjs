@@ -366,6 +366,27 @@ In addition to the tools above, you may use external utilities.
     assert.ok(!result.systemPrompt.includes("In addition to the tools above"), "Must strip 'In addition to...' line");
     assert.ok(result.systemPrompt.includes("## Operational Rules"), "Must preserve custom operational rules");
     assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
+
+    // Also verify Pi 1.3.0 XML <tools> block format is stripped
+    const pi13Prompt = `You are an expert coding assistant.
+
+<tools>
+- read: Read file
+- bash: Exec bash
+- edit: Edit file
+- write: Write file
+
+In addition to the tools above, you may have access to other custom tools depending on the project.
+</tools>
+
+<rules>
+- Always emit path first
+</rules>`;
+
+    const result13 = await beforeAgentStartHook({ systemPrompt: pi13Prompt });
+    assert.ok(!result13.systemPrompt.includes("<tools>"), "Must strip Pi 1.3.0 <tools> block");
+    assert.ok(!result13.systemPrompt.includes("</tools>"), "Must strip Pi 1.3.0 </tools> block");
+    assert.ok(result13.systemPrompt.includes("<rules>"), "Must preserve rules section");
   });
 
   await asyncTest("System Prompt Hygiene: normalizes Windows backslashes in documentation, context, and skills (Issue #8841)", async () => {

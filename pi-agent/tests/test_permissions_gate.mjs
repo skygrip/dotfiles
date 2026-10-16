@@ -99,18 +99,27 @@ export async function runPermissionsGateTests() {
     assert.ok(matchDangerous("rm -rf $HOME"), "Must block rm -rf $HOME");
     assert.ok(matchDangerous("rm -rf %USERPROFILE%"), "Must block rm -rf %USERPROFILE%");
     assert.ok(matchDangerous("rm -r -f C:/"), "Must block Windows drive root delete");
+    assert.ok(matchDangerous("Remove-Item -Path C:\\ -Recurse -Force"), "Must block Remove-Item root drive");
+    assert.ok(matchDangerous("Remove-Item -Recurse -Force ~"), "Must block Remove-Item user home");
+    assert.ok(matchDangerous("rmdir /s /q C:\\"), "Must block rmdir /s /q C:\\");
 
     assert.ok(matchDangerous("mkfs.ext4 /dev/sda1"), "Must block mkfs");
     assert.ok(matchDangerous("wipefs -a /dev/sdb"), "Must block wipefs");
     assert.ok(matchDangerous("dd if=/dev/zero of=/dev/sda"), "Must block dd overwrite");
     assert.ok(matchDangerous("fdisk /dev/nvme0n1"), "Must block fdisk");
+    assert.ok(matchDangerous("Format-Volume -DriveLetter C"), "Must block Format-Volume");
+    assert.ok(matchDangerous("Clear-Disk -Number 1"), "Must block Clear-Disk");
+    assert.ok(matchDangerous("format D: /fs:ntfs"), "Must block format drive");
 
     assert.ok(matchDangerous(":(){ :|:& };:"), "Must block fork bomb");
     assert.ok(matchDangerous("chmod -R 777 /"), "Must block recursive chmod 777 root");
+    assert.ok(matchDangerous("Set-ExecutionPolicy -Scope CurrentUser Bypass"), "Must block Set-ExecutionPolicy Bypass");
 
     assert.equal(matchDangerous("git status"), undefined, "Must allow git status");
     assert.equal(matchDangerous("npm test"), undefined, "Must allow npm test");
     assert.equal(matchDangerous("cargo check"), undefined, "Must allow cargo check");
+    assert.equal(matchDangerous("Remove-Item -Recurse -Force ./build"), undefined, "Must allow safe Remove-Item inside project");
+    assert.equal(matchDangerous("Set-ExecutionPolicy RemoteSigned"), undefined, "Must allow safe execution policy");
   });
 
   // Test 2: Destructive Git Commands & Privilege Escalation
@@ -131,7 +140,10 @@ export async function runPermissionsGateTests() {
     assert.ok(matchDangerous("sudo apt update"), "Must block sudo");
     assert.ok(matchDangerous("doas apk upgrade"), "Must block doas");
     assert.ok(matchDangerous("runas /user:Administrator cmd"), "Must block runas");
+    assert.ok(matchDangerous("gsudo choco install"), "Must block gsudo");
+    assert.ok(matchDangerous("Start-Process powershell -Verb RunAs"), "Must block Start-Process RunAs");
 
+    assert.equal(matchDangerous("Start-Process -FilePath node"), undefined, "Must allow safe Start-Process");
     assert.equal(matchDangerous("git branch"), undefined);
     assert.equal(matchDangerous("git diff"), undefined);
     assert.equal(matchDangerous("git checkout -b new-branch"), undefined);

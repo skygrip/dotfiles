@@ -32,7 +32,7 @@
  */
 
 import {
-  createWriteTool,
+  createWriteToolDefinition,
   generateDiffString,
   highlightCode,
   renderDiff,
@@ -102,7 +102,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   const localCwd = process.cwd();
-  const localWrite = createWriteTool(localCwd);
+  const localWrite = createWriteToolDefinition(localCwd);
 
   // -----------------------------------------------------------------------------------
   // 2. Enhanced Write Tool Registration
@@ -133,15 +133,16 @@ export default function (pi: ExtensionAPI) {
     /**
      * Executes the write operation while capturing pre-existing file state to compute diffs.
      */
-    async execute(id, params: any, signal, onUpdate, _ctx) {
+    async execute(id, params: any, signal, onUpdate, ctx) {
       const rawPath = params.path ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
       let isOverwrite = false;
 
+      const activeCwd = ctx?.cwd || localCwd;
       // Check if target file already exists on disk before performing write
-      const absPath = path.isAbsolute(rawPath) ? rawPath : path.resolve(localCwd, rawPath);
-      const relPath = path.relative(localCwd, absPath);
+      const absPath = path.isAbsolute(rawPath) ? rawPath : path.resolve(activeCwd, rawPath);
+      const relPath = path.relative(activeCwd, absPath);
 
       if (fsSync.existsSync(absPath)) {
         try {
@@ -153,7 +154,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Delegate actual file writing to Pi's robust native write handler
-      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate);
+      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate, ctx);
 
       // Attach structured details metadata for renderResult
       if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {

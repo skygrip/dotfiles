@@ -10,13 +10,15 @@ function loadFetchUrlModule() {
   const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
   const jiti = require(jitiPkg);
   const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
+  const piNodeModules = path.join(globalBase, "node_modules");
   const localNpmNodeModules = path.join(os.homedir(), ".pi/agent/npm/node_modules");
+  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
 
   const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
     alias: {
       "@earendil-works/pi-coding-agent": globalBase,
       "@earendil-works/pi-tui": path.join(globalBase, "node_modules/@earendil-works/pi-tui/dist/index.js"),
-      "typebox": path.join(localNpmNodeModules, "typebox/build/index.mjs"),
+      "typebox": path.join(typeboxBase, "typebox/build/index.mjs"),
       "@mozilla/readability": path.join(localNpmNodeModules, "@mozilla/readability/index.js"),
       "linkedom": path.join(localNpmNodeModules, "linkedom/cjs/index.js"),
       "turndown": path.join(localNpmNodeModules, "turndown/lib/turndown.cjs.js"),

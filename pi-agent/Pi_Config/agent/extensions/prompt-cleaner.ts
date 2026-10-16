@@ -149,9 +149,9 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event) => {
     let prompt = event.systemPrompt;
 
-    // Remove the hardcoded "Available tools: ..." block and "In addition to the tools above..."
+    // Remove the hardcoded "<tools>...</tools>" block or legacy "Available tools: ..." block
     prompt = prompt.replace(
-      /Available tools:\s*[\s\S]*?In addition to the tools above[^\n]*\n+/g,
+      /(?:<tools>[\s\S]*?<\/tools>\s*|Available tools:\s*[\s\S]*?In addition to the tools above[^\n]*\n+)/g,
       ""
     );
 
