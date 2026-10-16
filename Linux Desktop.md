@@ -1,10 +1,14 @@
-# Gnome Theming
+# Linux Desktop Setup
 
-Install the theme
+## GNOME Theming
 
-    yay -S pop-icon-theme-git pop-gtk-theme-git
+Install the theme:
 
-Set the font sizes in Tweak Tool
+```bash
+yay -S pop-icon-theme-git pop-gtk-theme-git
+```
+
+Set the font sizes in Tweak Tool:
 
 | Name                 | Font                | Size |
 | -------------------- | ------------------- | ---- |
@@ -13,7 +17,9 @@ Set the font sizes in Tweak Tool
 | Monospace Text       | Fira Mono Regular   | 11   |
 | Legacy Window Titles | Fira Sans Medium    | 10   |
 
-Install the terminal theme. If you have problems with the script create an new terminal profile and run the script again.
+Install the terminal theme. If you have problems with the script, create a new terminal profile and run the script again:
 
-    git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
-    ~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
+```bash
+git clone https://github.com/aaron-williamson/base16-gnome-terminal.git ~/.config/base16-gnome-terminal
+~/.config/base16-gnome-terminal/color-scripts/base16-ocean.sh
+```

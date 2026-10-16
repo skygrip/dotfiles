@@ -2,9 +2,7 @@
 
 Setup of a basic Windows Desktop
 
-## Setup and Debloat
-
-## BIOS
+## 1. BIOS Configuration
 
 Start with updating the BIOS and loading defaults:
 
@@ -25,11 +23,9 @@ Review BIOS settings:
 - Enable Wake on LAN (`Power On By PCI-E`)
 - Set a BIOS Password (Optional)
 
-### Windows 11
+## 2. Windows 11 Setup & Debloat
 
-Make the following changes:
-
-#### Initial Setup
+### Initial Setup
 
 - Enable Windows update for other Microsoft products.
 - Run Windows Update to install all available updates.
@@ -65,7 +61,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
   - Windows Sandbox
   - Windows Subsystem for Linux
 
-#### Manual Steps
+### Manual Steps
 
 - Disable Widgets, Taskview, and Search from Taskbar settings
 - Unpin all default app tiles and disable "Show recently added apps" and "Show recommendations for tips, shortcuts, new apps".
@@ -82,7 +78,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
   - Optionally enforce TPM and PIN (`gpedit.msc` > ... > BitLocker > OS Drive > Require Additional Authentication at Startup).
   - Optionally add a PIN protector: `manage-bde -protectors -add -TPMAndPIN C:`
 
-#### Remote Access (Optional)
+### Remote Access Configuration (Optional)
 
 Disable Fast Startup, Standby & Hibernation.
 
@@ -110,7 +106,7 @@ powercfg -setactive SCHEME_CURRENT
 
 ```
 
-##### RDP
+#### RDP
 
 Enable RDP
 
@@ -120,7 +116,7 @@ Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' 
 Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 ```
 
-##### Parsec
+#### Parsec
 
 Install via Winget
 
@@ -138,7 +134,7 @@ Configure the following Host settings in the Parsec app:
 - **Decoder/Encoder**: Ensure H.265 (HEVC) codec is **`Enabled`**
 - **Audio Source**: Set to **`Parsec Virtual Audio`**
 
-#### Automatic Maintenance (Optional)
+### Automatic Maintenance (Optional)
 
 - Configure Windows Update to automatically download and install updates.
   - Set Active Hours
@@ -168,13 +164,13 @@ Configure the following Host settings in the Parsec app:
 
 | Application                                                   | Winget ID                                      |
 | ------------------------------------------------------------- | ---------------------------------------------- |
-| [7zip](https://www.7-zip.org/download.html)                   | winget install -e --id 7zip.7zip               |
-| [Adobe Reader](https://get.adobe.com/reader/)                 |                                                |
-| [Calibre Ebook](https://calibre-ebook.com/download_windows64) | winget install -e --id calibre.calibre         |
-| [Chrome](https://www.google.com/chrome/)                      | winget install -e --id Google.Chrome           |
-| [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox         |
-| [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC |
-| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         |                                                |
+| [7zip](https://www.7-zip.org/download.html)                   | winget install -e --id 7zip.7zip                   |
+| [Adobe Reader](https://get.adobe.com/reader/)                 | winget install -e --id Adobe.Acrobat.Reader.64-bit |
+| [Calibre Ebook](https://calibre-ebook.com/download_windows64) | winget install -e --id calibre.calibre             |
+| [Chrome](https://www.google.com/chrome/)                      | winget install -e --id Google.Chrome               |
+| [Firefox](https://www.mozilla.org/en-US/firefox/new/)         | winget install -e --id Mozilla.Firefox             |
+| [KeepassXC](https://keepassxc.org/)                           | winget install -e --id KeePassXCTeam.KeePassXC     |
+| [Kindle](https://www.amazon.com.au/kindle-dbs/fd/kcp)         | winget install -e --id Amazon.Kindle               |
 | [Kobo Desktop](https://www.kobo.com/desktop)                  | winget install -e --id Rakuten.Kobo            |
 | [Libation](https://github.com/rmcrackan/Libation)             | winget install -e --id rmcrackan.Libation      |
 | [OBSStudio](https://obsproject.com/)                          | winget install -e --id OBSProject.OBSStudio    |
@@ -239,7 +235,9 @@ Configure the following Host settings in the Parsec app:
 | [ImageMagick](https://imagemagick.org/script/download.php)                                                | winget install -e --id ImageMagick.ImageMagick   |
 | [Inkscape](https://inkscape.org/)                                                                         | winget install -e --id Inkscape.Inkscape         |
 | [KiCad](https://www.kicad.org/)                                                                           | winget install -e --id KiCad.KiCad               |
+| [Krita](https://krita.org/)                                                                               | winget install -e --id KDE.Krita                 |
 | [Luminance HDR](http://qtpfsgui.sourceforge.net)                                                          |                                                  |
+| [MeshLab](https://www.meshlab.net/)                                                                       | winget install -e --id CNRISTI.MeshLab           |
 | [OpenSCAD](https://www.openscad.org/)                                                                     | winget install -e --id OpenSCAD.OpenSCAD         |
 
 ### Manufacturing Tools
@@ -249,8 +247,8 @@ Configure the following Host settings in the Parsec app:
 | [Bambu Studio](https://bambulab.com/en/download/studio)                                          | winget install -e --id Bambulab.Bambustudio |
 | [CrealityScan](https://www.creality.com/pages/download-cr-scan-otter)                            | winget install -e --id Creality.CrealityScan.4 |
 | [Laser GRBL](https://github.com/arkypita/LaserGRBL)                                              |                                             |
-| [Lychee Slicer](https://lychee.mango3d.io/)                                                      |                                             |
-| [Proton Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)    |                                             |
+| [Lychee Slicer](https://lychee.mango3d.io/)                                                      | winget install -e --id Mango3D.LycheeSlicer |
+| [Photon Workshop](https://www.anycubic.com/pages/anycubic-photon-workshop-3d-slicer-software)    |                                             |
 | [PrusaSlicer](https://www.prusa3d.com)                                                           | winget install -e --id Prusa3D.PrusaSlicer  |
 | [Ultimaker Cura](https://ultimaker.com/software/ultimaker-cura)                                  | winget install -e --id Ultimaker.Cura       |
 | [Valentina Dev](https://bitbucket.org/valentinaproject/valentinaproject.bitbucket.io/downloads/) |                                             |
@@ -270,8 +268,8 @@ Configure the following Host settings in the Parsec app:
 | Application                                                          | Winget ID / Install Command                     |
 | -------------------------------------------------------------------- | ----------------------------------------------- |
 | [AnythingLLM](https://useanything.com/)                              | winget install -e --id MintplexLabs.AnythingLLM |
-| [Google Antigravity](https://github.com/google/antigravity)          | winget install -e --id Google.Antigravity       |
-| [Google Antigravity CLI](https://github.com/google/antigravity)      | winget install -e --id Google.AntigravityCLI    |
+| [Google Antigravity](https://antigravity.google)                     | winget install -e --id Google.Antigravity       |
+| [Google Antigravity CLI](https://antigravity.google)                 | winget install -e --id Google.AntigravityCLI    |
 | [Jan](https://jan.ai/)                                               | winget install -e --id Jan.Jan                  |
 | [LM Studio](https://lmstudio.ai/)                                    | winget install -e --id ElementLabs.LMStudio     |
 | [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)   | winget install -e --id Nvidia.CUDA              |
@@ -279,14 +277,13 @@ Configure the following Host settings in the Parsec app:
 | [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)       |                                                 |
 | [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)           | winget install -e --id TopazLabs.TopazPhotoAI   |
 
-For advanced AI configurations, global settings, prompt templates, local LLM endpoints, and custom agent extensions, see [AI.md](./AI.md).
+For advanced AI configurations, global settings, prompt templates, local LLM endpoints, and custom agent extensions, see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-agent/README.md), and [Llama-Swap](./llama-swap/README.md).
 
 ### IDEs & Editors
 
 | Application                                                                  | Winget ID                                                      |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [Arduino IDE](https://www.arduino.cc/en/software/)                           | winget install -e --id ArduinoSA.IDE.stable                    |
-| [Google Antigravity](https://antigravity.google)                             | winget install -e --id Google.Antigravity                      |
 | [Mu Editor](https://codewith.mu/en/download)                                 | winget install -e --id Mu.Mu                                   |
 | [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/releases) | winget install -e --id Notepad++.Notepad++                     |
 | [Sublime Text](https://www.sublimetext.com/)                                 | winget install -e --id SublimeHQ.SublimeText.4                 |
@@ -310,7 +307,6 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [GitHub CLI](https://cli.github.com/)                                                                                   | winget install -e --id GitHub.cli                              |
 | [GitHub Desktop](https://desktop.github.com/)                                                                           | winget install -e --id GitHub.GitHubDesktop --scope user       |
 | [Google CloudSDK](https://cloud.google.com/sdk/docs/install)                                                            | winget install -e --id Google.CloudSDK                         |
-| [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                                 | winget install -e --id Google.IAPDesktop                       |
 | [jq](https://jqlang.github.io/jq/)                                                                                      | winget install -e --id jqlang.jq                               |
 | [lnav (Log Navigator)](https://lnav.org/)                                                                                | winget install -e --id tstack.lnav                             |
 | [Miller (mlr)](https://miller.readthedocs.io/)                                                                          | winget install -e --id Miller.Miller                           |
@@ -319,8 +315,10 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools       |
 | [Pandoc](https://pandoc.org/)                                                                                           | winget install -e --id JohnMacFarlane.Pandoc                   |
 | [Podman](https://github.com/containers/podman/)                                                                         | winget install -e --id RedHat.Podman                           |
+| [Postman](https://www.getpostman.com/downloads/)                                                                        | winget install -e --id Postman.Postman --scope user            |
 | [PowerBI](https://powerbi.microsoft.com/en-us/)                                                                         | winget install -e --id Microsoft.PowerBI                       |
-| [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                                 | winget install -e --id PuTTY.PuTTY                             |
+| [PulseView (sigrok)](https://sigrok.org/wiki/PulseView)                                                                 | winget install -e --id Sigrok.PulseView                        |
+| [QPDF](https://github.com/qpdf/qpdf)                                                                                    | winget install -e --id QPDF.QPDF                               |
 | [qrtool](https://github.com/sorairolake/qrtool)                                                                        | winget install -e --id sorairolake.qrtool                      |
 | [Raspberry Pi Imager](https://www.raspberrypi.com/software/)                                                            | winget install -e --id RaspberryPiFoundation.RaspberryPiImager |
 | [ripgrep](https://github.com/BurntSushi/ripgrep)                                                                        | winget install -e --id BurntSushi.ripgrep.MSVC                 |
@@ -329,18 +327,20 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Rust](https://www.rust-lang.org/tools/install)                                                                         | winget install -e --id Rustlang.Rustup                         |
 | [Semgrep](https://semgrep.dev/)                                                                                         | uv tool install semgrep                                        |
 | [Snyk CLI](https://snyk.io/)                                                                                            | npm install -g snyk                                            |
-| [TigerVNC](https://tigervnc.org/)                                                                                       | winget install -e --id TigerVNC.TigerVNC                       |
-| [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                                 | winget install -e --id Oracle.VirtualBox                       |
-| [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html)                | winget install -e --id VMware.WorkstationPro                   |
-| [WinSCP](https://winscp.net/eng/download.php)                                                                           | winget install -e --id WinSCP.WinSCP                           |
+| [xh](https://github.com/ducaale/xh)                                                                                    | winget install -e --id ducaale.xh                              |
 | [yq](https://github.com/mikefarah/yq)                                                                                  | winget install -e --id MikeFarah.yq                            |
 
-To keep project and log directories clean (avoiding local `.ck/` folders created in each indexed workspace), configure the persistent `CK_INDEX_DIR` environment variable to store indexes centrally:
+### Remote Access & Virtualization Tools
 
-```powershell
-# Set global index cache directory for ck (seek) in PowerShell:
-[Environment]::SetEnvironmentVariable("CK_INDEX_DIR", "$env:LOCALAPPDATA\ck\indexes", "User")
-```
+| Application                                                                                              | Winget ID                                                |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [Google IAPDesktop](https://github.com/GoogleCloudPlatform/iap-desktop)                                  | winget install -e --id Google.IAPDesktop                 |
+| [Parsec](https://parsec.app/)                                                                            | winget install -e --id Parsec.Parsec                     |
+| [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)                                  | winget install -e --id PuTTY.PuTTY                       |
+| [TigerVNC](https://tigervnc.org/)                                                                        | winget install -e --id TigerVNC.TigerVNC                 |
+| [Virtualbox](https://www.virtualbox.org/wiki/Downloads)                                                  | winget install -e --id Oracle.VirtualBox                 |
+| [VMWare Workstation](https://www.vmware.com/au/products/workstation-pro/workstation-pro-evaluation.html) | winget install -e --id VMware.WorkstationPro             |
+| [WinSCP](https://winscp.net/eng/download.php)                                                            | winget install -e --id WinSCP.WinSCP                     |
 
 ### Forensics Tools
 
@@ -360,7 +360,6 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 | [Maltego](https://www.maltego.com/downloads/)                                                     |                                                              |
 | [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)                                              |                                                              |
 | [Plaso](https://github.com/log2timeline/plaso)                                                    |                                                              |
-| [QPDF](https://github.com/qpdf/qpdf)                                                              | winget install -e --id QPDF.QPDF                             |
 | [RegRipper](https://github.com/keydet89/RegRipper3.0)                                             |                                                              |
 | [SysInternals](https://docs.microsoft.com/en-us/sysinternals/)                                    |                                                              |
 | [VirusTotal CLI](https://github.com/VirusTotal/vt-cli)                                            | winget install -e --id VirusTotal.vt-cli                     |
@@ -375,7 +374,6 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 | [Burp Suite Community](https://portswigger.net/burp/communitydownload) | winget install -e --id PortSwigger.BurpSuite.Community |
 | [MITMProxy](https://github.com/mitmproxy/mitmproxy)                    | winget install -e --id mitmproxy.mitmproxy             |
 | [Nmap](https://nmap.org/)                                              | winget install -e --id Insecure.Nmap                   |
-| [Postman](https://www.getpostman.com/downloads/)                       | winget install -e --id Postman.Postman --scope user    |
 | [Snort](https://www.snort.org/)                                        |                                                        |
 | [Wireshark](https://www.wireshark.org/)                                | winget install -e --id WiresharkFoundation.Wireshark   |
 | [ZAProxy](https://github.com/zaproxy/zaproxy)                          | winget install -e --id ZAP.ZAP                         |
@@ -385,8 +383,8 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 
 | Application                                                          | Winget ID                                          |
 | -------------------------------------------------------------------- | -------------------------------------------------- |
-| [Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop) |                                                    |
-| [CurseForge](https://download.curseforge.com/)                       |                                                    |
+| [Battle.net](https://www.blizzard.com/en-us/apps/battle.net/desktop) | winget install -e --id Blizzard.BattleNet          |
+| [CurseForge](https://download.curseforge.com/)                       | winget install -e --id Overwolf.CurseForge         |
 | [Epic Games](https://store.epicgames.com/en-US/)                     | winget install -e --id EpicGames.EpicGamesLauncher |
 | [EA](https://www.ea.com/en-au/ea-app)                                | winget install -e --id ElectronicArts.EADesktop    |
 | [Steam](https://store.steampowered.com/about/)                       | winget install -e --id Valve.Steam                 |
@@ -403,10 +401,9 @@ To keep project and log directories clean (avoiding local `.ck/` folders created
 | [FTDI Virtual COM Port Drivers](https://ftdichip.com/drivers/vcp-drivers/)                                                                |                                                         |
 | [GlosSI](https://github.com/Alia5/GlosSI/releases)                                                                                        |                                                         |
 | [Logitech Capture](https://www.logitech.com/en-au/product/capture)                                                                        |                                                         |
-| [Logitech Options](https://www.logitech.com/en-au/product/options)                                                                        | winget install -e --id Logitech.Options                 |
-| [MSI Afterburner](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                                         | winget install -e --id Guru3D.Afterburner               |
+| [Logitech Options+](https://www.logitech.com/en-au/software/logi-options-plus.html)                                                       | winget install -e --id Logitech.OptionsPlus             |
 | [Nvidia Drivers](https://www.nvidia.com/Download/index.aspx?lang=en-us)                                                                   |                                                         |
-| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          |                                                         |
+| [WinBtrfs](https://github.com/maharmstone/btrfs)                                                                                          | winget install -e --id maharmstone.btrfs                |
 
 ## Winget
 
@@ -427,7 +424,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 Install commonly used Powershell modules
 
 ```powershell
-Install-Module -Name AzureAD
+Install-Module -Name Microsoft.Entra
 Install-Module -Name ExchangeOnlineManagement
 Install-Module -Name Microsoft.Graph
 Install-Module -Name Microsoft.Online.SharePoint.PowerShell
@@ -443,7 +440,7 @@ Also install some basic server management tools
 
 ```powershell
 Add-WindowsCapability -Online -Name Rsat.ServerManager.Tools~~~~0.0.1.0
-Add-WindowsCapability –Online –Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
 ```
 
 ## Disable Network Connected Standby
@@ -597,6 +594,11 @@ $rclonePath = "$HOME\Build\Rclone\rclone.exe"
 Start-Process PowerShell.exe -ArgumentList "copy $rclonePath C:\Windows\" -Wait -Verb RunAs
 ```
 
+> **Note:** Mounting remotes as drive letters in Windows requires **WinFsp**:
+> ```powershell
+> winget install -e --id WinFsp.WinFsp
+> ```
+
 Create a Rclone command
 
 ```powershell
@@ -606,7 +608,7 @@ $rclone_service_name = "gdrive"
 $rclone_cachedir = "Q:\$rclone_service_name"
 $rclone_drive_letter = "Y"
 $rclone_log = "$ENV:AppData\rclone\rclone.log"
-$rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --cache-dir ${rclone_cachedir} --no-console --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h--vfs-cache-max-size 450G --file-perms 0777 --network-mode"
+$rclone_arguments = "mount ${rclone_service_name}:/ ${rclone_drive_letter}: --config ${rclone_config} --cache-dir ${rclone_cachedir} --no-console --log-file ${rclone_log} --vfs-cache-mode full --vfs-cache-max-age 8766h --vfs-cache-max-size 450G --file-perms 0777 --network-mode"
 # Check the command makes sense
 echo ($rclone_path + ' ' + $rclone_arguments)
 ```
@@ -615,6 +617,15 @@ Preload a VFS Cache
 
 ```powershell
 rclone hashsum crc32 --checkers 8 /rclonepath
+```
+
+## ck (seek) Configuration
+
+To keep project and log directories clean (avoiding local `.ck/` folders created in each indexed workspace), configure the persistent `CK_INDEX_DIR` environment variable to store indexes centrally:
+
+```powershell
+# Set global index cache directory for ck (seek) in PowerShell:
+[Environment]::SetEnvironmentVariable("CK_INDEX_DIR", "$env:LOCALAPPDATA\ck\indexes", "User")
 ```
 
 ## EXIFTOOL
@@ -669,8 +680,8 @@ cd $HOME\Build\ZimmermanTools
 Remove-Item $HOME\Build\ZimmermanTools\*
 Invoke-WebRequest -Uri https://f001.backblazeb2.com/file/EricZimmermanTools/Get-ZimmermanTools.zip -OutFile Get-ZimmermanTools.zip
 Expand-Archive -Path Get-ZimmermanTools.zip -DestinationPath .
-./Get-ZimmermanTools.ps1 -NetVersion 6
-mv net6/* .
+./Get-ZimmermanTools.ps1 -NetVersion 9
+mv net9/* .
 ```
 
 ## Ghidra
@@ -728,6 +739,8 @@ copy-item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\P
 
 ### Sync to OneDrive
 
+> **Note:** If OneDrive was uninstalled during the initial debloat step, ensure OneDrive is installed or replace `$Env:OneDrive` with an alternative sync location (e.g. Proton Drive or Google Drive).
+
 To setup the sync do the following
 
 ```powershell
@@ -743,8 +756,6 @@ cmd  /c mklink /J $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8
 ```
 
 ### Initial Setup
-
-mkdir
 
 Set Windows terminal theme to "One Half Dark"
 

@@ -1,6 +1,6 @@
 # Android TV
 
-## Install a new launcher
+## Install a New Launcher
 
 Good replacement launchers include:
 
@@ -9,14 +9,18 @@ Good replacement launchers include:
 
 ## Nvidia Shield
 
-The following ADB commands disable the built in launcher
+The following ADB commands disable the built-in launcher:
 
-    pm disable-user --user 0 com.google.android.tvlauncher
-    pm disable-user --user 0 com.google.android.tvrecommendations
+```bash
+pm disable-user --user 0 com.google.android.tvlauncher
+pm disable-user --user 0 com.google.android.tvrecommendations
+```
 
 ## Chromecast with Google TV
 
-The following ADB commands disable the built in launcher
+The following ADB commands disable the built-in launcher:
 
-    pm disable-user --user 0 com.google.android.apps.tv.launcherx
-    pm disable-user --user 0 com.google.android.tungsten.setupwraith
+```bash
+pm disable-user --user 0 com.google.android.apps.tv.launcherx
+pm disable-user --user 0 com.google.android.tungsten.setupwraith
+```

@@ -7,8 +7,8 @@
 - Disable sending diagnostic and usage data to Apple
 - Set Timezone Correctly
 - Swap "Command" and "Control" Modifier keys for attached keyboards
-- Disbale scroll inertia
-- Disable Sharing
+- Disable scroll inertia
+- Disable Sharing:
   - Disable Screen Sharing
   - Disable File Sharing
   - Disable Media Sharing
@@ -21,103 +21,115 @@
   - Disable Content Caching
   - Disable AirPlay Receiver
 
-### Homebrew
+### Homebrew Setup
 
-Install Xcode Command Line Tools
+Install Xcode Command Line Tools:
 
-    xcode-select --install
+```bash
+xcode-select --install
+```
 
-Install Homebrew.
+Install Homebrew:
 
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
 ### Terminal Tweaks
 
-Configure Zsh to use Grml config and install plugins via Homebrew.
+Configure Zsh to use Grml config and install plugins via Homebrew:
 
-    # Install ZSH plugins via Homebrew
-    brew install zsh-autosuggestions zsh-syntax-highlighting
+```bash
+# Install ZSH plugins via Homebrew
+brew install zsh-autosuggestions zsh-syntax-highlighting
 
-    # Download Grml zshrc config
-    curl -Lo ~/.zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
+# Download Grml zshrc config
+curl -Lo ~/.zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
 
-    # Enable plugins in ~/.zshrc.local
-    echo "source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ~/.zshrc.local
-    echo "source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc.local
+# Enable plugins in ~/.zshrc.local
+echo "source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> ~/.zshrc.local
+echo "source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc.local
+```
 
 ### General UI/UX Tweaks
 
-    # Set a fast keyboard repeat rate
-    defaults write NSGlobalDomain KeyRepeat -int 2
-    defaults write NSGlobalDomain InitialKeyRepeat -int 15
+```bash
+# Set a fast keyboard repeat rate
+defaults write NSGlobalDomain KeyRepeat -int 2
+defaults write NSGlobalDomain InitialKeyRepeat -int 15
 
-    # Disable "Are you sure you want to open this application?" dialog
-    defaults write com.apple.LaunchServices LSQuarantine -bool false
+# Disable "Are you sure you want to open this application?" dialog
+defaults write com.apple.LaunchServices LSQuarantine -bool false
 
-    # Expand save panel by default
-    defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true
-    defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true
+# Expand save panel by default
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true
 
-    # Expand print panel by default
-    defaults write NSGlobalDomain PMPrintingExpandedStateForPrint -bool true
-    defaults write NSGlobalDomain PMPrintingExpandedStateForPrint2 -bool true
+# Expand print panel by default
+defaults write NSGlobalDomain PMPrintingExpandedStateForPrint -bool true
+defaults write NSGlobalDomain PMPrintingExpandedStateForPrint2 -bool true
 
-    # Automatically quit printer app once the print jobs complete
-    defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true
+# Automatically quit printer app once the print jobs complete
+defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true
 
-    # Disable the "Are you sure you want to quit?" warning for multiple apps
-    defaults write com.apple.Safari ConfirmClosingMultiplePages -bool false
-    defaults write com.apple.iTerm2 PromptOnQuit -bool false
+# Disable the "Are you sure you want to quit?" warning for multiple apps
+defaults write com.apple.Safari ConfirmClosingMultiplePages -bool false
+defaults write com.apple.iTerm2 PromptOnQuit -bool false
+```
 
-## Finder Tweaks
+### Finder Tweaks
 
-    # Show all filename extensions
-    defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+```bash
+# Show all filename extensions
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 
-    # Show path bar in Finder
-    defaults write com.apple.finder ShowPathbar -bool true
+# Show path bar in Finder
+defaults write com.apple.finder ShowPathbar -bool true
 
-    # Show status bar in Finder
-    defaults write com.apple.finder ShowStatusBar -bool true
+# Show status bar in Finder
+defaults write com.apple.finder ShowStatusBar -bool true
 
-    # Keep folders on top when sorting by name
-    defaults write com.apple.finder _FXSortFoldersFirst -bool true
+# Keep folders on top when sorting by name
+defaults write com.apple.finder _FXSortFoldersFirst -bool true
 
-    # When performing a search, search the current folder by default
-    defaults write com.apple.finder FXDefaultSearchScope -string "SCcf"
+# When performing a search, search the current folder by default
+defaults write com.apple.finder FXDefaultSearchScope -string "SCcf"
 
-    # Disable the warning when changing a file extension
-    defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
+# Disable the warning when changing a file extension
+defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
 
-    # Avoid creating .DS_Store files on network or USB volumes
-    defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
-    defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true
+# Avoid creating .DS_Store files on network or USB volumes
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
+defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true
 
-    # Show the ~/Library folder
-    chflags nohidden ~/Library
+# Show the ~/Library folder
+chflags nohidden ~/Library
+```
 
 ### Dock & Mission Control Tweaks
 
-    # Set the icon size of Dock items
-    defaults write com.apple.dock tilesize -int 48
+```bash
+# Set the icon size of Dock items
+defaults write com.apple.dock tilesize -int 48
 
-    # Automatically hide and show the Dock
-    defaults write com.apple.dock autohide -bool true
+# Automatically hide and show the Dock
+defaults write com.apple.dock autohide -bool true
 
-    # Remove the auto-hiding Dock delay
-    defaults write com.apple.dock autohide-delay -float 0
+# Remove the auto-hiding Dock delay
+defaults write com.apple.dock autohide-delay -float 0
 
-    # Make Dock icons of hidden applications translucent
-    defaults write com.apple.dock showhidden -bool true
+# Make Dock icons of hidden applications translucent
+defaults write com.apple.dock showhidden -bool true
 
-    # Don't automatically rearrange Spaces based on most recent use
-    defaults write com.apple.dock mru-spaces -bool false
+# Don't automatically rearrange Spaces based on most recent use
+defaults write com.apple.dock mru-spaces -bool false
 
-    # Speed up Mission Control animations
-    defaults write com.apple.dock expose-animation-duration -float 0.1
+# Speed up Mission Control animations
+defaults write com.apple.dock expose-animation-duration -float 0.1
 
-    # Remove recent applications from the Dock
-    defaults write com.apple.dock show-recents -bool false
+# Remove recent applications from the Dock
+defaults write com.apple.dock show-recents -bool false
+```
 
 ## Software
 
@@ -132,7 +144,7 @@ Configure Zsh to use Grml config and install plugins via Homebrew.
 | [KeepassXC](https://keepassxc.org/)                                                             | `cask "keepassxc"`                               |
 | [Keka](https://www.keka.io/en/)                                                                 | `cask "keka"`                                    |
 | [LibreOffice](https://www.libreoffice.org/)                                                     | `cask "libreoffice"`                             |
-| [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) | `mas "Microsoft Remote Desktop", id: 1295203466` |
+| [Windows App (Remote Desktop)](https://apps.apple.com/us/app/windows-app/id1295203466)          | `mas "Windows App", id: 1295203466`              |
 | [Speedcrunch](https://speedcrunch.org/)                                                         | `cask "speedcrunch"`                             |
 | [Sublime Text](https://www.sublimetext.com/)                                                    | `cask "sublime-text"`                            |
 | [VLC](https://www.videolan.org/vlc/)                                                            | `cask "vlc"`                                     |

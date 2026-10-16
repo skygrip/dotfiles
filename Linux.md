@@ -1,8 +1,8 @@
 # Linux Setup
 
-# Install Basic Tools
+## Install Basic Tools
 
-## Arch
+### Arch
 
 Install the following basic tools
 
@@ -36,19 +36,19 @@ Install Yay (Optional)
     cd yay
     makepkg -si
 
-## Debian/Ubuntu
+### Debian/Ubuntu
 
 Install the following basic tools
 
     apt install dnsutils screen vim nano tree
 
-# Setup Networking
+## Setup Networking
 
-## Arch
+### Arch
 
-Install NetworkMangaer
+Install NetworkManager
 
-    Pacman -S networkmanager
+    pacman -S networkmanager
     systemctl enable NetworkManager
     systemctl start NetworkManager
 
@@ -60,26 +60,26 @@ Validate the hostname set
 
     hostnamectl
 
-# Setup Zsh
+## Setup Zsh
 
 Use the ZSH shell and setup the GRML setup
 
-## Arch
+### Arch
 
     pacman -S zsh zsh-completions
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     sudo chsh -s /bin/zsh $USER
     sudo chsh -s /bin/zsh root
 
-## Debian/Ubuntu
+### Debian/Ubuntu
 
     sudo apt install zsh zsh-autosuggestions linux-headers
     sudo wget -O /etc/zsh/zshrc https://git.grml.org/f/grml-etc-core/etc/zsh/zshrc
     ln -s ~/.profile ~/.zprofile
 
-# SSH
+## SSH
 
-## Arch
+### Arch
 
 Add user
 
@@ -135,9 +135,9 @@ Restart sshd and confirm the settings with ssh-audit
     systemctl restart sshd
     ssh-audit localhost
 
-# Setup fail2ban
+## Setup fail2ban
 
-## Arch
+### Arch
 
 Install and start fail2ban
 
@@ -158,13 +158,13 @@ Reload fail2ban and check that it works
     fail2ban-client status
     fail2ban-client status sshd
 
-# System Monitoring (Arch)
+## System Monitoring (Arch)
 
 Install smartmontools
 
     pacman -S smartmontools
 
-## Configure smartd with Telegram Notifications (via Apprise)
+### Configure smartd with Telegram Notifications (via Apprise)
 
 To keep credentials secure and avoid repeating the Telegram URL in multiple scripts, create a central Apprise configuration file at `/etc/apprise.conf` and restrict its permissions:
 
@@ -236,15 +236,15 @@ To verify the integration works:
 3. You should receive a test message on Telegram.
 4. **Be sure to remove `-M test`** afterwards, otherwise you will receive alerts on every service restart.
 
-# SSD Maintenance
+## SSD Maintenance
 
 To keep SSD performance high and prevent flash wear, enable systemd's weekly `fstrim` timer:
 
     systemctl enable --now fstrim.timer
 
-# Temperature sensing
+## Temperature sensing
 
-## Arch Setup
+### Arch Setup
 
 Install i2c tools:
 
@@ -609,7 +609,7 @@ Enable the service to run on boot:
     systemctl enable boot-notify.service
 
 
-# Containers (Docker CE)
+## Containers (Docker CE)
 
 Install and start Docker
 
@@ -617,9 +617,9 @@ Install and start Docker
     systemctl enable docker
     systemctl start docker
 
-# Containers (Podman)
+## Containers (Podman)
 
-## Arch
+### Arch
 
 Install and start podman
 
@@ -627,9 +627,9 @@ Install and start podman
     systemctl enable podman.service
     systemctl start podman.service
 
-# Virtualisation
+## Virtualisation
 
-## Arch
+### Arch
 
 Setup Hugepages support
 
@@ -688,9 +688,9 @@ Optionally forward built in bluetooth
     systemctl enable bluetooth.service
     systemctl start bluetooth.service
 
-# Video Acceleration with VA-API
+## Video Acceleration with VA-API
 
-## Arch with Intel CPU
+### Arch with Intel CPU
 
 Test to see if VA-API already works
 
@@ -712,7 +712,7 @@ Reboot and check if GuC/HuC loading worked
     cat /sys/kernel/debug/dri/0/gt/uc/guc_info
     cat /sys/kernel/debug/dri/0/gt/uc/huc_info
 
-## Arch with AMD iGPU
+### Arch with AMD iGPU
 
 Test to see if VA-API already works
 
@@ -731,11 +731,11 @@ To verify that the kernel successfully detected the GPU's hardware video acceler
 
     dmesg | grep -iE "vcn|uvd|vce|amdgpu"
 
-# Power Saving
+## Power Saving
 
-## Generic Instructions
+### Generic Instructions
 
-Many of the power saving settings configured in bios are honored. PCI Runtime or ASCPM settings should be configured in BIOS if possible.
+Many of the power saving settings configured in bios are honored. PCI Runtime or ASPM settings should be configured in BIOS if possible.
 
 Review power usage with Powertop
 
@@ -753,7 +753,7 @@ Then add a udev rule to enable it
 
     echo 'ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9205", ATTR{power/control}="auto"' >> /etc/udev/rules.d/50-usb_power_save.rules
 
-## Arch
+### Arch
 
 Disable NMI watchdog
 
@@ -763,9 +763,9 @@ Set powersaving mode for Intel Wireless Cards
 
     echo "options iwlwifi power_save=1" >> /etc/modprobe.d/iwlwifi.conf
 
-# BTRFS
+## BTRFS
 
-## Arch
+### Arch
 
 Install the btrfs system
 
@@ -789,9 +789,9 @@ Enable the scrub timer (replace /mnt/data with your actual mount point)
     systemctl enable --now btrfs-scrub@$(systemd-escape -p /mnt/data).timer
 
 
-# Local Network Discovery & Name Resolution (mDNS / WS-Discovery)
+## Local Network Discovery & Name Resolution (mDNS / WS-Discovery)
 
-## Arch
+### Arch
 
 ### mDNS / Zeroconf (for macOS, Linux, and Windows resolution)
 
@@ -819,9 +819,9 @@ Modern Windows (10/11) uses Web Services Dynamic Discovery (WSD) to populate the
     pacman -S wsdd
     systemctl enable --now wsdd
 
-# Time Sync/NTP
+## Time Sync/NTP
 
-## Arch
+### Arch
 
 Enable the lightweight systemd timesync
 
