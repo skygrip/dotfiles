@@ -129,7 +129,7 @@ node "$HOME\.pi\agent\skills\image-prompt-builder\benchmarking\swarm_generate.mj
 |---|---|
 | **1. Colloquial vs Clinical Jargon** | **PASS:** Uses natural terms (fingertips, knuckles, brow).<br>**FAIL:** Contains Latin jargon (distal phalanges, AU-only). |
 | **2. Repetition & Tag Blacklist** | **PASS:** Zero Danbooru tags repeated in Anima prose.<br>**FAIL:** Echoes tags word-for-word or repeats nouns $\ge 3$ times. |
-| **3. Token & Word Budget** | **PASS:** 70–100 words default (up to 150 for complex multi-actor scenes).<br>**FAIL:** Bloated prompts > 120 words with filler fluff. |
+| **3. Token & Word Budget** | **PASS:** Adheres to tiered budget: **45–65 words** (Turbo/Anime), **60–80 words** (RAW/Base), **85–110 words** (Multi-Actor).<br>**FAIL:** Bloated prompts exceeding budget or containing filler fluff. |
 | **4. Anti-Split-Screen Positive Syntax** | **PASS:** Uses natural environmental anchors (left sofa, table on right). Zero meta words (segmented, split).<br>**FAIL:** Contains "segmented into", "split into sections". |
 | **5. Open-Ended Narrative Artistry** | **PASS:** Reads like a coherent cinematic film note.<br>**FAIL:** Stitched-together comma-separated rule list. |
 
@@ -161,8 +161,8 @@ When running benchmarks to refine skill documents:
 2. **Audit Scorecard:** Record detected weaknesses in Layer 1 (prompt text) and Layer 2 (visual PNGs).
 3. **Apply Targeted Fixes:**
    * For vocabulary/repetition: Edit [`SKILL.md`](../SKILL.md) Pass 2.
-   * For photorealism / Krea 2: Edit [`krea2.md`](../krea2.md).
-   * For anime cel lineart / tags: Edit [`anima.md`](../anima.md).
+   * For photorealism / Krea 2: Edit [`references/krea2.md`](../references/krea2.md).
+   * For anime cel lineart / tags: Edit [`references/anima.md`](../references/anima.md).
 4. **Re-Run & Verify:** Re-execute the benchmark to confirm the before-vs-after improvement.
 5. **Sync to Runtime:**
    ```powershell

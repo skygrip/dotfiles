@@ -1,4 +1,4 @@
-[← Back to Universal Prompt Builder Hub](SKILL.md) | [Go to Krea 2 Edit & Inpainting Playbook →](krea2-edit.md)
+[← Back to Universal Prompt Builder Hub](../SKILL.md) | [Go to Krea 2 Edit & Inpainting Playbook →](krea2-edit.md)
 
 # Krea 2 (K2) Advanced Prompting & Optical Steering Playbook
 
@@ -42,10 +42,11 @@ Ground-truth layer analysis reveals that the 12 tapped hidden layers form **4 fu
 ### The 8-Block Canonical Prompt Sequence
 To maximize Qwen3-VL token-attention efficiency, structure all natural language prompts in this exact 8-block sequence:
 
-```
-[1. LENS & SHOT GEOMETRY] ──► [2. LIGHTING & ATMOSPHERE] ──► [3. SUBJECT ANCHOR] ──► [4. ENVIRONMENT & SURFACES]
-                                                                                             │
-[8. COLOR & FILM GRAIN]   ◄── [7. BIOMECHANICAL POSE]    ◄── [6. SECONDARY MOTION] ◄── [5. FACS MICRO-EXPRESSION]
+```mermaid
+flowchart LR
+    B1["1. Lens & Shot Geometry"] --> B2["2. Lighting & Atmosphere"] --> B3["3. Subject Anchor"] --> B4["4. Environment & Surfaces"]
+    B4 --> B5["5. FACS Micro-Expression"]
+    B5 --> B6["6. Secondary Motion"] --> B7["7. Biomechanical Pose"] --> B8["8. Color & Film Grain"]
 ```
 
 1. **Lens & Shot Geometry:** Focal length, aperture, angle, framing (*"85mm f/1.4 portrait prime lens, eye-level framing"*).
@@ -64,7 +65,7 @@ To maximize Qwen3-VL token-attention efficiency, structure all natural language 
 ## 4. Emotional Context & FACS Micro-Facial Guidance in Krea 2
 
 Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to natural language descriptions of physical muscle tensions and **FACS Action Units** without needing booru tags.
-- For universal FACS muscle mechanics, catchlight rules, and anti-plasticity dermal anchors (micro-pores, goosebumps, skin folds), see [**`SKILL.md` §2.E**](SKILL.md#e-facs-facial-mechanics--anti-plasticity-dermal-topography).
+- For universal FACS muscle mechanics, catchlight rules, and anti-plasticity dermal anchors (micro-pores, goosebumps, skin folds), see [**`SKILL.md` §2.E**](../SKILL.md#e-facs-facial-mechanics--anti-plasticity-dermal-topography).
 
 ### Krea 2 Specific Hardware & Encoder Rules:
 * **Encoder Rebalancing for Facial Nuance & Pores:** To maximize pore and expression fidelity in diffusion nodes, use the **Portrait & Micro-Emotion KGW preset** (boosting Band 4: `w9–w11`). The default learned projector suppresses deep layers `L23–L32`; rebalancing re-inflates these layers to capture high-frequency facial micro-geometry.
@@ -74,7 +75,7 @@ Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to n
 ## 5. Kinetic Posing, Tactile Actions & Optical Staging in Krea 2
 
 Krea 2 excels at continuous natural language prose describing spatial relationships, weight transfer, and camera perspectives without stiff mannequin artifacts.
-- For the universal 3-plane optical depth staging framework, camera angle matrix, DoF guidelines, contrapposto rules, and tactile blueprints, see [**`SKILL.md` §2**](SKILL.md#2-core-physical-pillars--optical-staging).
+- For the universal 3-plane optical depth staging framework, camera angle matrix, DoF guidelines, contrapposto rules, and tactile blueprints, see [**`SKILL.md` §2**](../SKILL.md#2-core-physical-pillars--optical-staging).
 
 ### Krea 2 Specific Staging Schema:
 * **The "Core Four" Biomechanical Flow:** When constructing Block 7 of Krea 2's 8-block canonical sequence, weave together:

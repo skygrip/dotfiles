@@ -207,23 +207,31 @@ The **BOSL2** library (`include <BOSL2/std.scad>`) replaces vanilla OpenSCAD coo
 
 Avoid manual nested `translate()` and `rotate()` trigonometry. BOSL2 objects encapsulate their own bounding geometry and can be snapped or aligned relative to anchors.
 
-```
-       [TOP+BACK+LEFT] -------- [TOP+BACK] -------- [TOP+BACK+RIGHT]
-              /|                                           /|
-             / |                                          / |
-      [TOP+LEFT]                                    [TOP+RIGHT]
-           /   |                                       /    |
-   [TOP+FRONT+LEFT] -------- [TOP+FRONT] -------- [TOP+FRONT+RIGHT]
-          |    |                    |                 |     |
-          |  [BACK+LEFT]         [BACK]               |  [BACK+RIGHT]
-          |    |                    |                 |     |
-       [LEFT]  |                 [CENTER]             |  [RIGHT]
-          |    |                    |                 |     |
-          |  [BOT+BACK+LEFT] --- [BOT+BACK] ----------|- [BOT+BACK+RIGHT]
-          |   /                                       |   /
-     [FRONT+LEFT] ----------- [FRONT] ----------- [FRONT+RIGHT]
-          | /                                         | /
-   [BOT+FRONT+LEFT] -------- [BOT+FRONT] -------- [BOT+FRONT+RIGHT]
+```mermaid
+flowchart TD
+    subgraph TOP["Top Plane (+Z)"]
+        direction TB
+        TBL["TOP+BACK+LEFT"] --- TB["TOP+BACK"] --- TBR["TOP+BACK+RIGHT"]
+        TL["TOP+LEFT"] --- T["TOP / UP"] --- TR["TOP+RIGHT"]
+        TFL["TOP+FRONT+LEFT"] --- TF["TOP+FRONT"] --- TFR["TOP+FRONT+RIGHT"]
+    end
+
+    subgraph MID["Center Plane (Z = 0)"]
+        direction TB
+        BL["BACK+LEFT"] --- BC["BACK"] --- BR["BACK+RIGHT"]
+        L["LEFT"] --- CTR["CENTER"] --- R["RIGHT"]
+        FL["FRONT+LEFT"] --- FC["FRONT / FWD"] --- FR["FRONT+RIGHT"]
+    end
+
+    subgraph BOT["Bottom Plane (-Z)"]
+        direction TB
+        BBL["BOT+BACK+LEFT"] --- BB["BOT+BACK"] --- BBR["BOT+BACK+RIGHT"]
+        BL2["BOT+LEFT"] --- BTM["BOTTOM / DOWN"] --- BR2["BOT+RIGHT"]
+        BFL["BOT+FRONT+LEFT"] --- BF["BOT+FRONT"] --- BFR["BOT+FRONT+RIGHT"]
+    end
+
+    T -. "+Z to 0" .-> CTR
+    CTR -. "0 to -Z" .-> BTM
 ```
 
 #### Core Anchors
@@ -361,12 +369,37 @@ skin([p1, p2, p3], slices=20, caps=true);
 
 Replace procedural `for` coordinate loops with declarative duplication:
 
-```
-xcopies(spacing=20, n=3)         rot_copies(n=6, r=30)          grid_copies(n=[3,2], spacing=20)
-     [o]   [o]   [o]                    [o]                          [o]   [o]   [o]
-                                  [o]         [o]                    [o]   [o]   [o]
-                                  [o]         [o]
-                                        [o]
+```mermaid
+flowchart TD
+    subgraph Linear["Linear: xcopies(spacing=20, n=3)"]
+        direction LR
+        L1["Item 1"] --> L2["Item 2"] --> L3["Item 3"]
+    end
+
+    subgraph Polar["Polar / Radial: rot_copies(n=6, r=30)"]
+        direction TB
+        P_CTR((Center))
+        P1["0°"]
+        P2["60°"]
+        P3["120°"]
+        P4["180°"]
+        P5["240°"]
+        P6["300°"]
+        P_CTR --- P1 & P2 & P3 & P4 & P5 & P6
+    end
+
+    subgraph Grid["Grid: grid_copies(n=[3,2], spacing=20)"]
+        direction TB
+        subgraph Row1["Row 1 (Y+)"]
+            direction LR
+            G11["[0,1]"] --- G12["[1,1]"] --- G13["[2,1]"]
+        end
+        subgraph Row0["Row 0 (Y0)"]
+            direction LR
+            G01["[0,0]"] --- G02["[1,0]"] --- G03["[2,0]"]
+        end
+        Row1 --- Row0
+    end
 ```
 
 - **`xcopies()` / `ycopies()` / `zcopies()`**: Linear arrays centered along cardinal axes.

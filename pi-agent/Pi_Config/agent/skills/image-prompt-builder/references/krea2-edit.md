@@ -1,4 +1,4 @@
-[← Back to Universal Prompt Builder Hub](SKILL.md) | [Go to Krea 2 Generation Playbook →](krea2.md)
+[← Back to Universal Prompt Builder Hub](../SKILL.md) | [Go to Krea 2 Generation Playbook →](krea2.md)
 
 # ComfyUI-Krea2Edit & Identity-Preserving Image Editing Playbook
 

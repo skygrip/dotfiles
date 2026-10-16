@@ -88,5 +88,5 @@ When all tasks in `Up Next` are empty and `Discovered` has no remaining `[BLOCKE
 
 1. Read through `Done` to verify all acceptance criteria were satisfied.
 2. Run full test suite / build checks across the workspace.
-3. **Critic Review Gate**: Call `critic_review` on the full diff or modified files to verify no security or logic regressions were introduced.
+3. **Review Gate**: Review the full diff or modified files to verify no security or logic regressions were introduced.
 4. Tell the user you are done and provide a concise summary of deliverables and any `[DEFERRED]` backlog items.

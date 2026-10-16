@@ -1,4 +1,4 @@
-[← Back to Universal Prompt Builder Hub](SKILL.md)
+[← Back to Universal Prompt Builder Hub](../SKILL.md)
 
 # CircleStone Labs ANIMA Prompt Engineering & Architecture Playbook
 
@@ -101,6 +101,8 @@
     - *Aesthetic:* Electrifying pop-art anime aesthetic, ultra-vibrant hyper-saturated neon color palettes, and dazzling multi-color geometric eye highlights.
 15. **`@tiv`** — *Masamune-kun's Revenge*, *Idolmaster Cinderella Girls*
     - *Aesthetic:* Ultra-clean modern commercial anime character art, bright pristine lighting, delicate facial expressions, and vibrant hair highlights.
+16. **`@abec`** — *Sword Art Online*
+    - *Aesthetic:* Clean fantasy adventurer designs, vivid eye highlights, delicate linework, and precise armor plating.
 
 ##### 6. Classic & Retro Cel Animation
 17. **`@sadamoto yoshiyuki`** — *Neon Genesis Evangelion*, *FLCL*, *The Girl Who Leapt Through Time*, *Summer Wars*, *Nadia*
@@ -115,7 +117,7 @@
 
 ### 5. Multi-Character Staging & Anti-Split-Screen Protocol
 
-When generating multiple characters performing distinct actions in Anima (especially **Anima-Turbo at CFG 1.0** where negative prompts are inert), avoid meta-layout phrases (`split into`, `segmented into`, `two halves`) which cause literal panel borders. Anchor characters directly to continuous environmental props and enforce high-contrast attribute separation (see [**`SKILL.md` §3.D: Multi-Actor Environmental Staging**](SKILL.md#d-multi-actor-environmental-staging--anti-split-screen-protocol)).
+When generating multiple characters performing distinct actions in Anima (especially **Anima-Turbo at CFG 1.0** where negative prompts are inert), avoid meta-layout phrases (`split into`, `segmented into`, `two halves`) which cause literal panel borders. Anchor characters directly to continuous environmental props and enforce high-contrast attribute separation (see [**`SKILL.md` §3.D: Multi-Actor Environmental Staging**](../SKILL.md#d-multi-actor-environmental-staging--anti-split-screen-protocol)).
 
 #### Anima-Specific Multi-Character Rules:
 1. **Camera Framing & Continuous Scene Anchors:** Prepend `wide shot` or `scenery` alongside the count tag in the Danbooru prefix (`2girls, wide shot, scenery, `) and use continuous wide phrasing in the prose (*"In a wide continuous shot..."*).
@@ -146,20 +148,20 @@ When generating multiple characters performing distinct actions in Anima (especi
 
 #### Complete Tag Taxonomy & Supported Vocabulary:
 * **Character Count & Identity Anchors:**
-  - `1girl`, `1boy`, `2girls`, `2boys`, `1boy 1girl`, `solo`, `multiple girls`, `multiple boys`
+   - `1girl`, `1boy`, `2girls`, `2boys`, `1boy 1girl`, `solo`, `multiple girls`, `multiple boys`
 * **Time Period & Release Year Tags:**
-  - *Specific years:* `year 2025`, `year 2024`, `year 2023`, `year 2020`, `year 2010`, `year 2000`, `year 1990`, etc.
-  - *Period tags:* `newest`, `recent`, `mid`, `early`, `old`
+   - *Specific years:* `year 2025`, `year 2024`, `year 2023`, `year 2020`, `year 2010`, `year 2000`, `year 1990`, etc.
+   - *Period tags:* `newest`, `recent`, `mid`, `early`, `old`
 * **Meta & Medium Tags:**
-  - `anime screenshot`, `official art`, `key visual`, `cover`, `traditional media`, `watercolor`, `lineart`, `cel shading`, `anime screencap`, `2d`, `clean lineart`
+   - `anime screenshot`, `official art`, `key visual`, `cover`, `traditional media`, `watercolor`, `lineart`, `cel shading`, `anime screencap`, `2d`, `clean lineart`
 * **Character & Series Naming + Appearance Co-Prompting:**
-  - Follow standard English capitalization rules for character and franchise names (e.g. `Fern`, `Sousou no Frieren`, `Oomuro Sakurako`, `Yuru Yuri`).
-  - *Co-Prompting Rule:* Name the character and immediately follow with their basic visual appearance (hair style/color, eyes, core outfit). When prompting multiple characters, this is essential to prevent trait bleeding.
+   - Follow standard English capitalization rules for character and franchise names (e.g. `Fern`, `Sousou no Frieren`, `Oomuro Sakurako`, `Yuru Yuri`).
+   - *Co-Prompting Rule:* Name the character and immediately follow with their basic visual appearance (hair style/color, eyes, core outfit). When prompting multiple characters, this is essential to prevent trait bleeding.
 * **Tag Dropout Resilience:**
-  - Anima was trained with random tag dropout, so it is resilient if non-essential tags are omitted.
+   - Anima was trained with random tag dropout, so it is resilient if non-essential tags are omitted.
 
 ### 7. Zero-Redundancy Division of Labor (Danbooru Anchors vs. Narrative Prose)
-To maximize cross-attention density and prevent token dilution in Anima's Cosmos+Qwen architecture, aim for an **80–120 word budget** with a strict division of labor:
+To maximize cross-attention density and prevent token dilution in Anima's Cosmos+Qwen architecture, aim for the tiered word budget (**45–65 words** for Turbo/Anime, **85–110 words** for multi-actor scenes) with a strict division of labor:
 
 > 🚫 **The Danbooru Tag Blacklist Rule:** Any noun, costume, creature, object, or environment tag placed in the Danbooru tag prefix (`flight suit`, `jellyfish`, `sketchbook`, `shrine`, `mecha`, `rain`) is **STRICTLY BANNED from being repeated in the narrative prose block.**
 > 
@@ -172,7 +174,7 @@ To maximize cross-attention density and prevent token dilution in Anima's Cosmos
 
 ### 8. Mitigating "Domain Leakage" (Real-World Gear & 2.5D Style Bleed)
 
-When prompting technical equipment, tactical gear, or suits that predominantly exist in photographic training data (e.g. `scuba gear`, `diving regulator`, `spacesuit`, `tactical armor`, `firefighter gear`, `gas mask`), photographic priors can leak into character faces and shaders (see [**`SKILL.md` §5: Mitigating Domain Leakage**](SKILL.md#mitigating-domain-leakage-real-world-gear--medium-bleed)).
+When prompting technical equipment, tactical gear, or suits that predominantly exist in photographic training data (e.g. `scuba gear`, `diving regulator`, `spacesuit`, `tactical armor`, `firefighter gear`, `gas mask`), photographic priors can leak into character faces and shaders (see [**`SKILL.md` §4.D: CircleStone Labs ANIMA**](../SKILL.md#d-circlestone-labs-anima-cosmos-2b--qwen3-anime-engine)).
 
 #### Anima Double-Shield Mitigation:
 1. **Positive 2D Medium Anchors (Prefix):** Prepend explicit 2D cel medium anchors alongside gear tags:
@@ -232,7 +234,7 @@ To achieve deep emotion in Anima, avoid flat labels like `sad` or `happy`. Use A
 
 ## 5. Dynamic Posing, Tactile Actions & 3-Plane Anime Staging
 
-Anima combines Danbooru perspective tags with rich narrative prose. For universal contrapposto rules, tactile blueprints, Kelvin lighting, and 3-plane optical staging, see [**`SKILL.md` §2–§4**](SKILL.md#2-kinetic-posing-mechanics--anti-stiffness).
+Anima combines Danbooru perspective tags with rich narrative prose. For universal contrapposto rules, tactile blueprints, Kelvin lighting, and 3-plane optical staging, see [**`SKILL.md` §2–§4**](../SKILL.md#2-core-physical-pillars--optical-staging).
 
 ### Danbooru Dynamic Posing Anchors (Anti-Stiffness)
 * **Perspective & Camera Angles:** `dynamic angle`, `dutch angle`, `from below`, `from above`, `worm's-eye view`, `pov`, `first-person view`, `selfie`, `dynamic foreshortening`.
@@ -242,7 +244,7 @@ Anima combines Danbooru perspective tags with rich narrative prose. For universa
 * **Lo-Fi & Retro Aesthetics vs. Clean Cel:** While `chromatic aberration` is standard in negative prompts for pristine modern cel animation, when deliberately generating gritty 1980s/90s retro OVA, cyberpunk, or found-footage anime, move `chromatic aberration` to positive tags (`retro anime screencap, vhs effect, subtle chromatic aberration, 1990s anime aesthetic`) and prune it from the negative prompt.
 
 ### Contrastive Relational Phrasing for Depth of Field (DoF)
-In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` cause ambiguous cross-attention blur across characters and linework. Always bind focus using **contrastive sentence fragments** with coordinating relational clauses (`while`, `as`, `against`) as detailed in [**`SKILL.md` §2.A: Contrastive Relational Phrasing**](SKILL.md#a-3-plane-optical-depth-staging--lens-physics).
+In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` cause ambiguous cross-attention blur across characters and linework. Always bind focus using **contrastive sentence fragments** with coordinating relational clauses (`while`, `as`, `against`) as detailed in [**`SKILL.md` §2.A: Contrastive Relational Phrasing**](../SKILL.md#a-3-plane-optical-depth-staging--lens-physics).
 
 ---
 

@@ -11,7 +11,7 @@ This workspace skill provides simple, standalone copy commands to synchronize sk
 
 ## 📂 Source of Truth & Target Directories
 
-* **Source of Truth (Repo):** `c:\Users\Glen\Build\dotfiles\pi-agent\Pi_Config\agent\`
+* **Source of Truth (Repo):** `pi-agent\Pi_Config\agent\` (or `$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\`)
 * **Pi Agent Global Destination:** `$HOME\.pi\agent\`
 * **Antigravity Global Skills Destination:** `$HOME\.gemini\config\skills\`
 
@@ -25,10 +25,10 @@ Whenever you create or modify any skill, extension, prompt, or configuration in 
 
 ```powershell
 # 1. Sync everything to Pi Agent
-Copy-Item -Path "c:\Users\Glen\Build\dotfiles\pi-agent\Pi_Config\agent\*" -Destination (Join-Path $HOME ".pi\agent") -Recurse -Force
+Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\*" -Destination (Join-Path $HOME ".pi\agent") -Recurse -Force
 
 # 2. Sync portable skills to Antigravity (excluding Pi-only batch/config skills)
-Copy-Item -Path "c:\Users\Glen\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination (Join-Path $HOME ".gemini\config\skills") -Exclude @("agent-config", "batch-automator") -Recurse -Force
+Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination (Join-Path $HOME ".gemini\config\skills") -Exclude @("agent-config", "batch-automator") -Recurse -Force
 ```
 
 ### 2. Full Sync (Bash — Linux / macOS / WSL)
