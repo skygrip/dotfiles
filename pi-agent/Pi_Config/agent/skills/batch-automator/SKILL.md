@@ -33,7 +33,7 @@ Guides agents on generating ready-to-run, isolated shell loops for human enginee
 | `pi -p` | Headless binary | Non-interactive prompt execution mode. |
 | `--approve` (`-a`) | Flag | Auto-approves project-local extensions, tools, and prompts. |
 | `--no-session` | Flag | Disables session transcript persistence to disk. |
-| `--tools "read,write"` | Allowlist | Restricts tool execution strictly to required operations. |
+| `--tools "read,edit,write"` | Allowlist | Restricts tool execution strictly to required operations (`edit` avoids full-file rewrites). |
 | `--exclude-tools ask_question` | Denylist | Strips interactive questioning tools from agent capabilities. |
 | `@<filepath>` | Target file | Injects file contents directly into fresh ~2,000-token micro-context. |
 
@@ -60,12 +60,13 @@ flowchart TD
 ```powershell
 git checkout -b chore/batch-refactor
 $env:PI_SKIP_VERSION_CHECK = "1"
+$env:PI_GATES = "0"
 $env:NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object {
     $file = $_.FullName
     Write-Host "➡️ Processing: $($_.Name)"
-    pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
 }
 git diff --stat
 ```
@@ -74,11 +75,12 @@ git diff --stat
 ```bash
 git checkout -b chore/batch-refactor
 export PI_SKIP_VERSION_CHECK=1
+export PI_GATES=0
 export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
     echo "➡️ Processing: $file"
-    timeout 90s pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
 done
 git diff --stat
 ```
@@ -92,6 +94,7 @@ git diff --stat
 $doneFile = ".batch_done.txt"
 if (!(Test-Path $doneFile)) { New-Item $doneFile -ItemType File | Out-Null }
 $env:PI_SKIP_VERSION_CHECK = "1"
+$env:PI_GATES = "0"
 $env:NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { 
@@ -100,7 +103,7 @@ Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object {
 } | ForEach-Object {
     $file = $_.FullName
     Write-Host "Processing: $($_.Name)..."
-    pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
     if ($LASTEXITCODE -eq 0) { Add-Content -Path $doneFile -Value $file }
 }
 ```
@@ -109,6 +112,7 @@ Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object {
 ```bash
 touch .batch_done.txt
 export PI_SKIP_VERSION_CHECK=1
+export PI_GATES=0
 export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
@@ -117,7 +121,7 @@ find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
         continue
     fi
     echo "➡️ Processing: $file"
-    if timeout 90s pi -p --approve --no-session --tools "read,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"; then
+    if timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"; then
         echo "$file" >> .batch_done.txt
     fi
 done

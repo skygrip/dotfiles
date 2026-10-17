@@ -1,22 +1,20 @@
 ## Tool Calling & Execution
-- WORKING DIR: Every tool call automatically executes inside the project root (<cwd>). Subshells do not persist directory changes. Run project commands directly (e.g. `npm test`, `git status`) without prepending directory changes.
-- PATHS: Always use forward slashes (`/`). Prefer relative paths over absolute.
-- SHELL:
-  - When using `bash`: commands execute in Git Bash (`export VAR=val`, `/dev/null`).
-  - When using `powershell`: use PowerShell 7 syntax (`$env:VAR="val"`, `$null`, `Where-Object`, `Select-Object`) and prefer cross-platform CLI utilities (`rg`, `fd`, `jq`, `uv`, `git`).
-- LARGE DATA FILES: Avoid loading entire large data or log files into context. Inspect and query them via `read` (with `offset`/`limit`) or streaming/query CLIs (e.g. `jq`, `duckdb`, `rg`, `mlr`).
-- SCRATCH: Use `./.scratch/` for temporary fixtures, scripts, or debug dumps.
-- CLI ERRORS: On flag/syntax errors, inspect `<tool> --help` before retrying. Never silently ignore failures.
+- WORKING DIR: Commands execute in the project root (`<cwd>`). Subshells do not persist `cd` / `Set-Location`. Run project commands directly.
+- PATHS: Always use forward slashes (`/`) and prefer paths relative to `<cwd>`.
+- SHELL SYNTAX:
+  - `bash` (Git Bash / POSIX): Use `export VAR=val`, `>/dev/null 2>&1`, and `&&`.
+  - `powershell` (PowerShell 7): Use `$env:VAR="val"`, `*>$null`, and single-quote `'...'` around JSON/glob/regex arguments to prevent `$`, `@`, and `{}` expansion.
+- CLI TOOLS: Prefer cross-platform CLIs in both shells:
+  - `rg` over `grep` / `Select-String` (e.g. `rg -n "pattern" src/`)
+  - `fd` over `find` / `Get-ChildItem -Recurse` (e.g. `fd -e ts "name"`)
+  - `jq` for JSON queries; `duckdb` / `mlr` for large CSV/Parquet/JSONL
+  - `uv run` over bare `python` / `pip` (e.g. `uv run pytest`, `uv run script.py`)
+- LARGE FILES: Never load entire large data/log files into context. Use `read` with `offset`/`limit` or query via `rg`, `jq`, `duckdb`, or `mlr`.
+- SCRATCH & ERRORS: Use `./.scratch/` for temporary files. On CLI flag/syntax errors, run `<tool> --help` before retrying.
 
-## File Edits
-- TOOL ARGS: ALWAYS emit `path` as the first argument before `edits` or `content`:
+## File Edits (`edit` & `write`)
+- PATH FIRST: Always emit `path` as the first JSON argument before `edits` or `content`:
   - `edit(path="src/index.ts", edits=[{oldText: "...", newText: "..."}])`
   - `write(path="src/index.ts", content="...")`
-- EDIT PRECISION: Keep `oldText` short and unique (3–5 lines max: 1 anchor line before, target line, 1 anchor line after). Never include entire function bodies or large blocks.
-- READ-BEFORE-EDIT: If an `edit` fails or if the file wasn't read recently, run a targeted `read` (with `offset`/`limit`) to copy indentation and line breaks verbatim.
-
-## Preferred CLI Utilities
-- `rg` over `grep` / `Select-String` (fast regex text search; e.g., `rg -i "pattern" ./src/`, `rg -l "TODO"`)
-- `fd` over `find` / `Get-ChildItem -Recurse` (fast file/directory search; e.g., `fd -e ts "filename"`, `fd --type d`)
-- `jq` for quick JSON inspection (e.g., `jq -c '.field' data.json`, `jq 'keys' in.json`)
-- `uv` for Python environments and tools (e.g., `uv run script.py`, `uv tool install <pkg>`)
+- SHORT ANCHORS: Keep `oldText` to 3–5 lines max (1 unchanged line before, target lines, 1 unchanged line after). Never paste full functions.
+- READ BEFORE RETRY: If `edit` fails or the file wasn't read recently, call `read(path="...", offset=..., limit=...)` to match exact indentation.

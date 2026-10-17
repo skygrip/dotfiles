@@ -117,7 +117,7 @@ export default function (pi: ExtensionAPI) {
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
       return {
-        path: args.path ?? "",
+        path: args.path ?? args.file_path ?? args.filePath ?? "",
         content: args.content ?? ""
       };
     },

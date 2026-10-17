@@ -119,6 +119,42 @@ function withTimeoutAndSignal<T>(
 }
 
 /**
+ * Mutex queue ensuring concurrent tool calls present selection dialogs sequentially
+ * rather than displacing/overwriting each other in Pi's single-slot editorContainer.
+ */
+let askDialogQueue: Promise<void> = Promise.resolve();
+
+async function promptSelect(
+  ctx: any,
+  question: string,
+  options: string[],
+  dialogOptions: any,
+  timeoutMs: number,
+  signal?: AbortSignal
+): Promise<string | undefined> {
+  const g = globalThis as any;
+  let releaseTurn: () => void = () => {};
+  const currentTurn = new Promise<void>((r) => { releaseTurn = r; });
+  const previousTurn: Promise<any> = g.__piDialogQueue || askDialogQueue;
+  askDialogQueue = previousTurn.then(() => currentTurn, () => currentTurn);
+  g.__piDialogQueue = askDialogQueue;
+
+  try {
+    await previousTurn;
+    if (signal?.aborted) {
+      throw new Error("Operation aborted");
+    }
+    return await withTimeoutAndSignal(
+      ctx.ui.select(question, options, dialogOptions),
+      timeoutMs,
+      signal
+    );
+  } finally {
+    releaseTurn();
+  }
+}
+
+/**
  * Extension module registering the streamlined `ask_question` tool.
  */
 export default function (pi: ExtensionAPI) {
@@ -197,8 +233,11 @@ export default function (pi: ExtensionAPI) {
       // 2. Interactive TUI Selection via Arrow Keys
       // ----------------------------------------------------
       try {
-        const selection = await withTimeoutAndSignal(
-          ctx.ui.select(question, options, dialogOptions),
+        const selection = await promptSelect(
+          ctx,
+          question,
+          options,
+          dialogOptions,
           DEFAULT_TIMEOUT_MS,
           signal
         );
@@ -267,5 +306,10 @@ export default function (pi: ExtensionAPI) {
       const answer = details.answer !== undefined ? String(details.answer) : "";
       return new Text(theme.fg("success", `✓ ANSWERED: `) + theme.fg("text", `"${answer}"`), 0, 0);
     }
+  });
+
+  pi.on("session_start", async () => {
+    askDialogQueue = Promise.resolve();
+    (globalThis as any).__piDialogQueue = Promise.resolve();
   });
 }

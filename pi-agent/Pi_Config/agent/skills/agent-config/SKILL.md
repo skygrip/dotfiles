@@ -37,6 +37,9 @@ Compiled on-the-fly via JITI. Only **one** extension can register a specific too
 | **`pi.on("tool_result", async (e, ctx))`**| Post-execution lifecycle hook | Zero conflicts. Formats, enriches, or logs tool results non-destructively. |
 | **`pi.on("session_start", async (e))`** | Session initialization hook | Runs setup scripts, verifies dependencies, or loads environment context. |
 
+> [!IMPORTANT]
+> **UI Dialog Mutex Queue Invariant (`editorContainer`)**: Pi's interactive terminal allocates a single slot in `editorContainer` for extension modals (`ctx.ui.select`, `ctx.ui.confirm`, `ctx.ui.input`). To prevent parallel tool calls from overwriting or dismissing active dialogs, always serialize interactive prompts through `globalThis.__piDialogQueue`.
+
 ---
 
 ## 3. Cross-Platform Dotfiles Sync

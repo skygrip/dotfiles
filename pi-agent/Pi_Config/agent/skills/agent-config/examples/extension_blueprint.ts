@@ -28,6 +28,9 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
+      // Note: If prompting interactively via ctx.ui.confirm/select, serialize using
+      // globalThis.__piDialogQueue to prevent parallel tool calls from colliding in editorContainer.
+
       return {
         content: [{ type: "text", text: `Success: processed ${params.inputPath}` }],
         details: { status: "ok" }

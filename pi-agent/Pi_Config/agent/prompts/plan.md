@@ -9,7 +9,7 @@ Load our `plan-execute` skill instructions.
 2. **Formulate Dependency-Ordered Plan**:
    * Create `PLAN.md` with clearly numbered, bite-sized tasks grouped into logical phases.
    * Explicitly define acceptance criteria and automated test/verification commands for each task.
-   * Mark tasks with execution strategy: inline execution vs background subagents (`invoke_subagent`).
+   * Mark tasks with execution strategy: inline execution vs background subagents (`subagent`).
 
 3. **Approval Gate**:
    * Present the implementation plan to me.

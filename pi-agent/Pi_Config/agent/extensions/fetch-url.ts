@@ -1018,7 +1018,14 @@ export function htmlToMarkdown(html: string, pageUrl: string): { title: string; 
 }
 
 /**
+ * Mutex queue ensuring concurrent fetch_url calls present confirmation dialogs sequentially
+ * rather than displacing/overwriting each other in Pi's single-slot editorContainer.
+ */
+let fetchDialogQueue: Promise<void> = Promise.resolve();
+
+/**
  * Prompts user for confirmation before outbound network calls (30s auto-dismiss).
+ * Chained sequentially across concurrent tool calls.
  */
 async function promptPermission(
   ctx: ExtensionContext,
@@ -1031,10 +1038,20 @@ async function promptPermission(
     return false; // Refuse safely in non-interactive/headless environments
   }
 
+  const g = globalThis as any;
+  let releaseTurn: () => void = () => {};
+  const currentTurn = new Promise<void>((r) => { releaseTurn = r; });
+  const previousTurn: Promise<any> = g.__piDialogQueue || fetchDialogQueue;
+  fetchDialogQueue = previousTurn.then(() => currentTurn, () => currentTurn);
+  g.__piDialogQueue = fetchDialogQueue;
+
   try {
+    await previousTurn;
     return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS });
   } catch {
     return false;
+  } finally {
+    releaseTurn();
   }
 }
 
@@ -1540,6 +1557,8 @@ export default function (pi: ExtensionAPI) {
   // 4. Lifecycle Events
   // ----------------------------------------------------
   pi.on("session_start", async (_event, ctx) => {
+    fetchDialogQueue = Promise.resolve();
+    (globalThis as any).__piDialogQueue = Promise.resolve();
     if (typeof pi.getFlag === "function" && pi.getFlag("no-fetch-gate") === true) {
       gateEnabled = false;
     }

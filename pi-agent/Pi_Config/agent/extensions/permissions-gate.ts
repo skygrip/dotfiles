@@ -48,7 +48,37 @@ function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: Extensio
   return true;
 }
 
-let gateEnabled = true;
+/**
+ * Mutex queue ensuring concurrent tool calls present confirmation dialogs sequentially
+ * rather than displacing/overwriting each other in Pi's single-slot editorContainer.
+ */
+let gateDialogQueue: Promise<void> = Promise.resolve();
+
+async function promptConfirmation(
+  ctx: any,
+  title: string,
+  message: string
+): Promise<boolean> {
+  if (!ctx.hasUI || !ctx.ui) {
+    return false;
+  }
+
+  const g = globalThis as any;
+  let releaseTurn: () => void = () => {};
+  const currentTurn = new Promise<void>((r) => { releaseTurn = r; });
+  const previousTurn: Promise<any> = g.__piDialogQueue || gateDialogQueue;
+  gateDialogQueue = previousTurn.then(() => currentTurn, () => currentTurn);
+  g.__piDialogQueue = gateDialogQueue;
+
+  try {
+    await previousTurn;
+    return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS });
+  } catch {
+    return false;
+  } finally {
+    releaseTurn();
+  }
+}
 
 /**
  * Dangerous bash command regex patterns with human-readable violation explanations.
@@ -201,12 +231,17 @@ export function getWorkspaceRoot(): string {
  */
 function normalizePath(targetPath: string): string {
   if (!targetPath) return "";
-  let p = targetPath.trim().replace(/\\/g, "/");
+  const home = os.homedir().replace(/\\/g, "/");
+  let p = targetPath.trim().replace(/^['"]+|['"]+$/g, "").replace(/\\/g, "/");
 
-  // Tilde expansion
+  // Tilde and shell/PowerShell home variable expansion
   if (p === "~" || p.startsWith("~/")) {
-    const home = os.homedir().replace(/\\/g, "/");
     p = home + p.slice(1);
+  } else {
+    p = p
+      .replace(/^\$env:(?:userprofile|home)(?:\/|$)/i, `${home}/`)
+      .replace(/^\$home(?:\/|$)/i, `${home}/`)
+      .replace(/^%userprofile%(?:\/|$)/i, `${home}/`);
   }
 
   // Windows drive normalization: /c/Users/... -> C:/Users/...
@@ -282,11 +317,11 @@ export function extractPathTokens(command: string): string[] {
   if (!command) return [];
 
   // Match path tokens:
-  // 1. Tildes: ~/foo or ~
+  // 1. Tildes & Home Env Vars: ~/foo, ~, $HOME/foo, $env:USERPROFILE\foo, %USERPROFILE%\foo
   // 2. Directory traversals: .. or ../ or ./.. or ./../foo or ../../foo
   // 3. Windows drives: C:\foo or C:/foo
   // 4. Root/system paths: /c/foo, /etc/foo, /var/foo, /Users/foo, etc.
-  const pathRegex = /(?:^|[\s"'=<>|&;])((?:~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
+  const pathRegex = /(?:^|[\s"'=<>|&;])((?:(?:\$env:(?:userprofile|home)|\$home|%userprofile%)(?:[\/\\][\w.\\\/-]+)+|~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
 
   const results: string[] = [];
   let match: RegExpExecArray | null;
@@ -314,7 +349,7 @@ export default function (pi: ExtensionAPI) {
     type: "boolean"
   });
 
-  gateEnabled = isGateInitiallyEnabled("PI_PERMISSIONS_GATE", "no-permissions-gate", pi);
+  let gateEnabled = isGateInitiallyEnabled("PI_PERMISSIONS_GATE", "no-permissions-gate", pi);
 
   // ----------------------------------------------------
   // 1. Slash Command: /permissions-gate
@@ -355,7 +390,7 @@ export default function (pi: ExtensionAPI) {
     // --------------------------------------------------
     // A. Bash & PowerShell Tool Safety Inspection
     // --------------------------------------------------
-    if (isToolCallEventType("bash", event) || (event as any).toolName === "powershell") {
+    if (isToolCallEventType("bash", event) || isToolCallEventType("powershell", event) || (event as any).toolName === "powershell") {
       const command = (event.input as any).command || "";
 
       // 1. Dangerous Command Regex Patterns
@@ -368,10 +403,10 @@ export default function (pi: ExtensionAPI) {
             };
           }
 
-          const approved = await ctx.ui.confirm(
+          const approved = await promptConfirmation(
+            ctx,
             "⚠️ Dangerous Command Alert",
-            `The agent wants to execute:\n\n${command}\n\nReason: ${pattern.reason}\n\nAllow execution?`,
-            { timeout: CONFIRM_TIMEOUT_MS }
+            `The agent wants to execute:\n\n${command}\n\nReason: ${pattern.reason}\n\nAllow execution?`
           );
 
           if (!approved) {
@@ -392,10 +427,10 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        const approved = await ctx.ui.confirm(
+        const approved = await promptConfirmation(
+          ctx,
           "🔒 Credential Access Alert",
-          `The agent wants to access sensitive secrets via shell:\n\n${command}\n\nAllow execution?`,
-          { timeout: CONFIRM_TIMEOUT_MS }
+          `The agent wants to access sensitive secrets via shell:\n\n${command}\n\nAllow execution?`
         );
 
         if (!approved) {
@@ -417,10 +452,10 @@ export default function (pi: ExtensionAPI) {
             };
           }
 
-          const approved = await ctx.ui.confirm(
+          const approved = await promptConfirmation(
+            ctx,
             "🔒 Sensitive System Path Access",
-            `The agent wants to access a sensitive system path via shell:\n\nCommand: ${command}\nDetected Path: ${token}\n\nAllow execution?`,
-            { timeout: CONFIRM_TIMEOUT_MS }
+            `The agent wants to access a sensitive system path via shell:\n\nCommand: ${command}\nDetected Path: ${token}\n\nAllow execution?`
           );
 
           if (!approved) {
@@ -441,10 +476,10 @@ export default function (pi: ExtensionAPI) {
             };
           }
 
-          const approved = await ctx.ui.confirm(
+          const approved = await promptConfirmation(
+            ctx,
             "⚠️ Out-of-Workspace Shell Access",
-            `The agent wants to execute a command targeting an external path:\n\nCommand: ${command}\nDetected Path: ${token}\nWorkspace: ${workspace}\n\nAllow execution?`,
-            { timeout: CONFIRM_TIMEOUT_MS }
+            `The agent wants to execute a command targeting an external path:\n\nCommand: ${command}\nDetected Path: ${token}\nWorkspace: ${workspace}\n\nAllow execution?`
           );
 
           if (!approved) {
@@ -478,10 +513,10 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        const approved = await ctx.ui.confirm(
+        const approved = await promptConfirmation(
+          ctx,
           "🔒 Sensitive File Access",
-          `The agent wants to access sensitive path:\n\n${targetPath}\n\nAllow access?`,
-          { timeout: CONFIRM_TIMEOUT_MS }
+          `The agent wants to access sensitive path:\n\n${targetPath}\n\nAllow access?`
         );
 
         if (!approved) {
@@ -502,10 +537,10 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        const approved = await ctx.ui.confirm(
+        const approved = await promptConfirmation(
+          ctx,
           "⚠️ Out-of-Workspace Access",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to access a path outside the project workspace.\n\nAllow access?`,
-          { timeout: CONFIRM_TIMEOUT_MS }
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to access a path outside the project workspace.\n\nAllow access?`
         );
 
         if (!approved) {
@@ -532,10 +567,10 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        const approved = await ctx.ui.confirm(
+        const approved = await promptConfirmation(
+          ctx,
           "⚠️ Sensitive File Modification",
-          `The agent wants to write/edit sensitive file:\n\n${targetPath}\n\nAllow modification?`,
-          { timeout: CONFIRM_TIMEOUT_MS }
+          `The agent wants to write/edit sensitive file:\n\n${targetPath}\n\nAllow modification?`
         );
 
         if (!approved) {
@@ -556,10 +591,10 @@ export default function (pi: ExtensionAPI) {
           };
         }
 
-        const approved = await ctx.ui.confirm(
+        const approved = await promptConfirmation(
+          ctx,
           "⚠️ Out-of-Workspace Modification",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to modify a file outside the project workspace.\n\nAllow modification?`,
-          { timeout: CONFIRM_TIMEOUT_MS }
+          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to modify a file outside the project workspace.\n\nAllow modification?`
         );
 
         if (!approved) {
@@ -573,6 +608,8 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_start", async (_event, ctx) => {
+    gateDialogQueue = Promise.resolve();
+    (globalThis as any).__piDialogQueue = Promise.resolve();
     if (typeof pi.getFlag === "function" && pi.getFlag("no-permissions-gate") === true) {
       gateEnabled = false;
     }

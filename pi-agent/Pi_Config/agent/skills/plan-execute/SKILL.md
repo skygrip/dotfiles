@@ -77,9 +77,9 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Sequential / Coupled Code** | **Inline Agent** | Preserves shared working memory and immediate feedback loop. |
 | **Core Architecture Refactoring** | **Inline Agent** | Prevents context fragmentation and workspace merge conflicts. |
-| **Parallel Independent Modules** | **Subagent** (`invoke_subagent`) | High speed; independent subagents operate concurrently without context bloat. |
-| **Deep Read-Only API Research** | **Research Subagent** (`TypeName: "research"`) | Prevents massive web/manual dumps from cluttering conversation context. |
-| **Batch Test / Docstring Sweeps** | **Self Subagent** (`TypeName: "self"`) | Offloads repetitive file writes; returns structured completion report. |
+| **Parallel Independent Modules** | **Subagent** (`subagent` / `invoke_subagent`) | High speed; independent subagents operate concurrently without context bloat. |
+| **Deep Read-Only API Research** | **Research Subagent** (`subagent` / `research`) | Prevents massive web/manual dumps from cluttering conversation context. |
+| **Batch Test / Docstring Sweeps** | **Worker Subagent** (`subagent` / `self`) | Offloads repetitive file writes; returns structured completion report. |
 
 
 ## Completion Gate & Review

@@ -53,9 +53,13 @@ function prioritizePathFirst(rawArgs: any): any {
     return rawArgs;
   }
 
-  // If path (or common path aliases) exists, reorder so path is the first property
-  const PATH_ALIASES = ["path", "filePath", "file_path", "target", "file", "filename", "src"];
-  const targetKey = PATH_ALIASES.find(k => k in obj);
+  // Always prioritize explicit path keys; only map generic aliases (target/file/src) when file-operation properties exist
+  const STRICT_PATH_KEYS = ["path", "filePath", "file_path", "filename"];
+  const CONTEXTUAL_ALIASES = ["target", "file", "src"];
+  const hasFileOpPayload = "edits" in obj || "content" in obj || "oldText" in obj || "offset" in obj || "limit" in obj;
+  const candidateKeys = hasFileOpPayload ? [...STRICT_PATH_KEYS, ...CONTEXTUAL_ALIASES] : STRICT_PATH_KEYS;
+
+  const targetKey = candidateKeys.find(k => k in obj);
   if (!targetKey) {
     return rawArgs;
   }
@@ -149,9 +153,9 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event) => {
     let prompt = event.systemPrompt;
 
-    // Remove the hardcoded "<tools>...</tools>" block or legacy "Available tools: ..." block
+    // Remove the hardcoded "<tools>...</tools>" block, "<docs>...</docs>" block, or legacy "Available tools: ..." block
     prompt = prompt.replace(
-      /(?:<tools>[\s\S]*?<\/tools>\s*|Available tools:\s*[\s\S]*?In addition to the tools above[^\n]*\n+)/g,
+      /(?:<tools>[\s\S]*?<\/tools>\s*|<docs>[\s\S]*?<\/docs>\s*|Available tools:\s*[\s\S]*?In addition to the tools above[^\n]*\n+)/g,
       ""
     );
 

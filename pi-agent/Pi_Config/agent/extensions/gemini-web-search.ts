@@ -216,7 +216,14 @@ export async function resolveGroundingRedirect(proxyUrl: string, signal?: AbortS
 }
 
 /**
+ * Mutex queue ensuring concurrent tool calls present confirmation dialogs sequentially
+ * rather than displacing/overwriting each other in Pi's single-slot editorContainer.
+ */
+let dialogQueue: Promise<void> = Promise.resolve();
+
+/**
  * Prompts user for confirmation before outbound network calls (30s auto-dismiss).
+ * Chained sequentially across concurrent tool calls.
  */
 async function promptPermission(
   ctx: ExtensionContext,
@@ -230,10 +237,20 @@ async function promptPermission(
     return false; // Refuse safely in non-interactive/headless environments
   }
 
+  const g = globalThis as any;
+  let releaseTurn: () => void = () => {};
+  const currentTurn = new Promise<void>((r) => { releaseTurn = r; });
+  const previousTurn: Promise<any> = g.__piDialogQueue || dialogQueue;
+  dialogQueue = previousTurn.then(() => currentTurn, () => currentTurn);
+  g.__piDialogQueue = dialogQueue;
+
   try {
+    await previousTurn;
     return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS });
   } catch {
     return false;
+  } finally {
+    releaseTurn();
   }
 }
 
@@ -503,6 +520,8 @@ export default function (pi: ExtensionAPI) {
   // 3. Lifecycle Events
   // ----------------------------------------------------
   pi.on("session_start", async (_event, ctx) => {
+    dialogQueue = Promise.resolve();
+    (globalThis as any).__piDialogQueue = Promise.resolve();
     if (!gateEnabled) {
       ctx.ui.setStatus("search-gate", "🔍 Search-Gate: OFF");
     }
