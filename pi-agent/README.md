@@ -23,7 +23,7 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `permissions-gate.ts`: Pre-execution security barriers intercepting dangerous commands (bash & powershell), secret credential exfiltration (`.env`, `.ssh`, API keys), and out-of-workspace file operations across `read`, `write`, `edit`, `grep`, `find`, and `ls`.
     *   `gemini-web-search.ts`: Grounded Google web search powered by Gemini API with source citations and standard tool annotations (`openWorldHint`, `readOnlyHint`).
     *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, Readability, and Turndown markdown parsing.
-    *   `prompt-cleaner.ts`: Strips prompt boilerplate (Pi 1.3.0 `<tools>` tags and legacy `Available tools:` blocks) and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
+    *   `prompt-cleaner.ts`: Strips prompt boilerplate (Pi 1.3.0 `<tools>` and `<docs>` tags, and legacy `Available tools:` blocks) and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
     *   `write-diff.ts`: Overrides native `write` tool using `createWriteToolDefinition` and dynamic `ctx.cwd`, rendering real-time syntax-highlighted unified diffs, new file previews, and no-change indicators.
     *   `ask-question.ts`: Interactive TUI-based decision dialogs with `model-only` exposure to prevent prompt bloat while remaining invokable.
     *   `ssh.ts`: Multiplexed in-memory SSH2/SFTP sessions with remote path mapping, native diff rendering, and automatic `<cwd>` system prompt injection.
@@ -119,7 +119,14 @@ Automated test suites for all custom extensions are available under `./tests/`:
 # Run all extension test suites:
 node tests/run_all_tests.mjs
 
-# Or run individual suites:
+# Fast offline unit tests (<1.5s, skips external API & network scraping):
+node tests/run_all_tests.mjs --offline
+
+# Run specific suite(s) by pattern filter:
+node tests/run_all_tests.mjs ask
+node tests/run_all_tests.mjs gate search
+
+# Or run individual suites directly:
 node tests/test_ssh.mjs
 node tests/test_permissions_gate.mjs
 node tests/test_ask_question.mjs
@@ -132,13 +139,14 @@ node tests/test_sequential_thinking.mjs
 
 #### Extension CLI Flags & Runtime Controls
 
-Custom extensions register first-class command-line flags and slash commands:
+Custom extensions register first-class command-line flags, environment variables, and slash commands:
 
 *   `--ssh <target>`: Connect to a remote Linux/macOS host over in-memory multiplexed SSH2/SFTP (`[user@]host[:port][/path]`). Use `/ssh [status|disconnect]` mid-session.
-*   `--no-permissions-gate`: Disables safety confirmation prompts for automated/unattended runs (or toggle mid-session via `/permissions-gate`).
-*   `--no-fetch-gate`: Disables confirmation prompts when fetching remote web pages or assets via `fetch_url`.
+*   `--no-permissions-gate` (or `PI_PERMISSIONS_GATE=0`): Disables safety confirmation prompts for automated/unattended runs (or toggle mid-session via `/permissions-gate`).
+*   `--no-fetch-gate` (or `PI_FETCH_GATE=0`): Disables confirmation prompts when fetching remote web pages or assets via `fetch_url`.
 *   `--fetch-engine <auto|chrome|got-scraping>`: Selects the web content retrieval engine (`got-scraping`, Chrome CDP, or auto fallback).
-*   `--no-search-gate`: Disables confirmation prompts for grounded Gemini Google searches.
+*   `--no-search-gate` (or `PI_SEARCH_GATE=0`): Disables confirmation prompts for grounded Gemini Google searches.
+*   `PI_GATES=0`: Master environment variable disabling all confirmation gates simultaneously for headless CI and batch automations.
 
 #### Configure External Editor & TUI Mode
 
