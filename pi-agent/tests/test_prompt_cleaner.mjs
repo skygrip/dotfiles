@@ -356,7 +356,7 @@ In addition to the tools above, you may have access to other custom tools depend
 
 <docs>
 Pi documentation (read only when the user asks about pi itself):
-- Main documentation: C:\\Users\\Glen\\README.md
+- Main documentation: C:\\Users\\username\\README.md
 </docs>`;
 
     const result13 = await beforeAgentStartHook({ systemPrompt: pi13Prompt });

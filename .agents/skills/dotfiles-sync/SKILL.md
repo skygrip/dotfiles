@@ -48,7 +48,7 @@ rsync -av --exclude="agent-config" --exclude="batch-automator" "$HOME/Build/dotf
 Verify that files are identical across runtimes:
 
 ```powershell
-Get-FileHash "c:\Users\Glen\Build\dotfiles\pi-agent\Pi_Config\agent\skills\image-prompt-builder\SKILL.md", `
+Get-FileHash (Join-Path $HOME "Build\dotfiles\pi-agent\Pi_Config\agent\skills\image-prompt-builder\SKILL.md"), `
              (Join-Path $HOME ".pi\agent\skills\image-prompt-builder\SKILL.md"), `
              (Join-Path $HOME ".gemini\config\skills\image-prompt-builder\SKILL.md") | Format-Table -Property Path, Hash
 ```
