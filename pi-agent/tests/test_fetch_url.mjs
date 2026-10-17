@@ -2,33 +2,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
+import { loadExtension, isOfflineMode } from "./test_harness.mjs";
 
 function loadFetchUrlModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  const jiti = require(jitiPkg);
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const piNodeModules = path.join(globalBase, "node_modules");
-  const localNpmNodeModules = path.join(os.homedir(), ".pi/agent/npm/node_modules");
-  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
-
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase,
-      "@earendil-works/pi-tui": path.join(globalBase, "node_modules/@earendil-works/pi-tui/dist/index.js"),
-      "typebox": path.join(typeboxBase, "typebox/build/index.mjs"),
-      "@mozilla/readability": path.join(localNpmNodeModules, "@mozilla/readability/index.js"),
-      "linkedom": path.join(localNpmNodeModules, "linkedom/cjs/index.js"),
-      "turndown": path.join(localNpmNodeModules, "turndown/lib/turndown.cjs.js"),
-      "got-scraping": path.join(localNpmNodeModules, "got-scraping/dist/index.js"),
-      "playwright-core": path.join(localNpmNodeModules, "playwright-core/index.js")
-    }
-  });
-
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/fetch-url.ts");
-  return load(targetPath);
+  return loadExtension("fetch-url.ts");
 }
 
 export async function runFetchUrlTests() {
@@ -474,39 +451,41 @@ export async function runFetchUrlTests() {
   });
 
   // Test 14: End-to-End Live Regression Targets (Raw Text, HTML, Google Gallery)
-  await test("Live Regression: fetches and parses live diverse web endpoints end-to-end", async () => {
-    const liveTargets = [
-      {
-        url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README",
-        check: (res) => {
-          assert.ok(res.content[0].text.includes("Hello World"), "Must fetch raw text from GitHub");
-          assert.equal(res.details?.url, "https://raw.githubusercontent.com/octocat/Hello-World/master/README");
+  if (!isOfflineMode()) {
+    await test("Live Regression: fetches and parses live diverse web endpoints end-to-end", async () => {
+      const liveTargets = [
+        {
+          url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README",
+          check: (res) => {
+            assert.ok(res.content[0].text.includes("Hello World"), "Must fetch raw text from GitHub");
+            assert.equal(res.details?.url, "https://raw.githubusercontent.com/octocat/Hello-World/master/README");
+          }
+        },
+        {
+          url: "https://github.com",
+          check: (res) => {
+            assert.ok(res.content[0].text.length > 50, "Must fetch and parse GitHub HTML");
+            assert.ok(res.details?.title, "Must extract page title");
+          }
+        },
+        {
+          url: "https://developers.google.com/speed/webp/gallery1",
+          check: (res) => {
+            assert.ok(res.content[0].text.includes("WebP Gallery"), "Must extract Google WebP gallery article");
+            assert.ok(res.content[0].text.includes("https://www.gstatic.com/webp/gallery/1.webp"), "Must have absolute URLs");
+          }
         }
-      },
-      {
-        url: "https://github.com",
-        check: (res) => {
-          assert.ok(res.content[0].text.length > 50, "Must fetch and parse GitHub HTML");
-          assert.ok(res.details?.title, "Must extract page title");
-        }
-      },
-      {
-        url: "https://developers.google.com/speed/webp/gallery1",
-        check: (res) => {
-          assert.ok(res.content[0].text.includes("WebP Gallery"), "Must extract Google WebP gallery article");
-          assert.ok(res.content[0].text.includes("https://www.gstatic.com/webp/gallery/1.webp"), "Must have absolute URLs");
-        }
-      }
-    ];
+      ];
 
-    for (const target of liveTargets) {
-      const res = await fetchTool.execute("live_regression", { url: target.url }, undefined, undefined, mockCtx);
-      assert.ok(res, `Result must exist for ${target.url}`);
-      assert.ok(!res.details?.error, `Unexpected error on ${target.url}: ${res.details?.error}`);
-      assert.ok(typeof res.details?.durationMs === "number", "durationMs must be recorded");
-      target.check(res);
-    }
-  });
+      for (const target of liveTargets) {
+        const res = await fetchTool.execute("live_regression", { url: target.url }, undefined, undefined, mockCtx);
+        assert.ok(res, `Result must exist for ${target.url}`);
+        assert.ok(!res.details?.error, `Unexpected error on ${target.url}: ${res.details?.error}`);
+        assert.ok(typeof res.details?.durationMs === "number", "durationMs must be recorded");
+        target.check(res);
+      }
+    });
+  }
 
   return results;
 }

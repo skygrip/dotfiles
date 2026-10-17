@@ -19,36 +19,10 @@
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
+import { loadExtension, ANSI } from "./test_harness.mjs";
 
 function loadGateModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  let jiti;
-  try {
-    jiti = require(jitiPkg);
-  } catch {
-    jiti = require("jiti");
-  }
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase
-    }
-  });
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/permissions-gate.ts");
-  return load(targetPath);
+  return loadExtension("permissions-gate.ts");
 }
 
 export async function runPermissionsGateTests() {
@@ -203,6 +177,9 @@ export async function runPermissionsGateTests() {
 
     const tokens4 = extractPathTokens("ls -lh ~/.pi/agent/extensions/");
     assert.ok(tokens4.some(t => t.includes("~/.pi/agent/extensions")), "Must extract tilde-anchored extension directory path");
+
+    const tokens5 = extractPathTokens("Get-Content $env:USERPROFILE\\.config\\gcloud\\credentials.db");
+    assert.ok(tokens5.some(t => t.toLowerCase().includes("$env:userprofile")), "Must extract PowerShell $env:USERPROFILE paths");
   });
 
   // ----------------------------------------------------
@@ -217,6 +194,7 @@ export async function runPermissionsGateTests() {
     assert.equal(isOutsideWorkspace("./README.md"), false);
     assert.equal(isOutsideWorkspace("../../other_workspace/file"), true);
     assert.equal(isOutsideWorkspace("~/.pi/agent/extensions"), true, "~/.pi/agent/extensions must resolve as outside project workspace");
+    assert.equal(isOutsideWorkspace("$env:USERPROFILE/.pi/agent/extensions"), true, "$env:USERPROFILE/.pi/agent/extensions must resolve as outside project workspace");
   });
 
   test("Workspace Boundary: remote POSIX workspace resolution (PI_SSH_REMOTE_CWD)", () => {
@@ -375,6 +353,49 @@ export async function runPermissionsGateTests() {
     await gateCmd.handler("off", mockCtx);
     await gateCmd.handler("on", mockCtx);
     await gateCmd.handler("toggle", mockCtx);
+  });
+
+  await asyncTest("Dialog Queue Mutex: concurrent permissions gate confirmations serialize sequentially", async () => {
+    const registeredEvents = new Map();
+    const mockPi = {
+      registerTool() {},
+      registerCommand() {},
+      registerFlag() {},
+      on(event, handler) { registeredEvents.set(event, handler); },
+      getFlag() { return false; }
+    };
+
+    extensionFactory(mockPi);
+    const toolCallHook = registeredEvents.get("tool_call");
+
+    let activeConfirmCount = 0;
+    let maxConcurrent = 0;
+    const confirmOrder = [];
+
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async confirm(title, msg) {
+          activeConfirmCount++;
+          if (activeConfirmCount > maxConcurrent) maxConcurrent = activeConfirmCount;
+          await new Promise((r) => setTimeout(r, 20));
+          confirmOrder.push(title);
+          activeConfirmCount--;
+          return true;
+        }
+      }
+    };
+
+    // Run 2 dangerous commands in parallel via Promise.all
+    const [r1, r2] = await Promise.all([
+      toolCallHook({ type: "tool_call", toolName: "bash", name: "bash", input: { command: "rm -rf /" } }, mockCtx),
+      toolCallHook({ type: "tool_call", toolName: "bash", name: "bash", input: { command: ":(){ :|:& };:" } }, mockCtx)
+    ]);
+
+    assert.equal(maxConcurrent, 1, "Max concurrent active confirm dialogs must never exceed 1 in editorContainer");
+    assert.equal(confirmOrder.length, 2, "Both confirmations must be recorded in order");
+    assert.equal(r1, undefined, "First call approved by user must not block");
+    assert.equal(r2, undefined, "Second call approved by user must not block");
   });
 
   return results;

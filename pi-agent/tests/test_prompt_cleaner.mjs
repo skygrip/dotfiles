@@ -18,39 +18,10 @@
 
 import assert from "node:assert/strict";
 import * as path from "node:path";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
+import { loadExtension, ANSI } from "./test_harness.mjs";
 
 function loadPromptCleanerModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  let jiti;
-  try {
-    jiti = require(jitiPkg);
-  } catch {
-    // Fallback if running via bun or local node
-    jiti = require("jiti");
-  }
-
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase
-    }
-  });
-
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/prompt-cleaner.ts");
-  return load(targetPath);
+  return loadExtension("prompt-cleaner.ts");
 }
 
 export async function runPromptCleanerTests() {
@@ -367,7 +338,7 @@ In addition to the tools above, you may use external utilities.
     assert.ok(result.systemPrompt.includes("## Operational Rules"), "Must preserve custom operational rules");
     assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
 
-    // Also verify Pi 1.3.0 XML <tools> block format is stripped
+    // Also verify Pi 1.3.0 XML <tools> and <docs> block format is stripped
     const pi13Prompt = `You are an expert coding assistant.
 
 <tools>
@@ -381,11 +352,18 @@ In addition to the tools above, you may have access to other custom tools depend
 
 <rules>
 - Always emit path first
-</rules>`;
+</rules>
+
+<docs>
+Pi documentation (read only when the user asks about pi itself):
+- Main documentation: C:\\Users\\Glen\\README.md
+</docs>`;
 
     const result13 = await beforeAgentStartHook({ systemPrompt: pi13Prompt });
     assert.ok(!result13.systemPrompt.includes("<tools>"), "Must strip Pi 1.3.0 <tools> block");
     assert.ok(!result13.systemPrompt.includes("</tools>"), "Must strip Pi 1.3.0 </tools> block");
+    assert.ok(!result13.systemPrompt.includes("<docs>"), "Must strip Pi 1.3.0 <docs> block");
+    assert.ok(!result13.systemPrompt.includes("</docs>"), "Must strip Pi 1.3.0 </docs> block");
     assert.ok(result13.systemPrompt.includes("<rules>"), "Must preserve rules section");
   });
 

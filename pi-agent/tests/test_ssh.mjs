@@ -22,49 +22,20 @@ import * as os from "node:os";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs/promises";
 import { createRequire } from "node:module";
+import { loadExtension, ANSI } from "./test_harness.mjs";
 
 const require = createRequire(import.meta.url);
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
 
 // ----------------------------------------------------------------------------
 // Module Loaders (JITI Dynamic Imports)
 // ----------------------------------------------------------------------------
 
 function loadSshModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  const jiti = require(jitiPkg);
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const piNodeModules = path.join(globalBase, "node_modules");
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase,
-      "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js")
-    }
-  });
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/ssh.ts");
-  return load(targetPath);
+  return loadExtension("ssh.ts");
 }
 
 function loadGateModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  const jiti = require(jitiPkg);
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase
-    }
-  });
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/permissions-gate.ts");
-  return load(targetPath);
+  return loadExtension("permissions-gate.ts");
 }
 
 export async function runSshTests() {

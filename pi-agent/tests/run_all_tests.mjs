@@ -5,20 +5,23 @@
  * Unified Extension Test Runner for Pi Coding Agent
  * ============================================================================
  *
- * Discovers and runs all 7 test suites, reporting aggregated results in a clean table:
+ * Discovers and runs all 8 custom extension test suites:
  * 1. write-diff (Local diff cards & ctrl+o expansion)
  * 2. prompt-cleaner (System prompt hygiene & history key ordering)
  * 3. permissions-gate (Security & workspace boundaries)
  * 4. ssh (Remote SSH & SFTP loopback transport)
- * 5. critic-review (Secondary LLM audit runner)
- * 6. sequential-thinking (Intermediate reasoning scratchpad)
- * 7. ask-question (Interactive prompt modals)
+ * 5. sequential-thinking (Intermediate reasoning scratchpad)
+ * 6. ask-question (Interactive prompt modals & mutex queue)
+ * 7. gemini-web-search (Google grounded web search & citations)
+ * 8. fetch-url (Web scraping, Readability, Chrome CDP & Turndown)
  *
  * Usage:
- *   node pi-agent/tests/run_all_tests.mjs
+ *   node pi-agent/tests/run_all_tests.mjs              # Run all 8 suites
+ *   node pi-agent/tests/run_all_tests.mjs --offline    # Skip live external network calls (<1.5s)
+ *   node pi-agent/tests/run_all_tests.mjs ask          # Run matching suite(s) only
+ *   node pi-agent/tests/run_all_tests.mjs gate search  # Run multiple matching suites
  */
 
-import * as path from "node:path";
 import { runWriteDiffTests } from "./test_write_diff.mjs";
 import { runPromptCleanerTests } from "./test_prompt_cleaner.mjs";
 import { runPermissionsGateTests } from "./test_permissions_gate.mjs";
@@ -27,16 +30,7 @@ import { runSequentialThinkingTests } from "./test_sequential_thinking.mjs";
 import { runAskQuestionTests } from "./test_ask_question.mjs";
 import { runGeminiTests } from "./test_gemini_web_search.mjs";
 import { runFetchUrlTests } from "./test_fetch_url.mjs";
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
+import { ANSI, isOfflineMode } from "./test_harness.mjs";
 
 const SUITES = [
   { name: "Write Diff (write-diff.ts)", runner: runWriteDiffTests },
@@ -50,9 +44,32 @@ const SUITES = [
 ];
 
 async function main() {
+  const offline = isOfflineMode();
+  if (offline) {
+    process.env.PI_TEST_OFFLINE = "1";
+  }
+
+  const filterArgs = process.argv.slice(2).filter((a) => !a.startsWith("-"));
+  const activeSuites = filterArgs.length > 0
+    ? SUITES.filter((s) => filterArgs.some((f) => s.name.toLowerCase().includes(f.toLowerCase())))
+    : SUITES;
+
   console.log(`\n${ANSI.bold}${ANSI.cyan}======================================================================${ANSI.reset}`);
   console.log(`${ANSI.bold}${ANSI.cyan}       Pi Coding Agent: Complete Extension Test Suite Runner          ${ANSI.reset}`);
-  console.log(`${ANSI.bold}${ANSI.cyan}======================================================================${ANSI.reset}\n`);
+  console.log(`${ANSI.bold}${ANSI.cyan}======================================================================${ANSI.reset}`);
+
+  if (offline) {
+    console.log(`  ${ANSI.yellow}⚡ Mode: FAST OFFLINE (Skipping external network & live API calls)${ANSI.reset}`);
+  }
+  if (filterArgs.length > 0) {
+    console.log(`  ${ANSI.cyan}🔍 Filter: ${filterArgs.join(", ")} (${activeSuites.length} of ${SUITES.length} suites selected)${ANSI.reset}`);
+  }
+  console.log();
+
+  if (activeSuites.length === 0) {
+    console.log(`${ANSI.red}No test suites matched filter: ${filterArgs.join(", ")}${ANSI.reset}\n`);
+    process.exit(1);
+  }
 
   const globalStart = Date.now();
   const summaryRows = [];
@@ -60,17 +77,17 @@ async function main() {
   let grandTotalFailed = 0;
   const allFailures = [];
 
-  for (const suite of SUITES) {
+  for (const suite of activeSuites) {
     const start = Date.now();
     try {
       const results = await suite.runner();
       const duration = Date.now() - start;
-      const passed = results.filter(r => r.pass).length;
-      const failed = results.filter(r => !r.pass).length;
+      const passed = results.filter((r) => r.pass).length;
+      const failed = results.filter((r) => !r.pass).length;
       grandTotalPassed += passed;
       grandTotalFailed += failed;
 
-      for (const f of results.filter(r => !r.pass)) {
+      for (const f of results.filter((r) => !r.pass)) {
         allFailures.push({ suite: suite.name, test: f.name, error: f.error });
       }
 

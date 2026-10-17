@@ -19,46 +19,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
+import { loadExtension, ANSI } from "./test_harness.mjs";
 
 function loadSequentialThinkingModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  let jiti;
-  try {
-    jiti = require(jitiPkg);
-  } catch {
-    jiti = require("jiti");
-  }
-
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const piNodeModules = path.join(globalBase, "node_modules");
-
-  const localNpmNodeModules = path.join(os.homedir(), ".pi/agent/npm/node_modules");
-  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
-
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase,
-      "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
-      "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs"),
-      "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs")
-    }
-  });
-
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/sequential-thinking.ts");
-  return load(targetPath);
+  return loadExtension("sequential-thinking.ts");
 }
 
 const mockTheme = {

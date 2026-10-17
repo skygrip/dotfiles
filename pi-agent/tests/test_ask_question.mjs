@@ -18,49 +18,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[32m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  cyan: "\x1b[36m",
-  dim: "\x1b[2m"
-};
+import { loadExtension, ANSI } from "./test_harness.mjs";
 
 function loadAskModule() {
-  const globalNodeModules = path.join(process.env.APPDATA || "", "npm", "node_modules");
-  const piCodingAgentDir = path.join(globalNodeModules, "@earendil-works", "pi-coding-agent");
-  const piNodeModules = path.join(piCodingAgentDir, "node_modules");
-  const localNpm = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules");
-  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpm;
-
-  const jitiRequire = createRequire(path.join(piCodingAgentDir, "dist", "index.js"));
-  const createJiti = jitiRequire("jiti");
-
-  const load = createJiti(path.join(piCodingAgentDir, "dist", "index.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": piCodingAgentDir,
-      "@earendil-works/pi-ai": path.join(piNodeModules, "@earendil-works", "pi-ai", "dist", "index.js"),
-      "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
-      "typebox/compile": path.join(typeboxBase, "typebox", "build", "compile", "index.mjs"),
-      "typebox/value": path.join(typeboxBase, "typebox", "build", "value", "index.mjs"),
-      "typebox/guard": path.join(typeboxBase, "typebox", "build", "guard", "index.mjs"),
-      "typebox/error": path.join(typeboxBase, "typebox", "build", "error", "index.mjs"),
-      "typebox/system": path.join(typeboxBase, "typebox", "build", "system", "index.mjs"),
-      "typebox/format": path.join(typeboxBase, "typebox", "build", "format", "index.mjs"),
-      "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs"),
-      "typebox/schema": path.join(typeboxBase, "typebox", "build", "schema", "index.mjs"),
-      "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs")
-    }
-  });
-
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/ask-question.ts");
-  return load(targetPath);
+  return loadExtension("ask-question.ts");
 }
 
 export async function runAskQuestionTests() {
@@ -269,6 +230,59 @@ export async function runAskQuestionTests() {
       {}
     );
     assert.ok(errorResult, "renderResult error must return a component");
+  });
+
+  await asyncTest("Dialog Queue Mutex: concurrent tool calls serialize dialogs sequentially", async () => {
+    let activeDialogCount = 0;
+    let maxConcurrent = 0;
+    const executionOrder = [];
+
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async select(question, options) {
+          activeDialogCount++;
+          if (activeDialogCount > maxConcurrent) maxConcurrent = activeDialogCount;
+          await new Promise((r) => setTimeout(r, 20));
+          executionOrder.push(question);
+          activeDialogCount--;
+          return options[0];
+        }
+      }
+    };
+
+    const [res1, res2] = await Promise.all([
+      askTool.execute("call_c1", { question: "Question 1?", options: ["A", "B"] }, undefined, undefined, mockCtx),
+      askTool.execute("call_c2", { question: "Question 2?", options: ["C", "D"] }, undefined, undefined, mockCtx)
+    ]);
+
+    assert.equal(maxConcurrent, 1, "Max concurrent active dialogs must never exceed 1 in editorContainer");
+    assert.deepEqual(executionOrder, ["Question 1?", "Question 2?"]);
+    assert.equal(res1.details?.answer, "A");
+    assert.equal(res2.details?.answer, "C");
+  });
+
+  await asyncTest("Dialog Queue Mutex: aborted first call releases lock and does not deadlock subsequent call", async () => {
+    const abortCtrl = new AbortController();
+    abortCtrl.abort();
+
+    const mockCtx = {
+      hasUI: true,
+      ui: {
+        async select(question, options) {
+          return options[0];
+        }
+      }
+    };
+
+    const [res1, res2] = await Promise.all([
+      askTool.execute("call_aborted", { question: "Aborted?" }, abortCtrl.signal, undefined, mockCtx),
+      askTool.execute("call_subsequent", { question: "Subsequent?" }, undefined, undefined, mockCtx)
+    ]);
+
+    assert.equal(res1.details?.cancelled, true);
+    assert.equal(res2.details?.cancelled, false);
+    assert.equal(res2.details?.answer, "Yes");
   });
 
   return results;

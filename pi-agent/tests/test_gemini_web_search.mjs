@@ -21,28 +21,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
+import { loadExtension, isOfflineMode } from "./test_harness.mjs";
 
 function loadGeminiModule() {
-  const jitiPkg = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti");
-  const jiti = require(jitiPkg);
-  const globalBase = path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent");
-  const piNodeModules = path.join(globalBase, "node_modules");
-  const localNpmNodeModules = path.join(os.homedir(), ".pi/agent/npm/node_modules");
-  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
-
-  const load = jiti(path.join(import.meta.dirname, "dummy.js"), {
-    alias: {
-      "@earendil-works/pi-coding-agent": globalBase,
-      "@earendil-works/pi-tui": path.join(globalBase, "node_modules/@earendil-works/pi-tui/dist/index.js"),
-      "typebox": path.join(typeboxBase, "typebox/build/index.mjs")
-    }
-  });
-
-  const targetPath = path.resolve(import.meta.dirname, "../Pi_Config/agent/extensions/gemini-web-search.ts");
-  return load(targetPath);
+  return loadExtension("gemini-web-search.ts");
 }
 
 function getLiveApiKey() {
@@ -610,21 +592,38 @@ export async function runGeminiTests() {
   // Section 9: Live Integration Tests (Real Network)
   // ==========================================================================
 
-  await test("Section 9: Live Grounding Redirect: unmasks real Vertex redirect URL to canonical destination", async () => {
+  await test("Section 9: Grounding Redirect: unmasks Vertex redirect URL to canonical destination via HEAD", async () => {
     const { resolveGroundingRedirect } = mod;
-    const sampleVertexRedirect = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG8AhVuA6wi6EGxp-p4Q0i21OOFudp7Axh0aOgpveIJelGyM9SKZs6b3PSAwqXMuzxU9Z1JFJpiGIJqEvjFKfJomBUfLvZ5LVC1jdlRBgKTyBZTTKA_u5T4qoGl";
 
+    // 1. Non-Vertex URLs pass through immediately without HTTP request
+    const regularUrl = "https://en.wikipedia.org/wiki/TypeScript";
+    assert.equal(await resolveGroundingRedirect(regularUrl), regularUrl);
+
+    // 2. Vertex redirect unmasking via HEAD location header
+    const mockVertexUrl = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/TEST_SAMPLE_TOKEN";
+    const canonicalTarget = "https://en.wikipedia.org/wiki/Node.js";
+
+    const originalFetch = globalThis.fetch;
     try {
-      const resolved = await resolveGroundingRedirect(sampleVertexRedirect);
-      // Real Vertex redirect points to Wikipedia Node.js page
-      assert.equal(resolved, "https://en.wikipedia.org/wiki/Node.js");
-    } catch (err) {
-      console.warn("   [WARN] Live redirect test encountered network issue:", err.message);
+      globalThis.fetch = async (url, opts) => {
+        if (String(url) === mockVertexUrl && opts?.method === "HEAD") {
+          return new Response(null, {
+            status: 302,
+            headers: { location: canonicalTarget }
+          });
+        }
+        return originalFetch(url, opts);
+      };
+
+      const resolved = await resolveGroundingRedirect(mockVertexUrl);
+      assert.equal(resolved, canonicalTarget, "Must resolve location header from HEAD response");
+    } finally {
+      globalThis.fetch = originalFetch;
     }
   });
 
   const liveKey = getLiveApiKey();
-  if (liveKey) {
+  if (liveKey && !isOfflineMode()) {
     await test("Section 9: Live End-to-End Search: performs live Google search grounding with Gemini API", async () => {
       const webSearch = registeredTools.get("web_search");
       const liveCtx = {
@@ -658,7 +657,7 @@ export async function runGeminiTests() {
       assert.ok(res.details?.durationMs > 0, "Must track request duration");
       assert.ok(streamedUpdates.length > 0, "Must stream progress updates via onUpdate");
     });
-  } else {
+  } else if (!liveKey) {
     console.log("   [INFO] Skipping Live Gemini API call (No Google key configured)");
   }
 
