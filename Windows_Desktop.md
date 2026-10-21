@@ -835,14 +835,19 @@ uv tool install docling
 # --- OPTIONAL: Enable GPU Acceleration for Docling ---
 
 # Option A: NVIDIA GPU (CUDA) - Required for fast local OCR & VLM pipelines
-uv pip install torch torchvision --reinstall --index-url https://download.pytorch.org/whl/cu128 --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip install torch torchvision --reinstall --index-url https://download.pytorch.org/whl/cu132 --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip uninstall onnxruntime --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 uv pip install onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 
+# Verify GPU detection (CUDA):
+& "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c "import torch; ok = torch.cuda.is_available(); dev = torch.cuda.get_device_name(0) if ok else None; print(f'CUDA Available: {ok} | Device: {dev}')"
+
 # Option B: AMD/Intel GPU (DirectML) - Acceleration for standard OCR/layout models
+uv pip uninstall onnxruntime onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 uv pip install onnxruntime-directml --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 
-# Verify GPU detection:
-& "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()} | Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"None\"}')"
+# Verify GPU detection (DirectML):
+& "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c 'import onnxruntime as ort; print("Available Providers:", ort.get_available_providers()); print("DML Ready:", "DmlExecutionProvider" in ort.get_available_providers())'
 ```
 
 ## OpenSCAD and BOSL2 Setup
