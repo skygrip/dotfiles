@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "transformers",
+#     "torch",
+# ]
+# ///
 """
 OpenAI Privacy Filter - Fast Grep-Style Contextual PII Scanner
 Scans text files, emails, and CSV datasets for 8 categories of sensitive personal data.
