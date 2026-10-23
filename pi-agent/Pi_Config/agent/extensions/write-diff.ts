@@ -22,13 +22,6 @@
  * 4. Interactive TUI Collapsing (`ctrl+o`):
  *    Collapses large diffs and long files to 10–12 line previews in the active terminal,
  *    with instant full-content expansion upon pressing `ctrl+o`.
- *
- * -------------------------------------------------------------------------------------
- * Mutual Exclusivity:
- * -------------------------------------------------------------------------------------
- * Exits immediately at startup if an active `--ssh` session is requested (via flag, env,
- * or CLI argument), allowing `ssh.ts` to take over the remote SFTP write transport without
- * tool registration collisions.
  */
 
 import {
@@ -87,32 +80,18 @@ function formatNativeDiff(filePath: string, diffText: string, theme: any, expand
  * @param pi ExtensionAPI interface provided by Pi Agent.
  */
 export default function (pi: ExtensionAPI) {
-  // -----------------------------------------------------------------------------------
-  // 1. Mutual Exclusivity Guard
-  // -----------------------------------------------------------------------------------
-  // If an SSH target is configured, yield write tool registration to ssh.ts
-  const hasSsh = Boolean(
-    (typeof pi.getFlag === "function" && pi.getFlag("ssh")) ||
-    process.env.PI_SSH ||
-    process.argv.some(arg => arg === "--ssh" || arg.startsWith("--ssh="))
-  );
-
-  if (hasSsh) {
-    return;
-  }
-
   const localCwd = process.cwd();
   const localWrite = createWriteToolDefinition(localCwd);
 
   // -----------------------------------------------------------------------------------
-  // 2. Enhanced Write Tool Registration
+  // Enhanced Write Tool Registration
   // -----------------------------------------------------------------------------------
   pi.registerTool({
     ...localWrite,
 
     /**
      * Pre-validation argument pass-through.
-     * Enforces strict schema conformity without injecting unneeded parameter aliases.
+     * Normalizes incoming LLM parameter aliases (file_path, filePath) into strict 'path' schema conformity.
      */
     prepareArguments(args: any) {
       if (!args || typeof args !== "object") return args;
@@ -126,7 +105,7 @@ export default function (pi: ExtensionAPI) {
      * Custom TUI header rendered when the tool call is initiated.
      */
     renderCall(args: any, theme: any, _renderCtx: any) {
-      const rawPath = args?.path ?? "file";
+      const rawPath = args?.path ?? args?.file_path ?? args?.filePath ?? "file";
       return new Text(theme.fg("toolTitle", theme.bold("write")) + " " + theme.fg("accent", rawPath), 0, 0);
     },
 
@@ -134,7 +113,7 @@ export default function (pi: ExtensionAPI) {
      * Executes the write operation while capturing pre-existing file state to compute diffs.
      */
     async execute(id, params: any, signal, onUpdate, ctx) {
-      const rawPath = params.path ?? "";
+      const rawPath = params.path ?? params.file_path ?? params.filePath ?? "";
       const content = params.content ?? "";
       let oldContent: string | null = null;
       let isOverwrite = false;
@@ -153,8 +132,9 @@ export default function (pi: ExtensionAPI) {
         }
       }
 
-      // Delegate actual file writing to Pi's robust native write handler
-      const result: any = await localWrite.execute(id, { path: rawPath, content }, signal, onUpdate, ctx);
+      // Delegate actual file writing to Pi's robust native write handler using resolved absPath
+      const writeHandler = activeCwd !== localCwd ? createWriteToolDefinition(activeCwd) : localWrite;
+      const result: any = await writeHandler.execute(id, { path: absPath, content }, signal, onUpdate, ctx);
 
       // Attach structured details metadata for renderResult
       if (isOverwrite && oldContent !== null && oldContent !== content && !result.isError) {
@@ -177,7 +157,7 @@ export default function (pi: ExtensionAPI) {
      */
     renderResult(result: any, options: any, theme: any, renderCtx: any) {
       // 1. Error state
-      if (result.isError) {
+      if (result.isError || renderCtx?.isError) {
         const text = result.content?.[0]?.text || "Write error";
         return new Text(theme.fg("error", text), 0, 0);
       }

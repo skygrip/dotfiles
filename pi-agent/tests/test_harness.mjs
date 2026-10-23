@@ -23,31 +23,37 @@ export function isOfflineMode() {
 
 let cachedJiti = null;
 
+export function getManagedReleaseNodeModules() {
+  const versionFile = path.join(os.homedir(), ".pi", "agent", "install", "current-version");
+  if (!fs.existsSync(versionFile)) {
+    throw new Error(`Managed Pi version file not found: ${versionFile}`);
+  }
+  const version = fs.readFileSync(versionFile, "utf8").trim();
+  const releaseNodeModules = path.join(os.homedir(), ".pi", "agent", "install", "releases", version, "node_modules");
+  if (!fs.existsSync(releaseNodeModules)) {
+    throw new Error(`Managed Pi release node_modules not found: ${releaseNodeModules}`);
+  }
+  return releaseNodeModules;
+}
+
+export function getPiCodingAgentDir() {
+  return path.join(getManagedReleaseNodeModules(), "@earendil-works", "pi-coding-agent");
+}
+
 export function getJitiLoader() {
   if (cachedJiti) return cachedJiti;
 
-  const globalBase = path.join(process.env.APPDATA || "", "npm", "node_modules", "@earendil-works", "pi-coding-agent");
-  const piNodeModules = path.join(globalBase, "node_modules");
+  const releaseNodeModules = getManagedReleaseNodeModules();
+  const piCodingAgentBase = getPiCodingAgentDir();
   const localNpmNodeModules = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules");
-  const typeboxBase = fs.existsSync(path.join(piNodeModules, "typebox")) ? piNodeModules : localNpmNodeModules;
+  const typeboxBase = fs.existsSync(path.join(releaseNodeModules, "typebox")) ? releaseNodeModules : localNpmNodeModules;
 
-  let jitiRequire;
-  try {
-    jitiRequire = createRequire(path.join(globalBase, "dist", "index.js"));
-  } catch {
-    jitiRequire = require;
-  }
-
-  let createJiti;
-  try {
-    createJiti = jitiRequire("jiti");
-  } catch {
-    createJiti = require("jiti");
-  }
+  const jitiRequire = createRequire(path.join(releaseNodeModules, "jiti", "package.json"));
+  const createJiti = jitiRequire("jiti");
 
   const aliases = {
-    "@earendil-works/pi-coding-agent": globalBase,
-    "@earendil-works/pi-tui": path.join(piNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
+    "@earendil-works/pi-coding-agent": piCodingAgentBase,
+    "@earendil-works/pi-tui": path.join(releaseNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
     "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs"),
     "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs"),
     "typebox/compile": path.join(typeboxBase, "typebox", "build", "compile", "index.mjs"),

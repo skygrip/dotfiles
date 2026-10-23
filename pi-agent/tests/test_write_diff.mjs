@@ -6,7 +6,7 @@
  * ============================================================================
  *
  * Comprehensive test suite verifying:
- * - Section 1: Mutual Exclusivity Guard (exits on --ssh flag, active on local)
+ * - Section 1: Tool Registration & Verification
  * - Section 2: Argument Preparation & Path Normalization (strips ./, quotes, backslashes, aliases)
  * - Section 3: File Operations & Overwrite Detection (new file vs overwrite vs identical)
  * - Section 4: TUI Rendering & ctrl+o Expand/Collapse Behavior
@@ -19,7 +19,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
-import { loadExtension, ANSI } from "./test_harness.mjs";
+import { createRequire } from "node:module";
+import { loadExtension, getPiCodingAgentDir, ANSI } from "./test_harness.mjs";
+
+const require = createRequire(import.meta.url);
 
 function loadWriteDiffModule() {
   return loadExtension("write-diff.ts");
@@ -56,20 +59,9 @@ export async function runWriteDiffTests() {
   }
 
   // ----------------------------------------------------
-  // Section 1: Mutual Exclusivity Guard
+  // Section 1: Tool Registration
   // ----------------------------------------------------
-  test("Mutual Guard: exits early and skips registration when --ssh flag is active", () => {
-    const registeredTools = new Map();
-    const mockPiSsh = {
-      getFlag(name) { return name === "ssh" ? "user@remote.host" : undefined; },
-      registerTool(tool) { registeredTools.set(tool.name, tool); }
-    };
-
-    extensionFactory(mockPiSsh);
-    assert.equal(registeredTools.has("write"), false, "Must not register write tool when --ssh flag is active");
-  });
-
-  test("Mutual Guard: registers custom write tool on local sessions", () => {
+  test("Tool Registration: registers custom write tool on sessions", () => {
     const registeredTools = new Map();
     const mockPiLocal = {
       getFlag() { return undefined; },
@@ -77,7 +69,7 @@ export async function runWriteDiffTests() {
     };
 
     extensionFactory(mockPiLocal);
-    assert.equal(registeredTools.has("write"), true, "Must register write tool for local sessions");
+    assert.equal(registeredTools.has("write"), true, "Must register write tool for sessions");
   });
 
   // ----------------------------------------------------
@@ -356,7 +348,7 @@ async function main() {
     
     let activeTheme = mockTheme;
     try {
-      const themeModule = require(path.join(process.env.APPDATA || "", "npm/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js"));
+      const themeModule = require(path.join(getPiCodingAgentDir(), "dist/modes/interactive/theme/theme.js"));
       themeModule.initTheme("dark");
       activeTheme = themeModule.theme;
     } catch {}

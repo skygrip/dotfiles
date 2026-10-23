@@ -186,7 +186,7 @@ export default function (pi: ExtensionAPI) {
         copy.question = String(copy.question);
       }
 
-      // Normalize options aliases (supporting legacy 'choices', 'items', 'variants')
+      // Normalize options aliases (choices, items, variants, candidates)
       const rawOptions = copy.options ?? copy.choices ?? copy.items ?? copy.variants ?? copy.candidates;
       if (rawOptions !== undefined) {
         copy.options = normalizeOptions(rawOptions);
@@ -212,7 +212,7 @@ export default function (pi: ExtensionAPI) {
       const question = (params.question || "").trim() || "Please make a decision:";
       let options = normalizeOptions(params.options);
 
-      // Mode 2: If fewer than 2 options provided, default to binary confirmation ["Yes", "No"]
+      // Default to binary confirmation ["Yes", "No"] if fewer than 2 options provided
       if (options.length < 2) {
         options = ["Yes", "No"];
       }
@@ -227,7 +227,7 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
-      const dialogOptions = { timeout: DEFAULT_TIMEOUT_MS };
+      const dialogOptions = { timeout: DEFAULT_TIMEOUT_MS, signal };
 
       // ----------------------------------------------------
       // 2. Interactive TUI Selection via Arrow Keys
@@ -269,7 +269,7 @@ export default function (pi: ExtensionAPI) {
     renderCall(args: any, theme, _context) {
       const qText = typeof args?.question === "string" ? args.question.trim() : "";
       const truncatedQ = qText.length > 70 ? `${qText.slice(0, 67)}...` : qText;
-      const opts = Array.isArray(args?.options) ? args.options : Array.isArray(args?.choices) ? args.choices : [];
+      const opts = Array.isArray(args?.options) ? args.options : [];
 
       let text = theme.fg("toolTitle", theme.bold("ask_question"));
       if (truncatedQ) {
@@ -295,12 +295,12 @@ export default function (pi: ExtensionAPI) {
         return new Text(text?.type === "text" ? text.text : "", 0, 0);
       }
 
-      if (details.error) {
-        return new Text(theme.fg("warning", `✗ ${details.error.toUpperCase()}`), 0, 0);
-      }
-
       if (details.cancelled) {
         return new Text(theme.fg("muted", `⊘ NO SELECTION MADE`), 0, 0);
+      }
+
+      if (details.error) {
+        return new Text(theme.fg("warning", `✗ ${details.error.toUpperCase()}`), 0, 0);
       }
 
       const answer = details.answer !== undefined ? String(details.answer) : "";

@@ -8,8 +8,8 @@
  * Core Capabilities & Architecture:
  * -------------------------------------------------------------------------------------
  * 1. System Prompt Boilerplate Stripping (`before_agent_start`):
- *    - Intercepts the generated system prompt before LLM dispatch and strips Pi's hardcoded
- *      "Available tools: ..." text blocks.
+ *    - Intercepts the generated system prompt before LLM dispatch and strips <tools> and
+ *      <docs> XML blocks.
  *    - Enables API-native JSON Schema tool definitions to drive model behavior directly,
  *      eliminating prompt contradiction and reclaiming valuable context window tokens.
  *
@@ -23,9 +23,9 @@
  *
  * 3. Cross-Format Argument Normalization:
  *    - Transparently handles OpenAI-style function calls (`tool_calls[].function.arguments`),
- *      Anthropic-style tool invocations (`toolCalls[].arguments`), and raw content blocks (`content[].input`).
+ *      Anthropic-style content blocks (`content[].input`), and Pi native AgentMessage blocks (`content[].arguments`).
  *
- * 4. Windows Path Normalization (Issue #8841):
+ * 4. Windows Path Normalization:
  *    - Normalizes unescaped Windows backslashes in documentation paths, context instructions,
  *      and skill locations to forward slashes.
  */
@@ -92,7 +92,7 @@ function sanitizeMessages(messages: any[]): any[] {
       }
     }
 
-    // 2. Anthropic / custom format toolCalls
+    // 2. Legacy / mock toolCalls array
     if (Array.isArray(msg.toolCalls)) {
       for (const tc of msg.toolCalls) {
         if (tc?.arguments) {
@@ -101,11 +101,14 @@ function sanitizeMessages(messages: any[]): any[] {
       }
     }
 
-    // 3. Structured content blocks
+    // 3. Structured content blocks (Anthropic tool_use & Pi native toolCall)
     if (Array.isArray(msg.content)) {
       for (const block of msg.content) {
         if (block?.type === "tool_use" && block.input) {
           block.input = prioritizePathFirst(block.input);
+        }
+        if (block?.type === "toolCall" && block.arguments) {
+          block.arguments = prioritizePathFirst(block.arguments);
         }
       }
     }
@@ -115,8 +118,7 @@ function sanitizeMessages(messages: any[]): any[] {
 }
 
 /**
- * Normalizes Windows drive-letter paths in the system prompt to forward slashes.
- * Fixes issue #8841: unnormalized backslashes in documentation, context, and skill paths.
+ * Normalizes unescaped Windows backslashes in documentation, context, and skill paths to forward slashes.
  *
  * @param text - The raw prompt text containing Windows file paths.
  * @returns The prompt text with normalized forward-slash paths.
@@ -153,13 +155,13 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event) => {
     let prompt = event.systemPrompt;
 
-    // Remove the hardcoded "<tools>...</tools>" block, "<docs>...</docs>" block, or legacy "Available tools: ..." block
+    // Remove hardcoded <tools> and <docs> blocks
     prompt = prompt.replace(
-      /(?:<tools>[\s\S]*?<\/tools>\s*|<docs>[\s\S]*?<\/docs>\s*|Available tools:\s*[\s\S]*?In addition to the tools above[^\n]*\n+)/g,
+      /(?:<tools>[\s\S]*?<\/tools>\s*|<docs>[\s\S]*?<\/docs>\s*)/g,
       ""
     );
 
-    // Normalize Windows backslashes in system prompt paths (issue #8841)
+    // Normalize Windows backslashes in system prompt paths
     prompt = normalizeWindowsPaths(prompt);
 
     return { systemPrompt: prompt };

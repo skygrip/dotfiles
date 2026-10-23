@@ -5,18 +5,17 @@
  * Unified Extension Test Runner for Pi Coding Agent
  * ============================================================================
  *
- * Discovers and runs all 8 custom extension test suites:
+ * Discovers and runs all 7 custom extension test suites:
  * 1. write-diff (Local diff cards & ctrl+o expansion)
  * 2. prompt-cleaner (System prompt hygiene & history key ordering)
  * 3. permissions-gate (Security & workspace boundaries)
- * 4. ssh (Remote SSH & SFTP loopback transport)
- * 5. sequential-thinking (Intermediate reasoning scratchpad)
- * 6. ask-question (Interactive prompt modals & mutex queue)
- * 7. gemini-web-search (Google grounded web search & citations)
- * 8. fetch-url (Web scraping, Readability, Chrome CDP & Turndown)
+ * 4. sequential-thinking (Intermediate reasoning scratchpad)
+ * 5. ask-question (Interactive prompt modals & mutex queue)
+ * 6. gemini-web-search (Google grounded web search & citations)
+ * 7. fetch-url (Web scraping, Readability, Chrome CDP & Turndown)
  *
  * Usage:
- *   node pi-agent/tests/run_all_tests.mjs              # Run all 8 suites
+ *   node pi-agent/tests/run_all_tests.mjs              # Run all 7 suites
  *   node pi-agent/tests/run_all_tests.mjs --offline    # Skip live external network calls (<1.5s)
  *   node pi-agent/tests/run_all_tests.mjs ask          # Run matching suite(s) only
  *   node pi-agent/tests/run_all_tests.mjs gate search  # Run multiple matching suites
@@ -25,7 +24,6 @@
 import { runWriteDiffTests } from "./test_write_diff.mjs";
 import { runPromptCleanerTests } from "./test_prompt_cleaner.mjs";
 import { runPermissionsGateTests } from "./test_permissions_gate.mjs";
-import { runSshTests } from "./test_ssh.mjs";
 import { runSequentialThinkingTests } from "./test_sequential_thinking.mjs";
 import { runAskQuestionTests } from "./test_ask_question.mjs";
 import { runGeminiTests } from "./test_gemini_web_search.mjs";
@@ -36,7 +34,6 @@ const SUITES = [
   { name: "Write Diff (write-diff.ts)", runner: runWriteDiffTests },
   { name: "Prompt Cleaner (prompt-cleaner.ts)", runner: runPromptCleanerTests },
   { name: "Permissions Gate (permissions-gate.ts)", runner: runPermissionsGateTests },
-  { name: "SSH Remote (ssh.ts)", runner: runSshTests },
   { name: "Sequential Thinking (sequential-thinking.ts)", runner: runSequentialThinkingTests },
   { name: "Ask Question (ask-question.ts)", runner: runAskQuestionTests },
   { name: "Gemini Web Search (gemini-web-search.ts)", runner: runGeminiTests },

@@ -90,7 +90,7 @@ export function truncateHead(content: string, options: { maxLines?: number; maxB
 }
 
 /**
- * Computes Pi-compatible Usage object from Gemini usageMetadata.
+ * Computes Pi Usage object from Gemini usageMetadata.
  */
 export function computeGeminiUsage(usageMeta?: { promptTokenCount?: number; candidatesTokenCount?: number }) {
   const input = usageMeta?.promptTokenCount ?? 0;
@@ -229,7 +229,8 @@ async function promptPermission(
   ctx: ExtensionContext,
   title: string,
   message: string,
-  gateEnabled: boolean
+  gateEnabled: boolean,
+  signal?: AbortSignal
 ): Promise<boolean> {
   if (!gateEnabled) return true;
 
@@ -246,7 +247,7 @@ async function promptPermission(
 
   try {
     await previousTurn;
-    return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS });
+    return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS, signal });
   } catch {
     return false;
   } finally {
@@ -294,6 +295,12 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("search-gate", {
     description: "Toggle or inspect web search permission gate (usage: /search-gate [status|on|off|toggle])",
+    getArgumentCompletions(prefix: string) {
+      const items = ["status", "on", "off", "toggle"];
+      return items
+        .filter((i) => i.startsWith(prefix.toLowerCase()))
+        .map((i) => ({ value: i, label: i }));
+    },
     handler: gateHandler
   });
 
@@ -323,6 +330,7 @@ export default function (pi: ExtensionAPI) {
       const query = (params.query || "").trim();
       if (!query) {
         return {
+          isError: true,
           content: [{ type: "text", text: "[Web Search Error]: Query cannot be empty." }],
           details: { error: "Empty query" } as WebSearchToolDetails
         };
@@ -334,7 +342,8 @@ export default function (pi: ExtensionAPI) {
         ctx,
         "🌐 Web Search Confirmation",
         `Allow agent to search Google for:\n\n"${query}"\n\n(Auto-cancels in 30s)`,
-        gateEnabled
+        gateEnabled,
+        signal
       );
 
       if (!allowed) {
@@ -346,6 +355,7 @@ export default function (pi: ExtensionAPI) {
 
       if (signal?.aborted) {
         return {
+          isError: true,
           content: [{ type: "text", text: "[Web Search Aborted]" }],
           details: { query, error: "Aborted" } as WebSearchToolDetails
         };
@@ -462,12 +472,14 @@ export default function (pi: ExtensionAPI) {
       } catch (err: any) {
         if (signal?.aborted || err?.name === "AbortError") {
           return {
+            isError: true,
             content: [{ type: "text", text: "[Web Search Aborted]" }],
             details: { query, error: "Aborted" } as WebSearchToolDetails
           };
         }
         const msg = err instanceof Error ? err.message : String(err);
         return {
+          isError: true,
           content: [{ type: "text", text: `[Web Search Error]: ${msg}` }],
           details: { query, error: msg } as WebSearchToolDetails
         };

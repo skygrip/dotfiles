@@ -103,9 +103,11 @@ export async function runFetchUrlTests() {
     await fetchGateCmd.handler("on", mockCtx);
 
     // 1. User confirms -> allowed
-    const allowCtx = { ...mockCtx, ui: { ...mockCtx.ui, confirm: async () => true } };
-    const allowRes = await fetchTool.execute("call_allow", { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" }, undefined, undefined, allowCtx);
-    assert.ok(!allowRes.details?.denied, "Fetch must proceed when user confirms");
+    if (!isOfflineMode()) {
+      const allowCtx = { ...mockCtx, ui: { ...mockCtx.ui, confirm: async () => true } };
+      const allowRes = await fetchTool.execute("call_allow", { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" }, undefined, undefined, allowCtx);
+      assert.ok(!allowRes.details?.denied, "Fetch must proceed when user confirms");
+    }
 
     // 2. User declines -> clean rejection without throwing
     const declineCtx = { ...mockCtx, ui: { ...mockCtx.ui, confirm: async () => false } };
@@ -127,75 +129,81 @@ export async function runFetchUrlTests() {
   // =========================================================================
 
   // Test 4: Engine: got-scraping (Pure Fast HTTP)
-  await test("Engine got-scraping: executes fast HTTP path, bypasses browser, respects boundaries", async () => {
-    await fetchEngineCmd.handler("got-scraping", mockCtx);
+  if (!isOfflineMode()) {
+    await test("Engine got-scraping: executes fast HTTP path, bypasses browser, respects boundaries", async () => {
+      await fetchEngineCmd.handler("got-scraping", mockCtx);
 
-    const res = await fetchTool.execute(
-      "call_got_scraping",
-      { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" },
-      undefined,
-      undefined,
-      mockCtx
-    );
+      const res = await fetchTool.execute(
+        "call_got_scraping",
+        { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" },
+        undefined,
+        undefined,
+        mockCtx
+      );
 
-    assert.equal(res.details?.engine, "got-scraping");
-    assert.equal(res.details?.usedBrowser, false, "Must not invoke browser or CDP");
-    assert.equal(res.details?.viaCDP, false);
-    assert.ok(res.content[0].text.includes("Hello World"), "Must retrieve text via got-scraping");
+      assert.equal(res.details?.engine, "got-scraping");
+      assert.equal(res.details?.usedBrowser, false, "Must not invoke browser or CDP");
+      assert.equal(res.details?.viaCDP, false);
+      assert.ok(res.content[0].text.includes("Hello World"), "Must retrieve text via got-scraping");
 
-    // UI tag rendering
-    const rendered = fetchTool.renderResult(res, { expanded: false }, mockCtx.ui.theme);
-    const renderedStr = rendered.text || rendered.toString();
-    assert.ok(renderedStr.includes("[got-scraping]"), "Badge must display [got-scraping]");
+      // UI tag rendering
+      const rendered = fetchTool.renderResult(res, { expanded: false }, mockCtx.ui.theme);
+      const renderedStr = rendered.text || rendered.toString();
+      assert.ok(renderedStr.includes("[got-scraping]"), "Badge must display [got-scraping]");
 
-    await fetchEngineCmd.handler("auto", mockCtx);
-  });
+      await fetchEngineCmd.handler("auto", mockCtx);
+    });
+  }
 
   // Test 5: Engine: chrome (Direct Remote Debugging / CDP & Diagnostics)
-  await test("Engine chrome: executes direct CDP path, handles session discovery & diagnostics", async () => {
-    await fetchEngineCmd.handler("chrome", mockCtx);
+  if (!isOfflineMode()) {
+    await test("Engine chrome: executes direct CDP path, handles session discovery & diagnostics", async () => {
+      await fetchEngineCmd.handler("chrome", mockCtx);
 
-    const res = await fetchTool.execute(
-      "call_chrome_test",
-      { url: "https://example.com" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-
-    assert.equal(res.details?.engine, "chrome");
-
-    // If Chrome is open with remote debugging active, it succeeds via CDP;
-    // If not open, it MUST return the actionable diagnostic link!
-    if (res.details?.error) {
-      assert.ok(
-        res.details.error.includes("chrome://inspect/#remote-debugging") ||
-        res.details.error.includes("timed out") ||
-        res.details.error.includes("declined"),
-        "Chrome failure must provide clear diagnostic guidance"
+      const res = await fetchTool.execute(
+        "call_chrome_test",
+        { url: "https://example.com" },
+        undefined,
+        undefined,
+        mockCtx
       );
-    } else {
-      assert.equal(res.details?.usedBrowser, true);
-      assert.equal(res.details?.viaCDP, true);
-      assert.equal(res.details?.isUserSession, true);
-    }
 
-    await fetchEngineCmd.handler("auto", mockCtx);
-  });
+      assert.equal(res.details?.engine, "chrome");
+
+      // If Chrome is open with remote debugging active, it succeeds via CDP;
+      // If not open, it MUST return the actionable diagnostic link!
+      if (res.details?.error) {
+        assert.ok(
+          res.details.error.includes("chrome://inspect/#remote-debugging") ||
+          res.details.error.includes("timed out") ||
+          res.details.error.includes("declined"),
+          "Chrome failure must provide clear diagnostic guidance"
+        );
+      } else {
+        assert.equal(res.details?.usedBrowser, true);
+        assert.equal(res.details?.viaCDP, true);
+        assert.equal(res.details?.isUserSession, true);
+      }
+
+      await fetchEngineCmd.handler("auto", mockCtx);
+    });
+  }
 
   // Test 6: Engine: auto (Hybrid Happy Path & Fallback Narrative)
   await test("Engine auto: HTTP-first happy path and seamless fallback narrative generation", async () => {
     await fetchEngineCmd.handler("auto", mockCtx);
 
     // 1. Happy path: standard fetch resolves fast over HTTP
-    const happyRes = await fetchTool.execute(
-      "call_auto_happy",
-      { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-    assert.equal(happyRes.details?.usedBrowser, false, "Happy path must not invoke browser");
+    if (!isOfflineMode()) {
+      const happyRes = await fetchTool.execute(
+        "call_auto_happy",
+        { url: "https://raw.githubusercontent.com/octocat/Hello-World/master/README" },
+        undefined,
+        undefined,
+        mockCtx
+      );
+      assert.equal(happyRes.details?.usedBrowser, false, "Happy path must not invoke browser");
+    }
 
     // 2. Fallback narrative: verifies UI shows chronological got-scraping -> Chrome transition
     const mockFallbackResult = {
@@ -339,54 +347,56 @@ export async function runFetchUrlTests() {
   });
 
   // Test 10: Image Deduplication (Option 2)
-  await test("Image Deduplication: preserves contextual inline images and avoids bottom appendix duplicates", async () => {
-    // Test on Google's WebP gallery comparison page
-    const res = await fetchTool.execute(
-      "call_dedup_test",
-      { url: "https://developers.google.com/speed/webp/gallery1" },
-      undefined,
-      undefined,
-      mockCtx
-    );
-
-    const text = res.content[0].text;
-    assert.ok(text.includes("WebP Gallery"), "Must retrieve WebP gallery page");
-
-    // 1. Comparison images are present inline in the article
-    assert.ok(text.includes("https://www.gstatic.com/webp/gallery/1.webp"), "Must have inline WebP comparison image");
-    assert.ok(text.includes("https://www.gstatic.com/webp/gallery/2.webp"), "Must have inline WebP comparison image 2");
-
-    // 2. The bottom section must NOT duplicate the inline images
-    if (text.includes("### 🖼️ Extracted Page Images")) {
-      const bottomSection = text.split("### 🖼️ Extracted Page Images")[1];
-      assert.ok(
-        !bottomSection.includes("https://www.gstatic.com/webp/gallery/1.webp"),
-        "Inline comparison image must not be duplicated in the bottom appendix"
+  if (!isOfflineMode()) {
+    await test("Image Deduplication: preserves contextual inline images and avoids bottom appendix duplicates", async () => {
+      // Test on Google's WebP gallery comparison page
+      const res = await fetchTool.execute(
+        "call_dedup_test",
+        { url: "https://developers.google.com/speed/webp/gallery1" },
+        undefined,
+        undefined,
+        mockCtx
       );
-    }
-  });
 
-  // Test 11: In-Process Multimodal Vision (Universal WebP -> PNG Conversion)
-  await test("Multimodal Vision: converts WebP to PNG in-process via Photon WASM without Chrome", async () => {
-    const res = await fetchTool.execute(
-      "call_vision_test",
-      { url: "https://www.gstatic.com/webp/gallery/2.webp" },
-      undefined,
-      undefined,
-      mockCtx
-    );
+      const text = res.content[0].text;
+      assert.ok(text.includes("WebP Gallery"), "Must retrieve WebP gallery page");
 
-    assert.equal(res.details?.isImage, true, "Must classify as image");
-    assert.equal(res.details?.usedBrowser, false, "Must NOT invoke Chrome for image conversion");
-    assert.equal(res.details?.contentType, "image/png", "Must convert WebP to image/png");
+      // 1. Comparison images are present inline in the article
+      assert.ok(text.includes("https://www.gstatic.com/webp/gallery/1.webp"), "Must have inline WebP comparison image");
+      assert.ok(text.includes("https://www.gstatic.com/webp/gallery/2.webp"), "Must have inline WebP comparison image 2");
 
-    const imgPart = res.content.find(c => c.type === "image");
-    assert.ok(imgPart, "Must contain multimodal image content part");
-    assert.equal(imgPart.mimeType, "image/png");
+      // 2. The bottom section must NOT duplicate the inline images
+      if (text.includes("### 🖼️ Extracted Page Images")) {
+        const bottomSection = text.split("### 🖼️ Extracted Page Images")[1];
+        assert.ok(
+          !bottomSection.includes("https://www.gstatic.com/webp/gallery/1.webp"),
+          "Inline comparison image must not be duplicated in the bottom appendix"
+        );
+      }
+    });
 
-    // Standard PNG magic signature in base64: \x89PNG = iVBORw0KGgo
-    assert.ok(imgPart.data.startsWith("iVBORw0KGgo"), "Converted bytes must start with valid PNG header");
-  });
+    // Test 11: In-Process Multimodal Vision (Universal WebP -> PNG Conversion)
+    await test("Multimodal Vision: converts WebP to PNG in-process via Photon WASM without Chrome", async () => {
+      const res = await fetchTool.execute(
+        "call_vision_test",
+        { url: "https://www.gstatic.com/webp/gallery/2.webp" },
+        undefined,
+        undefined,
+        mockCtx
+      );
+
+      assert.equal(res.details?.isImage, true, "Must classify as image");
+      assert.equal(res.details?.usedBrowser, false, "Must NOT invoke Chrome for image conversion");
+      assert.equal(res.details?.contentType, "image/png", "Must convert WebP to image/png");
+
+      const imgPart = res.content.find(c => c.type === "image");
+      assert.ok(imgPart, "Must contain multimodal image content part");
+      assert.equal(imgPart.mimeType, "image/png");
+
+      // Standard PNG magic signature in base64: \x89PNG = iVBORw0KGgo
+      assert.ok(imgPart.data.startsWith("iVBORw0KGgo"), "Converted bytes must start with valid PNG header");
+    });
+  }
 
   // =========================================================================
   // DOMAIN 4: Token Budgeting, UX & Live Regression

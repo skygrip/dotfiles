@@ -183,10 +183,9 @@ export async function runPermissionsGateTests() {
   });
 
   // ----------------------------------------------------
-  // Section 3: Workspace Boundary & Remote Coordination
+  // Section 3: Workspace Boundary Confinement
   // ----------------------------------------------------
   test("Workspace Boundary: local workspace resolution", () => {
-    delete process.env.PI_SSH_REMOTE_CWD;
     const root = getWorkspaceRoot();
     assert.equal(root, process.cwd());
 
@@ -195,19 +194,6 @@ export async function runPermissionsGateTests() {
     assert.equal(isOutsideWorkspace("../../other_workspace/file"), true);
     assert.equal(isOutsideWorkspace("~/.pi/agent/extensions"), true, "~/.pi/agent/extensions must resolve as outside project workspace");
     assert.equal(isOutsideWorkspace("$env:USERPROFILE/.pi/agent/extensions"), true, "$env:USERPROFILE/.pi/agent/extensions must resolve as outside project workspace");
-  });
-
-  test("Workspace Boundary: remote POSIX workspace resolution (PI_SSH_REMOTE_CWD)", () => {
-    process.env.PI_SSH_REMOTE_CWD = "/home/developer/sample_project";
-    assert.equal(getWorkspaceRoot(), "/home/developer/sample_project");
-
-    assert.equal(isOutsideWorkspace("src/index.ts"), false);
-    assert.equal(isOutsideWorkspace("/home/developer/sample_project/package.json"), false);
-    assert.equal(isOutsideWorkspace("/etc/nginx/nginx.conf"), true);
-    assert.equal(isOutsideWorkspace("/var/log/syslog"), true);
-    assert.equal(isOutsideWorkspace("../../unauthorized/secret"), true);
-
-    delete process.env.PI_SSH_REMOTE_CWD;
   });
 
   // ----------------------------------------------------

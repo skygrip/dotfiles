@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { pathToFileURL } from "node:url";
 
 /**
  * Lean URL Fetch & Web Extraction Extension for Pi Coding Agent
@@ -87,22 +88,17 @@ function getInitialEngine(pi?: ExtensionAPI): FetchEngine {
 let currentEngine: FetchEngine = getInitialEngine();
 
 /**
- * Resolves npm packages from ~/.pi/agent/npm/node_modules or standard node resolution.
+ * Resolves npm packages from Pi's isolated package directory (~/.pi/agent/npm/).
  * Strictly adheres to Pi's isolated package architecture without touching global npm.
  */
 function loadDependency<T = any>(name: string): T {
   try {
-    const req = createRequire(import.meta.url);
-    return req(name);
-  } catch {}
-
-  try {
     const piNpmDir = path.join(os.homedir(), ".pi", "agent", "npm", "package.json");
     const piReq = createRequire(piNpmDir);
     return piReq(name);
-  } catch {}
-
-  throw new Error(`Failed to load '${name}'. Please install it in ~/.pi/agent/npm/ (e.g. npm i ${name})`);
+  } catch {
+    throw new Error(`Failed to load '${name}'. Please install it via 'npm --prefix ~/.pi/agent/npm install'`);
+  }
 }
 
 let cachedReadability: any = null;
@@ -137,23 +133,16 @@ let cachedGotScraping: any = null;
 
 /**
  * Lazy loader for got-scraping anti-bot HTTP client (ESM module).
- * Loads directly via dynamic import to avoid CJS require() startup errors.
+ * Loads directly via dynamic import from Pi's isolated npm directory (~/.pi/agent/npm/).
  */
 async function getGotScraping() {
   if (!cachedGotScraping) {
     try {
-      const mod = await import("got-scraping");
+      const directPath = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules", "got-scraping", "dist", "index.js");
+      const fileUrl = pathToFileURL(directPath).href;
+      const mod = await import(fileUrl);
       cachedGotScraping = mod.gotScraping || mod.default || mod;
     } catch {}
-
-    if (!cachedGotScraping) {
-      try {
-        const directPath = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules", "got-scraping", "dist", "index.js");
-        const fileUrl = new URL(`file:///${directPath.replace(/\\/g, "/")}`).href;
-        const mod = await import(fileUrl);
-        cachedGotScraping = mod.gotScraping || mod.default || mod;
-      } catch {}
-    }
   }
   return cachedGotScraping;
 }
@@ -585,6 +574,7 @@ function resetCdpIdleTimer(): void {
   cdpIdleTimer = setTimeout(() => {
     disconnectCdpBrowser().catch(() => {});
   }, CDP_IDLE_TIMEOUT_MS);
+  cdpIdleTimer.unref?.();
 }
 
 export async function disconnectCdpBrowser(): Promise<void> {
@@ -1030,7 +1020,8 @@ let fetchDialogQueue: Promise<void> = Promise.resolve();
 async function promptPermission(
   ctx: ExtensionContext,
   title: string,
-  message: string
+  message: string,
+  signal?: AbortSignal
 ): Promise<boolean> {
   if (!gateEnabled) return true;
 
@@ -1047,7 +1038,8 @@ async function promptPermission(
 
   try {
     await previousTurn;
-    return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS });
+    if (signal?.aborted) return false;
+    return await ctx.ui.confirm(title, message, { timeout: CONFIRM_TIMEOUT_MS, signal });
   } catch {
     return false;
   } finally {
@@ -1079,6 +1071,12 @@ export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
   pi.registerCommand("fetch-gate", {
     description: "Toggle or inspect URL fetch permission gate (usage: /fetch-gate [status|on|off|toggle])",
+    getArgumentCompletions(prefix: string) {
+      const items = ["status", "on", "off", "toggle"];
+      return items
+        .filter((i) => i.startsWith(prefix.toLowerCase()))
+        .map((i) => ({ value: i, label: i }));
+    },
     handler: async (args, ctx) => {
       const sub = (args || "").trim().toLowerCase();
 
@@ -1103,6 +1101,12 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("fetch-engine", {
     description: "Set or inspect fetch engine (usage: /fetch-engine [auto|chrome|got-scraping|status])",
+    getArgumentCompletions(prefix: string) {
+      const items = ["auto", "chrome", "got-scraping", "status"];
+      return items
+        .filter((i) => i.startsWith(prefix.toLowerCase()))
+        .map((i) => ({ value: i, label: i }));
+    },
     handler: async (args, ctx) => {
       const sub = (args || "").trim().toLowerCase();
 
@@ -1158,7 +1162,8 @@ export default function (pi: ExtensionAPI) {
       const allowed = await promptPermission(
         ctx,
         "🌐 Fetch URL Confirmation",
-        `Allow agent to fetch remote content from:\n\n${targetUrl}\n\n(Auto-cancels in 30s)`
+        `Allow agent to fetch remote content from:\n\n${targetUrl}\n\n(Auto-cancels in 30s)`,
+        signal
       );
 
       if (!allowed) {

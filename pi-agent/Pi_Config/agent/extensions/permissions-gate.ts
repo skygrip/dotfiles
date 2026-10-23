@@ -97,7 +97,7 @@ export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   },
   {
     name: "Filesystem Destruction",
-    regex: /(?:\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r|-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r[a-zA-Z]*)\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])|\b(?:Remove-Item|ri|rmdir)\b(?=.*(?:-(?:recurse|r)\b|\/s\b))(?=.*(?:-(?:force|f)\b|\/q\b))(?=.*(?:[a-zA-Z]:[\\\/]?$|[a-zA-Z]:[\\\/](?:\*|\s|$)|~(?:\s|$|[\\\/]\*)|[\/\\](?:\s|$|\*)|\$env:(?:SystemDrive|USERPROFILE|HOME)|\%(?:SystemDrive|USERPROFILE)\%|\$HOME)).*)/i,
+    regex: /(?:\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r|-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r[a-zA-Z]*)\s+(?:[\/\\]|~|\$HOME|\%USERPROFILE\%|[a-zA-Z]:[\\\/])|\b(?:Remove-Item|ri|rmdir|del|rd|erase)\b(?=.*(?:-(?:recurse|r)\b|\/s\b))(?=.*(?:-(?:force|f)\b|\/q\b))(?=.*(?:[a-zA-Z]:[\\\/]?$|[a-zA-Z]:[\\\/](?:\*|\s|$)|~(?:\s|$|[\\\/]\*)|[\/\\](?:\s|$|\*)|\$env:(?:SystemDrive|USERPROFILE|HOME)|\%(?:SystemDrive|USERPROFILE)\%|\$HOME)).*)/i,
     reason: "Root or home directory recursive forceful removal is forbidden."
   },
   {
@@ -150,8 +150,9 @@ export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
 export const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
 
 export const CREDENTIAL_FILE_PATTERNS = [
-  /(?:^|[\\\/])\.env(?:\.local|\.production|\.development|\.staging|\.test|\.example)?$/i,
-  /(?:^|[\\\/])\.ssh(?:[\\\/](?:id_rsa|id_ed25519|id_ecdsa|id_dsa|authorized_keys|known_hosts|config))?$/i,
+  /(?:^|[\\\/])\.env(?:\.[\w-]+)?$/i,
+  /(?:^|[\\\/])\.ssh(?:[\\\/].*)?$/i,
+  /(?:^|[\\\/])(?:id_rsa|id_ed25519|id_ecdsa|id_dsa)$/i,
   /(?:^|[\\\/])\.aws(?:[\\\/](?:credentials|config))?$/i,
   /(?:^|[\\\/])\.kube(?:[\\\/]config)?$/i,
   /(?:^|[\\\/])\.git-credentials$/i,
@@ -160,7 +161,7 @@ export const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/])\.netrc$/i,
   /(?:^|[\\\/])\.gnupg(?:[\\\/]|$)/i,
   /(?:^|[\\\/])\.docker[\\\/]config\.json$/i,
-  /(?:^|[\\\/])(?:\.bash_history|\.zsh_history|\.ps_history)$/i,
+  /(?:^|[\\\/])(?:\.bash_history|\.zsh_history|\.ps_history|ConsoleHost_history\.txt)$/i,
   /(?:^|[\\\/])(?:etc[\\\/]shadow|etc[\\\/]master\.passwd)$/i,
   /(?:^|[\\\/]).*\.(?:pem|key|p12|pfx)$/i,
   /(?:^|[\\\/])(?:service_account|client_secret).*\.json$/i
@@ -169,18 +170,6 @@ export const CREDENTIAL_FILE_PATTERNS = [
 export function isOutsideWorkspace(targetPath: string): boolean {
   if (!targetPath) return false;
   const workspaceRoot = getWorkspaceRoot();
-  const isRemote = Boolean(process.env.PI_SSH_REMOTE_CWD);
-
-  if (isRemote) {
-    let p = targetPath.trim().replace(/\\/g, "/");
-    if (p === "~" || p.startsWith("~/")) {
-      const remoteHome = path.posix.dirname(workspaceRoot);
-      p = remoteHome + p.slice(1);
-    }
-    const resolved = path.posix.resolve(workspaceRoot, p);
-    const normRoot = path.posix.normalize(workspaceRoot);
-    return !resolved.startsWith(normRoot + "/") && resolved !== normRoot;
-  }
 
   // Local filesystem path resolution with ~ and drive normalization
   const normTarget = normalizePath(targetPath);
@@ -220,9 +209,6 @@ export function isSensitiveSystemPath(targetPath: string): boolean {
 }
 
 export function getWorkspaceRoot(): string {
-  if (process.env.PI_SSH_REMOTE_CWD) {
-    return process.env.PI_SSH_REMOTE_CWD;
-  }
   return process.cwd();
 }
 
@@ -256,8 +242,6 @@ function normalizePath(targetPath: string): string {
   }
 }
 
-
-
 /**
  * Checks if a target path is located inside the global Pi or Agent skills directory.
  * Handles ~ expansion, Windows/POSIX slashes, Git Bash drive prefixes, and environment variables.
@@ -276,7 +260,8 @@ export function isGlobalSkillPath(targetPath: string): boolean {
     .replace(/^~(?:\/|$)/, `${home}/`)
     .replace(/^\$home(?:\/|$)/, `${home}/`)
     .replace(/^%userprofile%(?:\/|$)/, `${home}/`)
-    .replace(/^\$env:userprofile(?:\/|$)/, `${home}/`);
+    .replace(/^\$env:userprofile(?:\/|$)/, `${home}/`)
+    .replace(/^\$env:home(?:\/|$)/, `${home}/`);
 
   // Normalize MSYS2 / Git Bash /c/Users -> C:/Users
   if (process.platform === "win32" && /^\/([a-z])\//i.test(norm)) {
@@ -291,12 +276,15 @@ export function isGlobalSkillPath(targetPath: string): boolean {
 
   const piSkills = `${home}/.pi/agent/skills`;
   const agentsSkills = `${home}/.agents/skills`;
+  const geminiSkills = `${home}/.gemini/config/skills`;
 
   return (
     norm === piSkills ||
     norm.startsWith(`${piSkills}/`) ||
     norm === agentsSkills ||
-    norm.startsWith(`${agentsSkills}/`)
+    norm.startsWith(`${agentsSkills}/`) ||
+    norm === geminiSkills ||
+    norm.startsWith(`${geminiSkills}/`)
   );
 }
 
@@ -356,6 +344,12 @@ export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
   pi.registerCommand("permissions-gate", {
     description: "Toggle or inspect permissions gate (usage: /permissions-gate [status|on|off|toggle])",
+    getArgumentCompletions(prefix: string) {
+      const items = ["status", "on", "off", "toggle"];
+      return items
+        .filter((i) => i.startsWith(prefix.toLowerCase()))
+        .map((i) => ({ value: i, label: i }));
+    },
     handler: async (args, ctx) => {
       const sub = (args || "").trim().toLowerCase();
 
@@ -378,8 +372,6 @@ export default function (pi: ExtensionAPI) {
       ctx.ui.notify(`Permissions Gate: ${stateText}`, gateEnabled ? "info" : "warning");
     }
   });
-
-
 
   // ----------------------------------------------------
   // 2. Event Hook: tool_call Interception

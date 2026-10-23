@@ -306,7 +306,7 @@ export async function runPromptCleanerTests() {
   // ----------------------------------------------------
   // Section 3: System Prompt Boilerplate Stripping
   // ----------------------------------------------------
-  await asyncTest("System Prompt Hygiene: strips 'Available tools:' text block", async () => {
+  await asyncTest("System Prompt Hygiene: strips <tools> and <docs> XML blocks", async () => {
     const registeredEvents = new Map();
     const mockPi = {
       on(event, handler) { registeredEvents.set(event, handler); }
@@ -316,30 +316,7 @@ export async function runPromptCleanerTests() {
     const beforeAgentStartHook = registeredEvents.get("before_agent_start");
     assert.ok(beforeAgentStartHook, "before_agent_start hook must be registered");
 
-    const dirtyPrompt = `# System Environment
-You are a coding assistant.
-
-Available tools:
-- read: Read file contents
-- write: Write file contents
-- edit: Make targeted changes
-- bash: Execute terminal commands
-
-In addition to the tools above, you may use external utilities.
-
-## Operational Rules
-- Never run cd.
-- Always emit path first.`;
-
-    const result = await beforeAgentStartHook({ systemPrompt: dirtyPrompt });
-
-    assert.ok(!result.systemPrompt.includes("Available tools:"), "Must strip 'Available tools:' block");
-    assert.ok(!result.systemPrompt.includes("In addition to the tools above"), "Must strip 'In addition to...' line");
-    assert.ok(result.systemPrompt.includes("## Operational Rules"), "Must preserve custom operational rules");
-    assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
-
-    // Also verify Pi 1.3.0 XML <tools> and <docs> block format is stripped
-    const pi13Prompt = `You are an expert coding assistant.
+    const xmlPrompt = `You are an expert coding assistant.
 
 <tools>
 - read: Read file
@@ -359,15 +336,16 @@ Pi documentation (read only when the user asks about pi itself):
 - Main documentation: C:\\Users\\username\\README.md
 </docs>`;
 
-    const result13 = await beforeAgentStartHook({ systemPrompt: pi13Prompt });
-    assert.ok(!result13.systemPrompt.includes("<tools>"), "Must strip Pi 1.3.0 <tools> block");
-    assert.ok(!result13.systemPrompt.includes("</tools>"), "Must strip Pi 1.3.0 </tools> block");
-    assert.ok(!result13.systemPrompt.includes("<docs>"), "Must strip Pi 1.3.0 <docs> block");
-    assert.ok(!result13.systemPrompt.includes("</docs>"), "Must strip Pi 1.3.0 </docs> block");
-    assert.ok(result13.systemPrompt.includes("<rules>"), "Must preserve rules section");
+    const result = await beforeAgentStartHook({ systemPrompt: xmlPrompt });
+    assert.ok(!result.systemPrompt.includes("<tools>"), "Must strip <tools> block");
+    assert.ok(!result.systemPrompt.includes("</tools>"), "Must strip </tools> block");
+    assert.ok(!result.systemPrompt.includes("<docs>"), "Must strip <docs> block");
+    assert.ok(!result.systemPrompt.includes("</docs>"), "Must strip </docs> block");
+    assert.ok(result.systemPrompt.includes("<rules>"), "Must preserve rules section");
+    assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
   });
 
-  await asyncTest("System Prompt Hygiene: normalizes Windows backslashes in documentation, context, and skills (Issue #8841)", async () => {
+  await asyncTest("System Prompt Hygiene: normalizes Windows backslashes in documentation, context, and skills", async () => {
     const registeredEvents = new Map();
     const mockPi = {
       on(event, handler) { registeredEvents.set(event, handler); }
@@ -418,7 +396,7 @@ Pi documentation (read only when the user asks about pi itself):
     assert.ok(!result.systemPrompt.includes("C:\\"), "No unnormalized C:\\ Windows drive paths should remain");
   });
 
-  test("Provider Request Hygiene: normalizes Windows backslashes in developer / system message payloads (Issue #8841)", () => {
+  test("Provider Request Hygiene: normalizes Windows backslashes in developer / system message payloads", () => {
     const registeredEvents = new Map();
     const mockPi = {
       on(event, handler) { registeredEvents.set(event, handler); }

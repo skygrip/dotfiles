@@ -18,7 +18,7 @@ export type SequentialThinkingParams = Static<typeof SequentialThinkingSchema>;
  * 
  * Purpose:
  * Provides an intermediate reasoning scratchpad for the model. This allows the model
- * (especially smaller, highly capable SOTA models like Gemma) to decompose complex,
+ * (especially models without native reasoning tokens) to decompose complex,
  * multi-step software engineering tasks, outline hypotheses, and reason step-by-step
  * before committing edits or executing commands.
  * 
@@ -28,7 +28,7 @@ export default function initExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "sequential_thinking",
     label: "Sequential Thinking",
-    description: "For Step-by-step reasoning, test hypotheses, or to plan multi-file changes before editing code or executing actions (e.g. diagnosing subtle race conditions or planning complex refactors).",
+    description: "Step-by-step reasoning, test hypotheses, or plan multi-file changes before editing code or executing actions (e.g. diagnosing subtle race conditions or planning complex refactors).",
     annotations: {
       readOnlyHint: true,
       idempotentHint: true,
