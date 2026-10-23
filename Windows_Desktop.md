@@ -273,7 +273,7 @@ Configure the following Host settings in the Parsec app:
 | [Jan](https://jan.ai/)                                               | winget install -e --id Jan.Jan                  |
 | [LM Studio](https://lmstudio.ai/)                                    | winget install -e --id ElementLabs.LMStudio     |
 | [Nvidia CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)   | winget install -e --id Nvidia.CUDA              |
-| [Pi Coding Agent](https://github.com/earendil-works/pi-coding-agent) | npm install -g @earendil-works/pi-coding-agent  |
+| [Pi Coding Agent](https://github.com/earendil-works/pi-coding-agent) | `irm https://pi.dev/install.ps1 \| iex`         |
 | [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)       |                                                 |
 | [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)           | winget install -e --id TopazLabs.TopazPhotoAI   |
 

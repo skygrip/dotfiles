@@ -23,10 +23,9 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `permissions-gate.ts`: Pre-execution security barriers intercepting dangerous commands (bash & powershell), secret credential exfiltration (`.env`, `.ssh`, API keys), and out-of-workspace file operations across `read`, `write`, `edit`, `grep`, `find`, and `ls`.
     *   `gemini-web-search.ts`: Grounded Google web search powered by Gemini API with source citations and standard tool annotations (`openWorldHint`, `readOnlyHint`).
     *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, Readability, and Turndown markdown parsing.
-    *   `prompt-cleaner.ts`: Strips prompt boilerplate (Pi 1.3.0 `<tools>` and `<docs>` tags, and legacy `Available tools:` blocks) and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
+    *   `prompt-cleaner.ts`: Strips prompt boilerplate (`<tools>` and `<docs>` blocks) and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
     *   `write-diff.ts`: Overrides native `write` tool using `createWriteToolDefinition` and dynamic `ctx.cwd`, rendering real-time syntax-highlighted unified diffs, new file previews, and no-change indicators.
     *   `ask-question.ts`: Interactive TUI-based decision dialogs with `model-only` exposure to prevent prompt bloat while remaining invokable.
-    *   `ssh.ts`: Multiplexed in-memory SSH2/SFTP sessions with remote path mapping, native diff rendering, and automatic `<cwd>` system prompt injection.
     *   `sequential-thinking.ts`: Step-by-step reasoning scratchpad with idempotent read-only tool annotations.
 *   **Workspace Skills (`skills/`)**: Checklists and instruction sets loaded via the `use` command.
     *   *Source Directory*: [Pi_Config/agent/skills/](./Pi_Config/agent/skills/)
@@ -57,15 +56,26 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
 
 #### Install Pi Coding Agent
 
-Install Pi globally using `npm`:
+Install Pi via the official managed installer:
 
+**Windows (PowerShell):**
+```powershell
+powershell -c "irm https://pi.dev/install.ps1 | iex"
+```
+
+**Bash / Zsh (Linux / macOS):**
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+To update Pi, its managed core runtime, and installed packages:
+```bash
+pi update --all
 ```
 
 #### Add Binaries to PATH
 
-Add `.pi\agent\bin` (`$HOME\.pi\agent\bin`) to your user PATH:
+The managed installer adds `~/.pi/agent/bin` (`$HOME\.pi\agent\bin`) to your user PATH automatically. If needed manually:
 
 **PowerShell (Windows):**
 
@@ -81,34 +91,44 @@ echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
 
 #### Install Extension Dependencies & Plugins
 
-Install runtime packages required by custom extensions (`ssh2` for `ssh.ts`, `turndown` and `got-scraping` for `fetch-url.ts`) and global plugins:
+All runtime packages required by custom extensions (`turndown`, `got-scraping`, `linkedom`, `@mozilla/readability`, `playwright-core`) are tracked in `Pi_Config/agent/npm/package.json`. Install them into Pi's isolated npm environment:
 
+**PowerShell (Windows):**
+```powershell
+npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
+```
+
+**Bash / Zsh (Linux / macOS):**
 ```bash
-cd ~/.pi/agent/npm
-npm install ssh2 turndown got-scraping
-pi install npm:pi-subagents
+npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit
 ```
 
 #### Syncing Skills, Extensions & Config
 
-To sync all skills, extensions, prompts, and configurations from `Pi_Config/agent/` to your global `~/.pi/agent` directory (and optionally Antigravity):
+To sync all skills, extensions, prompts, configurations, and extension dependencies from `Pi_Config/agent/` to your global `~/.pi/agent` directory (and optionally Antigravity):
 
 **Windows (PowerShell):**
 ```powershell
-# Sync everything to Pi Agent:
+# 1. Sync everything to Pi Agent:
 Copy-Item -Path ".\Pi_Config\agent\*" -Destination "$HOME\.pi\agent" -Recurse -Force
 
-# Sync portable skills to Antigravity:
+# 2. Sync portable skills to Antigravity:
 Copy-Item -Path ".\Pi_Config\agent\skills\*" -Destination "$HOME\.gemini\config\skills" -Exclude @("agent-config", "batch-automator") -Recurse -Force
+
+# 3. Ensure extension dependencies are installed:
+npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
 ```
 
 **Linux / macOS (Bash):**
 ```bash
-# Sync everything to Pi Agent:
-rsync -av --delete ./Pi_Config/agent/ "$HOME/.pi/agent/"
+# 1. Sync everything to Pi Agent (excluding node_modules):
+rsync -av --exclude="node_modules" --exclude="package-lock.json" ./Pi_Config/agent/ "$HOME/.pi/agent/"
 
-# Sync portable skills to Antigravity:
+# 2. Sync portable skills to Antigravity:
 rsync -av --exclude="agent-config" --exclude="batch-automator" ./Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
+
+# 3. Ensure extension dependencies are installed:
+npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit
 ```
 
 #### Running Extension Tests
@@ -127,7 +147,6 @@ node tests/run_all_tests.mjs ask
 node tests/run_all_tests.mjs gate search
 
 # Or run individual suites directly:
-node tests/test_ssh.mjs
 node tests/test_permissions_gate.mjs
 node tests/test_ask_question.mjs
 node tests/test_gemini_web_search.mjs
@@ -137,16 +156,22 @@ node tests/test_write_diff.mjs
 node tests/test_sequential_thinking.mjs
 ```
 
-#### Extension CLI Flags & Runtime Controls
+#### Extension CLI Flags, Environment Variables & Slash Commands
 
-Custom extensions register first-class command-line flags, environment variables, and slash commands:
+Custom extensions register first-class command-line flags, environment variables, and interactive slash commands with tab-completions:
 
-*   `--ssh <target>`: Connect to a remote Linux/macOS host over in-memory multiplexed SSH2/SFTP (`[user@]host[:port][/path]`). Use `/ssh [status|disconnect]` mid-session.
-*   `--no-permissions-gate` (or `PI_PERMISSIONS_GATE=0`): Disables safety confirmation prompts for automated/unattended runs (or toggle mid-session via `/permissions-gate`).
+##### CLI Flags & Environment Overrides
+*   `--no-permissions-gate` (or `PI_PERMISSIONS_GATE=0`): Disables safety confirmation prompts for automated/unattended runs.
 *   `--no-fetch-gate` (or `PI_FETCH_GATE=0`): Disables confirmation prompts when fetching remote web pages or assets via `fetch_url`.
-*   `--fetch-engine <auto|chrome|got-scraping>`: Selects the web content retrieval engine (`got-scraping`, Chrome CDP, or auto fallback).
+*   `--fetch-engine <auto|chrome|got-scraping>` (or `PI_FETCH_ENGINE`): Sets the content retrieval engine (`got-scraping`, Chrome CDP, or auto fallback).
 *   `--no-search-gate` (or `PI_SEARCH_GATE=0`): Disables confirmation prompts for grounded Gemini Google searches.
-*   `PI_GATES=0`: Master environment variable disabling all confirmation gates simultaneously for headless CI and batch automations.
+*   `PI_GATES=0`: Master environment variable disabling all confirmation gates simultaneously for headless CI, scripting, and batch automations.
+
+##### Interactive Slash Commands
+*   `/permissions-gate [status|on|off|toggle]`: Inspect or toggle dangerous command, secret file, and out-of-workspace confirmation gates mid-session.
+*   `/search-gate [status|on|off|toggle]`: Inspect or toggle Google Search grounding confirmation prompts mid-session (supports Tab autocompletion).
+*   `/fetch-gate [status|on|off|toggle]`: Inspect or toggle URL fetch confirmation prompts mid-session.
+*   `/fetch-engine [auto|chrome|got-scraping|status]`: Switch the active web retrieval engine dynamically mid-session.
 
 #### Configure External Editor & TUI Mode
 
@@ -160,9 +185,9 @@ Edit your global settings file (`~/.pi/agent/settings.json` or `%USERPROFILE%\.p
 ```
 
 *   `externalEditor`: Allows pressing `Ctrl+G` in the Pi TUI to edit prompts in VS Code (`--wait` ensures Pi pauses until you save and close).
-*   `tuiMode`: Starting in Pi 1.3.0, the default is `"fullscreen"`. Set to `"regular"` if you prefer the standard inline terminal layout (or use the `--tui-mode regular` flag).
+*   `tuiMode`: Defaults to `"fullscreen"`. Set to `"regular"` if you prefer the standard inline terminal layout (or use the `--tui-mode regular` flag).
 
-#### Configure MCP Servers (Pi 1.3.0+)
+#### Configure MCP Servers
 
 Pi has native built-in support for the [Model Context Protocol](https://modelcontextprotocol.io) (stdio and streamable HTTP).
 
@@ -171,7 +196,7 @@ Pi has native built-in support for the [Model Context Protocol](https://modelcon
 *   **Project-level**: `.pi/mcp.json` (Note: project configs require project trust via `pi --approve` or interactive confirmation).
 
 ##### Tool Exposure Modes
-In Pi 1.3.0+, MCP tools are **not** unconditionally dumped into the prompt by default. The `exposure` property controls how tools reach the model:
+MCP tools use the `exposure` property to control how tools reach the model:
 *   `"codemode"` *(default)*: Tools are callable from scripts or dynamically searched, saving prompt context.
 *   `"direct"`: Declared directly in the LLM system prompt like built-in tools (`read`, `bash`). **Recommended for primary tools like OpenSCAD.**
 *   `"deferred"`: Loaded on-demand when discovered via tool search.
