@@ -1,6 +1,6 @@
 ---
 name: duckdb
-description: Fast in-process SQL analytics on Parquet, CSV, JSONL, and SQLite (e.g. duckdb -json -bail -c SELECT * FROM data.parquet LIMIT 10).
+description: Default in-process SQL engine for analytics, aggregations, and joins across Parquet, CSV, JSONL, and SQLite files (e.g. duckdb -json -bail -c SELECT * FROM FILE.parquet LIMIT 10).
 ---
 
 # DuckDB CLI & SQL Capabilities Reference
@@ -9,104 +9,61 @@ In-process, vectorized SQL OLAP engine optimized for high-performance analytical
 
 ---
 
-## 1. Execution Primitives & Negative Guardrails
+## 1. Execution Primitives & Circuit Breakers
 
 Always execute non-interactively using `-c` with `-bail` (abort immediately on SQL error) and `-json` (for structured agent ingestion):
 
-| Flag / Parameter | Purpose | Agent Syntax |
+| Primitive / Trap | Operational Hazard & Behavior | Required Affirmative Protocol |
 | :--- | :--- | :--- |
-| `-json -bail -c "..."` | Headless execution returning structured JSON array; aborts on syntax error | `duckdb -json -bail -c "SELECT ..."` |
-| `-jsonlines -bail -c "..."` | Emits streaming line-delimited JSON (NDJSON) for memory-efficient agent pipelines | `duckdb -jsonlines -bail -c "SELECT ..."` |
-| `-markdown` / `-table` / `-box` | Direct ASCII/Markdown table output for terminal inspection | `duckdb -markdown -c "SELECT ..."` |
-| `-safe` | Disables arbitrary filesystem write and dynamic extension loads (sandboxing) | `duckdb -safe -json -c "SELECT ..."` |
-| `-readonly` | Prevents database lock contention on active SQLite / DuckDB files | `duckdb -readonly -json -bail -c "..."` |
-| `Single Quotes` | File paths MUST use single quotes (`'data.parquet'`), not double quotes | `FROM 'data.parquet'` |
-| `LIMIT 25` | Bound output on exploratory queries to prevent terminal buffer overflow | Always append `LIMIT 25` |
-| `Memory Budget` | Cap memory allocation and threads to prevent OOM kills in subshells | `SET max_memory = '4GB'; SET threads = 4;` |
+| **Interactive Shell Hang** | Invoking bare `duckdb` opens an interactive TUI that hangs subshells | Always execute headless with `duckdb -json -bail -c "SQL"` |
+| **Streaming Output** | Loading multi-million row arrays into memory overflows subshell buffers | Use `duckdb -jsonlines -bail -c "SQL"` for streaming line-delimited records |
+| **Terminal Inspection** | Raw JSON is token-heavy when inspecting schema or statistics directly | Use `duckdb -markdown -c "SQL"` for compact terminal tables |
+| **Double-Quoted Path Trap** | Double quotes in SQL (`"data.parquet"`) parse as table or column identifiers | Always wrap file paths in single quotes: `FROM 'data.parquet'` |
+| **Unbounded Query Buffer** | Unbounded full-file queries crash terminal buffers and subshell memory | Always append `LIMIT 25` to exploratory queries |
+| **Out-Of-Memory (OOM) Circuit Breaker** | Analytical joins or large aggregations exceeding subshell RAM trigger OOM crash | If memory error occurs, prepend: `SET max_memory = '4GB'; SET temp_directory = '/tmp/duckdb.tmp';` |
 
 ---
 
-## 2. Zero-Ingestion Input Formats & Storage Engines Matrix
+## 2. Ingest Formats & Storage Engines Matrix
 
 DuckDB natively queries structured, semi-structured, geospatial, and database files in-place with transparent decompression:
 
 | Category | File Formats / Extensions | Engine Slicing & Scan Functions | Key Parameters & Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Columnar / Tabular** | `.parquet`, `.arrow`, `.feather` | Direct `FROM 'path'`, `read_parquet()` | Predicate pushdown (row group skipping), min/max stats, column projection, `hive_partitioning = true`. |
-| **Delimited Text** | `.csv`, `.tsv`, `.psv`, `.txt` | Direct `FROM 'path'`, `read_csv()` | Multi-threaded parallel sniffer; auto-detects delimiter, header, types; handles `lazy_quotes = true`. |
-| **Semi-Structured** | `.json`, `.jsonl`, `.ndjson` | Direct `FROM 'path'`, `read_json_auto()` | Schema inference, nested struct/list conversion, arrow extraction (`->` / `->>`). |
-| **Compressed Streams** | `.gz`, `.zst`, `.bz2`, `.lz4` | Direct `FROM 'file.<ext>.<comp>'` | Transparent in-stream decompression without extracting to disk. |
+| **Columnar / Tabular** | `.parquet`, `.arrow`, `.feather` | Direct `FROM 'PATH'`, `read_parquet()` | Predicate pushdown (row group skipping), min/max stats, column projection, `hive_partitioning = true`. |
+| **Delimited Text** | `.csv`, `.tsv`, `.psv`, `.txt` | Direct `FROM 'PATH'`, `read_csv()` | Multi-threaded parallel sniffer; auto-detects delimiter, header, types; handles `lazy_quotes = true`. |
+| **Semi-Structured** | `.json`, `.jsonl`, `.ndjson` | Direct `FROM 'PATH'`, `read_json_auto()` | Schema inference, nested struct/list conversion, arrow extraction (`->`, `->>`). |
+| **Compressed Streams** | `.gz`, `.zst`, `.bz2`, `.lz4` | Direct `FROM 'events.csv.gz'` | Transparent in-stream decompression without extracting to disk. |
 | **Data Lake Tables** | Apache Iceberg, Delta Lake | `iceberg_scan()`, `delta_scan()` | Metadata & manifest parsing, snapshot time-travel (`iceberg`, `delta` extensions). |
-| **Spreadsheets & GIS** | `.xlsx`, `.geojson`, `.shp`, `.gpkg` | `st_read('file', layer='...')` | Direct Excel worksheet and GIS layer reads (`spatial` extension). |
-| **Attached Databases** | `.sqlite`, `.db`, PostgreSQL, MySQL | `ATTACH 'conn_str' AS db (TYPE ...)` | Live cross-engine joins across external databases in a single SQL query (`ATTACH`). |
-| **Remote Object Stores**| `https://`, `s3://`, `gcs://`, `azure://`, `hf://` | `httpfs`, `azure`, `hf` extensions | HTTP range requests (downloads only requested column byte ranges via DuckDB Secret Manager). |
+| **Spreadsheets & GIS** | `.xlsx`, `.geojson`, `.shp`, `.gpkg` | `st_read('file.geojson', layer='layer')` | Direct Excel worksheet and GIS layer reads (`spatial` extension). |
+| **Attached Databases** | `.sqlite`, `.db`, PostgreSQL, MySQL | `ATTACH 'database.sqlite' AS db (TYPE SQLITE)` | Live cross-engine joins across external databases in a single SQL query (`ATTACH`). |
+| **Remote Object Stores** | `https://`, `s3://`, `gcs://`, `hf://` | `httpfs`, `azure`, `hf` extensions | HTTP range requests (downloads only requested column byte ranges via Secret Manager). |
 
 ---
 
-## 3. SQL Dialect Capabilities & Syntax Flags Matrix
+## 3. SQL Dialect & Analytical Superpowers Matrix
 
-DuckDB implements modern "Friendly SQL" shortcuts and extensions:
+DuckDB implements modern analytical extensions, window filters, vector math, and zero-copy export:
 
-| Category | Supported Dialect Capability | Syntax Pattern | Behavioral Rule / Equivalence |
+| Category | Dialect Feature | Syntax Pattern | Behavioral Rule / Purpose |
 | :--- | :--- | :--- | :--- |
-| **Projection** | Column Exclusion | `SELECT * EXCLUDE (col_a, col_b)` | Removes specified columns from wildcard projection (BigQuery-style). |
-| | Column Replacement | `SELECT * REPLACE (expr AS col_a)` | In-place transformation of existing column in wildcard output. |
-| | Dynamic Column Sets | `COLUMNS('regex_pattern')` | Matches and applies expressions across columns by regex or lambda `COLUMNS(c -> c LIKE '%_amt')`. |
-| **Clauses** | `FROM`-First Syntax | `FROM 'data.parquet' WHERE ...` | Omits `SELECT *` as default projection. |
-| | Automated Grouping | `GROUP BY ALL`, `ORDER BY ALL` | Auto-detects and groups/orders by all non-aggregated columns. |
-| | Window Filtering | `QUALIFY <window_condition>` | Filters window function results directly without subqueries/CTEs (Snowflake-style). |
-| **Joins** | Temporal Predecessor | `ASOF JOIN ... ON t.ts >= q.ts` | Nearest preceding timestamp match for time-series / event streams. |
-| | Set Membership Joins | `SEMI JOIN`, `ANTI JOIN`, `POSITIONAL JOIN` | Optimized existence / non-existence and index-matched row joins. |
-| **Reshaping** | Pivot (Wide) | `PIVOT tbl ON col USING sum(val) GROUP BY row_col` | Direct keyword pivot without manual `CASE WHEN` aggregation. |
-| | Unpivot (Long) | `UNPIVOT tbl ON c1, c2 INTO NAME k VALUE v` | Melts wide columns into key/value rows. |
-| **Multi-File Scan** | Schema Evolution | `read_*(..., union_by_name = true)` | Merges files with differing or reordered schemas; fills missing keys with `NULL`. |
-| | File Lineage | `read_*(..., filename = true)` | Injects origin filepath as a virtual column on every row. |
-| | Hive Partitions | `read_parquet('year=*/...', hive_partitioning = true)` | Parses partition directories into virtual columns. |
-| **Sampling** | Statistical Subsetting | `USING SAMPLE 10% (bernoulli \| reservoir)` | Instant sampling without full table scan. |
-| **Logic & Types** | Null-Safe Equality | `a IS NOT DISTINCT FROM b` | Evaluates `NULL = NULL` as `TRUE` (joins/filters). |
-| | String Slicing | `str[1:3]` (1-based), `str[-4:]` (negative index) | Python-style string and list bracket slicing. |
-| | Trailing Commas | `SELECT a, b, FROM ...` | Trailing commas permitted in `SELECT`, `GROUP BY`, and structs. |
-| | SQL Macros | `CREATE MACRO name(args) AS <expr>` | User-defined scalar and parameterized `TABLE` macros (`CREATE MACRO m() AS TABLE ...`). |
+| **Projection** | Column Exclusion / Replacement | `SELECT * EXCLUDE (col_a) REPLACE (expr AS col_b)` | Modifies wildcard projection without listing all columns. |
+| | Dynamic Column Sets | `COLUMNS('regex_pattern')` | Matches and applies expressions across columns by regex or lambda. |
+| **Friendly Clauses** | `FROM`-First Syntax | `FROM 'data.parquet' WHERE status = 'err'` | Omits `SELECT *` as default projection. |
+| | Auto Group & Window Filter | `GROUP BY ALL`, `QUALIFY row_number() OVER (...) = 1` | Automatically groups non-aggregates; filters window functions without CTEs. |
+| **Joins & Reshape** | Temporal & Positional Joins | `ASOF JOIN ... ON t.ts >= q.ts`, `PIVOT`, `UNPIVOT` | Nearest timestamp match for time-series; direct declarative pivot/unpivot. |
+| **Multi-File Scan** | Schema Evolution & Lineage | `read_parquet('*.parquet', union_by_name = true, filename = true)` | Merges drifting schemas with null-fill and injects origin file path. |
+| **JSON Extraction** | Arrow Operators | `payload->'$.user.id'`, `payload->>'$.user.name'` | `->` returns JSON struct/array; `->>` returns unquoted VARCHAR. |
+| **Array & Vector** | Vector Similarity (AI) | `array_cosine_similarity(v1, v2)` | Fast cosine similarity across vector embeddings (`FLOAT[N]`). |
+| **Profiling & Stats** | Statistical Introspection | `SUMMARIZE SELECT * FROM 'data.parquet';` | Computes column types, null %, distinct count, avg, stddev in 1 pass. |
+| **Partitioned Export**| Hive Partitioned Export | `COPY (SELECT * FROM tbl) TO 'dir/' (FORMAT PARQUET, COMPRESSION ZSTD, PARTITION_BY (dt))` | Streams query results into compressed partitioned directory. |
 
 ---
 
-## 4. Built-in Function Families & AI Superpowers
-
-| Family | Function / Operator | Capabilities & Usage |
-| :--- | :--- | :--- |
-| **JSON Extraction** | `->` (Extracts `JSON` / Struct) | 0-based array index or path extraction: `payload->'$.user.id'`, `items->0`. |
-| | `->>` (Extracts `VARCHAR`) | Scalar unquoted text extraction: `payload->>'$.user.name'`. |
-| **Array Expansion** | `UNNEST(list_or_struct)` | Expands multi-value arrays or structs into discrete relational rows (Postgres-style). |
-| **List Lambdas** | `list_transform(list, x -> expr)` | Maps expression over list elements: `list_transform(nums, x -> x * 2)`. |
-| | `list_filter(list, x -> bool_expr)` | Filters list elements by predicate: `list_filter(tags, t -> t LIKE 'sec_%')`. |
-| | `list_reduce(list, (acc, x) -> expr)` | Folds list into aggregate value. |
-| | `list_sort()`, `list_slice()`, `list_concat()` | Vectorized list manipulation utilities. |
-| **Vector Math (AI)** | `array_cosine_similarity(v1, v2)` | Cosine similarity across fixed-size vector embeddings (`FLOAT[N]`). |
-| | `array_dot_product(v1, v2)` | Dot product across vector arrays. |
-| | `array_distance(v1, v2)` | Euclidean distance ($L_2$ norm) across vector embeddings. |
-| **Full-Text Search** | `PRAGMA create_fts_index(...)` | Inverted index creation for BM25 ranking (`fts` extension). |
-| | `fts_main_<table>.match_bm25(...)` | Computes BM25 relevance score over indexed text. |
-
----
-
-## 5. Schema Introspection, Profiling & Export Flags
-
-| Task | Command / SQL | Purpose |
-| :--- | :--- | :--- |
-| **Full Statistical Profiling** | `SUMMARIZE SELECT * FROM 'file.parquet';` | Computes column types, min, max, null %, distinct count, avg, stddev, and quartiles in 1 pass. |
-| **Schema & Table Info** | `DESCRIBE SELECT * FROM 'file.parquet';`<br/>`PRAGMA table_info('file.parquet');` | Column data types, nullability, and default metadata. |
-| **Parquet Internals** | `SELECT * FROM parquet_metadata('file.parquet');`<br/>`SELECT * FROM parquet_schema('file.parquet');` | Row groups, column encodings, uncompressed/compressed sizes, and min/max statistics. |
-| **Execution Profiling** | `EXPLAIN ANALYZE SELECT ...;` | Detailed physical operator tree with memory usage and CPU time per stage. |
-| **Partitioned Parquet Export** | `COPY (...) TO 'dir/' (FORMAT PARQUET, COMPRESSION ZSTD, PARTITION_BY (...));` | Stream query results to ZSTD-compressed Hive-partitioned directory. |
-| **Compressed Stream Export** | `COPY tbl TO 'export.json.gz' (FORMAT JSON, COMPRESSION GZIP, ARRAY false);`<br/>`COPY tbl TO 'export.csv.zst' (FORMAT CSV, HEADER true, COMPRESSION ZSTD);` | Export to gzip JSONL or zstd CSV directly. |
-| **Out-of-Core Spill Config** | `SET max_memory = '4GB';`<br/>`SET temp_directory = '/tmp/duckdb.tmp';` | Prevents OOM by spilling intermediate hash joins and sorts to disk. |
-
----
-
-## 6. High-Leverage Composite Examples
+## 4. High-Leverage Composite Examples
 
 ```bash
-# 1. Multi-file JSONL / Parquet triage with QUALIFY, EXCLUDE, and lineage tracking
+# Stage 1: Multi-file Parquet triage with QUALIFY, EXCLUDE, and lineage tracking
 duckdb -json -bail -c "
   FROM read_parquet('logs/*/*.parquet', union_by_name=true, filename=true)
   SELECT * EXCLUDE (internal_hash),
@@ -116,7 +73,7 @@ duckdb -json -bail -c "
   LIMIT 25;
 "
 
-# 2. Out-of-core ZSTD-compressed Hive-partitioned export with memory ceiling
+# Stage 2: Out-of-core ZSTD-compressed Hive-partitioned export with row-count verification
 duckdb -bail -c "
   SET max_memory = '4GB';
   SET temp_directory = '/tmp/duckdb.tmp';
@@ -125,8 +82,9 @@ duckdb -bail -c "
     WHERE event_type IS NOT NULL
   ) TO 'lake/' (FORMAT PARQUET, COMPRESSION ZSTD, PARTITION_BY (service, date), OVERWRITE_OR_IGNORE true);
 "
+duckdb -bail -c "SELECT count(*) FROM 'lake/*/*.parquet';"
 
-# 3. Vector similarity search over document embeddings
+# Stage 3: Vector similarity search over document embeddings
 duckdb -json -bail -c "
   SELECT doc_id, title,
          array_cosine_similarity(embedding, [0.023, -0.045, 0.112, 0.089]::FLOAT[4]) AS similarity

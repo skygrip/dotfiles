@@ -1,150 +1,117 @@
 ---
 name: skill-authoring
-description: Standardized blueprint, directory layout, and archetype rules for creating high-density, token-efficient AI agent skills.
+description: Create, audit, and refactor agent SKILL.md files, references/, and scripts/ for 12B SLMs and frontier models using Primacy-Matrix-Recency layout and XML-safe frontmatter.
 ---
 
 # Agent Skill Authoring & Architecture Blueprint
 
-A definitive guide for designing, structuring, and optimizing AI agent skills across diverse tool domains. Enforces progressive disclosure, token efficiency, high-density capability matrices, cross-platform shell portability, and archetype-specific design patterns.
+Standardized architecture for authoring, auditing, and refactoring `SKILL.md` files that execute reliably across both small local agents (e.g., Gemma 4 12B) and SOTA frontier models (e.g., Gemini 4).
 
 ---
 
-## 1. Core Philosophy: Capability Flags vs. Verbose Tutorials
+## 1. Stage 1: Primacy Zone — Positional Layout & Authoring Guardrails
 
-Modern foundation models are pre-trained on programming languages, standard SQL dialects, POSIX tools, and major APIs. They do not need basic tutorials explaining fundamental concepts (e.g. what `WHERE` or `grep` does).
-
-### The Dialect & Hallucination Problem
-Models fail primarily due to **dialect uncertainty** (e.g., *"Does DuckDB support QUALIFY?"*, *"Does yq use strenv() or env()?"*, *"Does ast-grep use $VAR or $$$VAR?"*).
-
-### The Core Principles of Skill Design:
-1. **Capability Matrices over Tutorials:** Replace multi-page prose tutorials with compact, high-density reference tables detailing exact supported flags, keywords, and dialect behaviors.
-2. **2–3 High-Leverage Composite Examples:** Always include 2–3 real-world composite commands, prompts, or workflows showing how flags, quoting, and pipe chaining combine in practice to anchor execution.
-3. **Cross-Platform Shell Portability:** Ensure composite command examples use portable, non-conflicting quoting across PowerShell (`pwsh`) and POSIX shells (`bash`/`zsh`). Avoid ambiguous nested double-quotes that break subshell string interpolation.
-4. **Tool Fast-Paths First:** When a skill provides deterministic helper scripts in `scripts/` (e.g. `scripts/vt_summary.py` or `scripts/pii_analyzer.py`), document them in *Programs Used* and feature them as *Example 1* to minimize token waste and eliminate complex multi-step tool calls.
-5. **Single Working Memory vs. Modular Splitting:**
-   - **Keep Unified (High-Density Monolith ~120–250 lines):** When a domain requires multiple tight rules to co-occur in active memory to produce valid output (e.g. OpenSCAD SSA scoping + BOSL2 attachment tags + headless render flags; or Prompt Builder FACS Action Units + optics + lighting tokens). Avoid over-splitting tightly coupled rules into separate files, which causes "lazy retrieval" and hallucinations in smaller models.
-   - **Delegate to `references/` (Progressive Disclosure):** Strictly for massive secondary lookup dictionaries (e.g. 200+ raw API event schemas, exhaustive vendor field lists, historical changelogs) that are only consulted during deep forensic pivots.
-6. **Token Density over Arbitrary Line Budgets:** Eliminate conversational filler, redundant tool explanations, and textbook tutorials, but preserve 100% of the critical domain rules, negative guardrails, and syntax quirks.
-
----
-
-## 2. YAML Frontmatter & XML/Prompt Hygiene
-
-Agent harness prompt compilers (such as Pi Agent's `formatSkillsForPrompt()`) format skill manifests into `<available_skills>` XML blocks and apply standard XML escaping to frontmatter fields.
-
-> [!IMPORTANT]
-> **Zero XML-Sensitive Characters and Unquoted Colons in Frontmatter `description`:**
-> `SKILL.md` frontmatter `description` strings must **NEVER** contain single quotes (`'`), double quotes (`"`), angle brackets (`<`, `>`), ampersands (`&`), or colons followed by a space (`: `).
-> 
-> * **Why Quotes & Brackets:** When harness prompt builders run `escapeXml()`, quotes and brackets convert into literal entity strings (`&apos;`, `&quot;`, `&lt;`, `&gt;`, `&amp;`). Ingested into LLM context, smaller open-weights models (e.g. 12B/14B) copy these literally into generated code and shell calls, producing broken syntax like `bash(command="ast-grep run -p &quot;test&quot; -l typescript")`.
-> * **Why Colons (`: `):** In unquoted YAML frontmatters, a colon followed by a space is parsed as a nested mapping key delimiter, triggering `Nested mappings are not allowed in compact mappings` parser errors. Use words like `including`, `with`, or `by` instead.
-> * **Placeholders:** Use uppercase bare words (e.g., `FILE`, `DIR`, `PATTERN`, `LANG`, `IMAGE`) instead of angle brackets (`<file>`, `<dir>`).
-> * **Commands & Flags:** Omit wrapping quotes entirely (e.g., `Run ck literal, ck --hybrid query, or ck --sem concept`).
-> * **Conjunctions:** Use `and` instead of `&`.
-
-### Valid vs Invalid Description Examples:
-* ❌ **BAD:** `description: "Use 'ast-grep run -p \"...\" -l <lang>' or 'ast-grep run -r \"...\" -U'"`
-* ✅ **GOOD:** `description: Use ast-grep run -p PATTERN -l LANG for AST search, or ast-grep run -p PATTERN -r REPLACEMENT -U for safe AST rewrites.`
-* ❌ **BAD:** `description: Configure Pi Agent: modify AGENTS.md, APPEND_SYSTEM.md, extensions, and skills.`
-* ✅ **GOOD:** `description: Configure Pi Agent by modifying AGENTS.md, APPEND_SYSTEM.md, extensions, and skills.`
-
----
-
-## 3. Standard Multi-File Directory Layout
-
-Skills must strictly adhere to the standard multi-file layout:
-
-```text
-[skill-name]/
-├── SKILL.md              # Required: Main entry point, capability matrices, and 2-3 examples
-├── references/           # Optional: Heavy domain manuals, API catalogs, taxonomies (loaded on-demand)
-├── scripts/              # Optional: Deterministic helper scripts (Python, Bash, JS)
-├── examples/             # Optional: 30+ line code templates, extension boilerplates, sample configs
-└── assets/               # Optional: Schemas, binaries, test fixtures
-```
-
----
-
-## 4. The 5 Skill Archetypes & Structural Blueprints
-
-Do not force a single rigid format onto fundamentally different domains. Choose the archetype that fits the skill's operational purpose:
-
-### Archetype 1: Single / Multi-CLI Tools
-* **Target Skills:** `duckdb`, `yq`, `mlr`, `ast-grep`, `gh`, `snyk`, `vt-cli`, `docling`, `ck`
-* **Structural Flow:**
-  1. `## 1. Programs Used` (Include bundled `scripts/` fast-paths)
-  2. `## 2. Negative Guardrails & Headless Execution Safety` (Quoting, bounds, memory, exit codes)
-  3. `## 3. Supported Formats / Scan Engines Matrix`
-  4. `## 4. Dialect & Syntax Flags Matrix` (Operators, keywords, function families)
-  5. `## 5. High-Leverage Composite Examples` (Example 1 = Fast-path helper if present, followed by portable CLI one-liners)
-
-### Archetype 2: Multi-Tool Triage & Investigation Funnels
-* **Target Skills:** `pe-malware-triage`, `doc-malware-triage`, `pii-detection`, `log-analysis`
-* **Structural Flow:**
-  1. `## 1. Safety & Isolation Guardrails` (Quarantine, non-execution, temp directories)
-  2. `## 2. Investigation Funnel Pipeline Matrix` (Stage $\rightarrow$ Tool $\rightarrow$ Exact One-Liner $\rightarrow$ Finding Signal)
-  3. `## 3. Tool-Specific Capability & Flag Reference`
-  4. `## 4. Structured Output / Finding JSON Schema`
-  5. `## 5. High-Leverage Composite Triage Examples` (2–3 end-to-end investigation flows)
-
-### Archetype 3: Workflow, Planning & Process State Machines
-* **Target Skills:** `plan-execute`, `dotfiles-sync`, `batch-automator`, `agent-config`
-* **Structural Flow:**
-  1. `## 1. Process Overview & State Machine` (Mermaid flowchart of phases)
-  2. `## 2. Phase Transition & Circuit-Breaker Rules` (Execution rules, stopping conditions)
-  3. `## 3. Interactive User Confirmation Protocols` (Gating rules, review gates)
-  4. `## 4. Artifact & Plan Document Schema` (Living `PLAN.md` template or config matrix)
-  5. `## 5. High-Leverage Workflow Examples` (2–3 multi-phase execution scenarios)
-
-### Archetype 4: Declarative DSLs & Headless Compilers
-* **Target Skills:** `openscad`
-* **Structural Flow:**
-  1. `## 1. Headless Compiler & Render Matrix` (CLI flags, camera matrices, image sizes, export formats)
-  2. `## 2. Core DSL & Semantic Attachment Matrix` (Attachment anchors, tag-based booleans, differences)
-  3. `## 3. Negative Syntax Traps & Performance Guardrails` (Resolution LOD, SSA variable rules)
-  4. `## 4. High-Leverage Parametric Recipes` (2–3 complete CSG/BOSL2 component models)
-
-### Archetype 5: Generative Staging & Prompt Builders
-* **Target Skills:** `image-prompt-builder`
-* **Structural Flow:**
-  1. `## 1. Optical Staging & Optics Matrix` (Focal lengths, apertures, lighting setups, shot types)
-  2. `## 2. FACS Anatomical Mechanics Matrix` (Action Units, micro-expressions, facial tensions)
-  3. `## 3. Engine Dialect Modifiers` (Krea 2 RAW, ANIMA anime, Flux, Midjourney)
-  4. `## 4. Negative Prompt & Quality Guardrails`
-  5. `## 5. Exemplar Composite Prompt Stacks` (2–3 complete production-grade prompts)
-
----
-
-## 5. Diagram Standards: Native Mermaid Only
-
-> [!IMPORTANT]
-> **Zero ASCII Box Art:**
-> Never use ASCII character boxes (`┌`, `└`, `│`, `─`). They waste vertical context tokens, wrap awkwardly across terminal widths, and break markdown linters. Always use native **Mermaid diagrams** (`flowchart TD`, `sequenceDiagram`, `stateDiagram-v2`).
+Both 12B SLMs and frontier models exhibit a U-shaped attention curve ("Lost in the Middle"). Structure every `SKILL.md` using the **Primacy–Matrix–Recency Sandwich** and enforce the guardrails below:
 
 ```mermaid
 flowchart TD
-    INPUT["Input Source / Artifact"] --> ROUTER{"Archetype Router"}
-    ROUTER -->|CLI Engine| M1["Capability & Flag Matrix"]
-    ROUTER -->|Triage Funnel| M2["Funnel Pipeline Matrix"]
-    ROUTER -->|Agent Workflow| M3["Mermaid State Machine"]
-    M1 --> EXAMPLES["2–3 Composite Anchors (Portable Quoting)"]
-    M2 --> EXAMPLES
-    M3 --> EXAMPLES
+    TOP["Stage 1: Primacy Zone<br/>• XML-Clean YAML Frontmatter<br/>• Bundled scripts/ Fast-Paths<br/>• Guardrails & Positive Circuit Breakers"] --> MID["Stage 2: Reference Zone<br/>• Directory & Progressive Disclosure Matrix<br/>• 5 Skill Archetype Blueprints (≤4 cols, ≤20 rows)"]
+    MID --> BOT["Stage 3: Recency Zone<br/>• Canonical SKILL.md Skeleton<br/>• Deterministic Verification Checkpoint"]
 ```
+
+| Dimension | Operational Trap & Why It Fails on 12B / SOTA | Required Affirmative Rule & Syntax |
+| :--- | :--- | :--- |
+| **Induction-Head Safety** | Including broken code snippets or invalid flags in examples causes 12B induction heads to copy them verbatim into tool calls. | Describe traps strictly in plain English prose; ensure **100% of backticked spans are valid, executable syntax**. |
+| **Frontmatter XML Hygiene** | Single/double quotes, angle brackets, ampersands, or unquoted colons with spaces trigger XML entity escaping or YAML parser errors. | Write clean unquoted `description` strings with action verbs, file extensions, and bare uppercase tokens (`FILE`, `PATTERN`, `LANG`). |
+| **Split Placeholders** | Using uppercase placeholders or dummy words (foo, bar, example domains) inside bottom examples causes 12B literal echoing. | Use bare uppercase tokens (`FILE`, `LANG`) in frontmatter/tables, and **realistic domain paths** (`'logs/events.parquet'`, `suspect.exe`) in bottom examples. |
+| **Lexical Anchoring** | Swapping synonyms across sections (e.g., *Triage* vs. *Recon* vs. *Initial Scan*) causes 12B attention-head synonym drift. | Use the **exact same stage names** across Mermaid nodes, table headers, and `# Stage N:` example comments. |
+| **Table Geometry** | Wide 7+ column tables or 80-row monolithic tables cause horizontal token-alignment drift and middle-row amnesia in 12B models. | Cap Markdown tables at **$\le 4$ columns** and **$\le 20$ rows** per table. |
+| **Fast-Paths First** | Chaining 5 raw CLI flags from scratch increases 12B syntax hallucination risk and wastes multi-turn tokens. | Bundle deterministic helpers in `scripts/` (e.g., `uv run scripts/pe_summary.py suspect.exe`), list them in Section 1, and feature them as Example 1. |
+| **Circuit Breakers** | Leaving error recovery implicit or writing bare prohibitions causes 12B models to repeat failing commands in an infinite loop. | Frame recovery with positive projection: *"If command X exits with an error, immediately switch to command Y."* |
+| **Output Signal Hygiene** | Progress bars, ANSI color codes, and deeply nested pretty-printed JSON waste 30–50% of context tokens and accelerate context rot. | Enforce `--no-progress`, `--no-color`, `-q`; use `-markdown`, TSV, or `jq -r` when the LLM reads stdout directly, and `-json` when piping. |
+| **Output & Memory Bounds** | Unbounded table scans, full-file dumps, or uncapped in-memory joins overflow terminal buffers and subshell RAM. | Always append row/line bounds (`LIMIT 25`, `head -n 20`, `--limit 20`) and memory ceilings (`SET max_memory = '4GB';`). |
+| **Headless & Idempotent** | Interactive TUIs hang subshells; non-idempotent commands fail or duplicate state on agent retry turns. | Enforce headless flags (`-bail`, `--no-prompt`, `-U`) and retry-safe operations (`CREATE OR REPLACE`, `OVERWRITE_OR_IGNORE true`, `-Force`). |
+| **Verification Checkpoints** | Assuming exit code `0` means success fails when a command silently writes zero rows or empty artifacts. | Append a **1-line deterministic verification check** (row count, file hash, or preview render) at the end of mutating workflow examples. |
+| **Shell & Path Portability** | Double-quoted SQL file paths parse as column identifiers; nested double-quotes break across PowerShell and Bash. | Single-quote file paths inside SQL/DSLs (`FROM 'data.parquet'`) and use cross-platform quoting in shell blocks. |
+| **Diagram Policy & Hygiene** | Linear Mermaid diagrams in CLI tools waste 40–80 tokens on human theater without reasoning benefit; box-drawing characters break linters. | Reserve **Mermaid diagrams** strictly for **multi-path branching (triage funnels) and cyclic state machines (retry loops)**. For linear CLI tools, omit diagrams and use Markdown tables. Zero Unicode box characters. |
 
 ---
 
-## 6. Universal Do's and Don'ts Checklist
+## 2. Stage 2: Reference Zone — Directory & Archetype Matrices
 
-| Dimension | ✅ DO | ❌ DON'T |
+### Directory & Progressive Disclosure Matrix
+
+| Skill Path | Status | Token Budget & Progressive Disclosure Rule |
 | :--- | :--- | :--- |
-| **Frontmatter XML Hygiene** | Use bare uppercase placeholders (`FILE`, `DIR`) and unquoted CLI commands in `description`. | Use `'`, `"`, `<`, `>`, or `&` in frontmatter descriptions, which trigger XML entity escaping (`&quot;`, `&apos;`, `&lt;`). |
-| **Token Density** | Use compact Markdown tables for flags, operators, and parameters. | Write conversational paragraphs explaining basic computer science or SQL basics. |
-| **Fast-Paths** | List bundled `scripts/` helpers and prioritize them as Example 1. | Omit helper scripts or force models to reconstruct complex multi-step pipelines. |
-| **Shell Portability** | Write cross-platform shell commands that execute reliably in PowerShell and Bash. | Use ambiguous nested double-quotes that break string interpolation across shells. |
-| **Output Bounding** | Always enforce bounds on exploratory commands (`LIMIT 25`, `head -n 20`, `-I --limit 20`). | Emit unbounded commands that flood terminal buffers (`SELECT *`, `cat massive.log`). |
-| **Path Escaping** | Enforce single-quotes for file paths in SQL/APIs (`FROM 'file.parquet'`). | Use unquoted or double-quoted filenames in SQL clauses (`FROM "file.parquet"`). |
-| **Non-Interactive** | Enforce headless, non-interactive flags (`-bail`, `--no-prompt`, `-U`, `--approve`). | Invoke interactive TUIs or prompts (`lnav`, `snyk auth` without token, `sg -i` in scripts). |
-| **Media & Images** | Use lightweight placeholders (`--image-export-mode placeholder`). | Embed raw base64 data URIs (`data:image/png;base64,...`) which blow out context windows. |
-| **Code Bloat** | Move 30+ line code templates into `examples/` or `scripts/`. | Embed massive 200-line TypeScript or Python classes directly in `SKILL.md`. |
-| **File Structure** | Put secondary domain manuals into `references/<name>.md`. | Leave loose `.md` files cluttering the skill root folder. |
+| `SKILL.md` | **Required** | Co-locate all core flags, guardrails, workflow stages, and 2–3 composite examples in active memory to prevent 12B lazy retrieval. Offload deep reference catalogs to `references/`. |
+| `scripts/` | Optional | **Zero context cost until executed.** Bundle deterministic Python/Bash/JS helpers (`scripts/pe_summary.py`) and feature them as Example 1. |
+| `references/` | Optional | **Loaded on demand.** Offload deep vendor API catalogs or rare sub-workflows (`references/ghidra-headless.md`). Always state the exact trigger condition in `SKILL.md`. |
+| `examples/` | Optional | **Loaded on demand.** Store extensive boilerplate classes, config templates, or complex multi-file scaffolds outside `SKILL.md`. |
+| `assets/` | Optional | **Static resources.** Store JSON schemas, binary fixtures, or lookup dictionaries consumed by `scripts/`. |
+
+### 5 Skill Archetype Blueprints
+
+Select the archetype that matches the skill's domain. Every archetype follows the **Stage 1: Primacy Zone $\rightarrow$ Stage 2: Reference Zone $\rightarrow$ Stage 3: Recency Zone** progression:
+
+| Archetype | Target Skills | Required Section Progression (1:1 Lexical Anchors) | Recency Zone Deliverable |
+| :--- | :--- | :--- | :--- |
+| **1. Single / Multi-CLI Tools** | `uv`, `duckdb`, `yq`, `mlr`, `ast-grep`, `gh`, `snyk`, `semgrep`, `secret-scanning`, `vt-cli`, `docling`, `ck` | `1. Execution Primitives & Circuit Breakers` $\rightarrow$ `2. Formats / Engines Matrix` $\rightarrow$ `3. Dialect & Flags Matrix` $\rightarrow$ `4. High-Leverage Composite Examples`<br/>*(Omit Mermaid: linear CLI tools use Markdown tables to eliminate token bloat)* | Example 1 = `scripts/` fast-path; Examples 2–3 = bounded headless pipelines. |
+| **2. Multi-Tool Triage Funnels** | `pe-malware-triage`, `doc-malware-triage`, `pii-detection`, `log-analysis` | `1. Toolchain, Quarantine & Circuit Breakers` $\rightarrow$ `2. Investigation Funnel Matrix` (Mermaid Branching Tree + Table) $\rightarrow$ `3. Tool Flag Reference` $\rightarrow$ `4. Output Schema` $\rightarrow$ `5. Composite Triage Examples` | 2–3 end-to-end triage pipelines with `# Stage N:` comments matching Section 2. |
+| **3. Workflow State Machines** | `plan-execute`, `dotfiles-sync`, `batch-automator`, `agent-config` | `1. Process State Machine & Circuit Breakers` (Mermaid Cyclic State Machine) $\rightarrow$ `2. Confirmation & Dry-Run Gates` $\rightarrow$ `3. Artifact / Config Schema` $\rightarrow$ `4. Composite Workflow Examples` | Multi-phase execution blocks ending with a file-hash or diff verification step. |
+| **4. Declarative DSL Compilers** | `openscad` | `1. Headless Compiler, Guardrails & Render Matrix` $\rightarrow$ `2. Core DSL & Attachment Matrix` $\rightarrow$ `3. Parametric Recipes & Verification` | 2–3 parametric models followed by headless PNG render + visual inspection. |
+| **5. Generative Prompt Staging** | `image-prompt-builder` | `1. Quality Guardrails & Engine Modifiers` $\rightarrow$ `2. Optical Staging Matrix` $\rightarrow$ `3. FACS / Subject Matrix` $\rightarrow$ `4. Exemplar Composite Prompt Stacks` | 2–3 production-grade multi-layer prompts with negative prompt stacks. |
+
+---
+
+## 3. Stage 3: Recency Zone — Canonical `SKILL.md` Skeleton & Verification
+
+### Example 1: Canonical `SKILL.md` Skeleton
+
+````markdown
+---
+name: tool-name
+description: Action-oriented summary with file extensions and literal flags (e.g. tool-cli --json --bail FILE).
+---
+
+# Tool Name & 1-Sentence Operational Scope
+
+## 1. Execution Primitives, Fast-Paths & Circuit Breakers
+
+| Flag / Script / Rule | Operational Trap & Purpose | Required Affirmative Syntax |
+| :--- | :--- | :--- |
+| `uv run scripts/fast_summary.py` | Eliminates manual multi-step parsing errors | `uv run scripts/fast_summary.py logs/app.jsonl` |
+| `--json --bail --no-progress` | Prevents interactive hangs and spinner noise | `tool-cli --json --bail --no-progress FILE` |
+| **Error Circuit Breaker** | Prevents retry loops on corrupt records | If exit code != 0, switch to `tool-cli --salvage FILE` |
+
+## 2. Investigation Funnel & Capability Matrix
+
+```mermaid
+flowchart TD
+    IN["Input File"] --> DECIDE{"Format / Type"}
+    DECIDE -->|"JSONL / Stream"| S1["Stage 1: Fast Summary"]
+    DECIDE -->|"Structured / Log"| S2["Stage 2: Filtered Extraction"]
+```
+
+| Stage | Focus | Exact Command (`FILE` / `PATTERN`) | Finding Signal |
+| :--- | :--- | :--- | :--- |
+| **Stage 1: Fast Summary** | Schema & row stats | `uv run scripts/fast_summary.py FILE` | Identifies corrupt partitions |
+| **Stage 2: Filtered Extraction** | Bounded record slice | `tool-cli --json --bail -p PATTERN --limit 25 FILE` | Emits matching JSON records |
+
+## 3. High-Leverage Composite Examples
+
+```bash
+# Stage 1: Fast Summary using bundled helper script
+uv run scripts/fast_summary.py logs/auth_2026.jsonl
+
+# Stage 2: Filtered Extraction with bounded output and verification count
+tool-cli --json --bail --no-progress -p "status >= 500" --limit 25 logs/auth_2026.jsonl > errors.json
+jq 'length' errors.json
+```
+````
+
+### Example 2: Deterministic Verification Checkpoint
+
+```bash
+# Stage 3: Recency Zone — Deterministic Verification Checkpoint (XML-clean description, zero box chars)
+uv run -q --no-project python -c "import pathlib, re, sys; p = pathlib.Path('.agents/skills/skill-authoring/SKILL.md'); txt = p.read_text(encoding='utf-8'); desc = re.search(r'^description:\s*(.+)$', txt, re.M).group(1); bad_xml = re.findall(r'[\x22\x27<>&]|:\s', desc); bad_box = re.findall(r'[\u2500-\u257f]', txt); print(f'XML-unsafe: {bad_xml} | Box chars: {len(bad_box)}'); sys.exit(1 if bad_xml or bad_box else 0)"
+```

@@ -9,46 +9,46 @@ Guides agents on generating ready-to-run, isolated shell loops for human enginee
 
 ---
 
-## 1. Execution Policy & Headless Fail-Safe Guardrails
+## 1. Process State Machine & Circuit Breakers
 
-> [!IMPORTANT]
-> **Anti-Self-Execution Policy:**
-> **Do NOT execute bulk batch loops yourself in agent tool calls.** Inspect the workspace pattern, draft the single-purpose `pi -p` prompt, and provide the copy-paste PowerShell or Bash command for the **user to run in their own terminal**.
+```mermaid
+flowchart TD
+    A["Stage 1: Inspect Workspace & Scope Glob"] --> B["Stage 2: Canary Single-File Test"]
+    B --> C["Stage 3: Advise Isolated Git Branch"]
+    C --> D["Stage 4: Generate Shell Loop Template"]
+    D --> E["Stage 5: User Terminal Execution"]
+    E --> F["Stage 6: Diff & Verification Check"]
+```
 
-| Hallucination / Mistake | Why It Fails | Correct Protocol / Syntax |
+| Primitive / Trap | Operational Hazard & Behavior | Required Affirmative Protocol |
 | :--- | :--- | :--- |
-| Interactive `ask_question` call | Subshell hangs waiting for STDIN in headless mode | Always append `--exclude-tools ask_question` |
-| Version check on every iteration | Spawns npm registry network checks for every file | Export `PI_SKIP_VERSION_CHECK=1` before loop |
-| IPv6 DNS lookup stalls | Stalls Node.js network requests on certain systems | Export `NODE_OPTIONS="--dns-result-order=ipv4first"` |
-| Session file flooding | Creates hundreds of junk `.jsonl` session files on disk | Always pass `--no-session` |
-| Extension confirmation prompts | Prompts user on every iteration for local tools | Pass `--approve` (`-a`) |
-| Unbounded hang on single stall | Freezes entire multi-hour loop on one stalled API call | Add `90s` wall-clock timeout per iteration |
+| **Direct Agent Self-Execution** | Running bulk multi-file loops directly inside agent tool calls hits tool timeouts | Draft the loop command and present it to the human user to run in their own terminal |
+| **Interactive Question Hang** | Subshells hang indefinitely waiting for interactive user response | Always append `--exclude-tools ask_question` to headless calls |
+| **Per-Iteration Registry Lag** | Checking npm registry versions on every iteration wastes network time | Export `PI_SKIP_VERSION_CHECK=1` prior to executing loop |
+| **Session File Proliferation** | Creating hundreds of `.jsonl` transcript files clutters workspace | Always pass `--no-session` to headless loops |
+| **Stalled API Call Circuit Breaker**| Single unresponsive model query freezes multi-hour batch runs | Wrap execution in a 90-second timeout per iteration |
 
 ---
 
-## 2. Headless Loop Parameter Matrix
+## 2. Confirmation & Dry-Run Canary Gates
+
+Before delivering a 100+ file loop command, always enforce the **Canary Gate**:
+1. Run a single-file test: `pi -p --approve --no-session --tools "read,edit" "@src/canary.ts" "PROMPT"`.
+2. Inspect the resulting `git diff src/canary.ts` to confirm edits are minimal, accurate, and syntax-safe.
+3. Advise the user to create a clean branch before executing the full loop: `git checkout -b chore/batch-refactor`.
+
+---
+
+## 3. Headless Loop Parameter Matrix
 
 | Parameter / Flag | Type | Purpose & Behavior |
 | :--- | :--- | :--- |
 | `pi -p` | Headless binary | Non-interactive prompt execution mode. |
 | `--approve` (`-a`) | Flag | Auto-approves project-local extensions, tools, and prompts. |
 | `--no-session` | Flag | Disables session transcript persistence to disk. |
-| `--tools "read,edit,write"` | Allowlist | Restricts tool execution strictly to required operations (`edit` avoids full-file rewrites). |
+| `--tools "read,edit,write"` | Allowlist | Restricts tool execution strictly to required operations. |
 | `--exclude-tools ask_question` | Denylist | Strips interactive questioning tools from agent capabilities. |
-| `@<filepath>` | Target file | Injects file contents directly into fresh ~2,000-token micro-context. |
-
----
-
-## 3. Workflow State Machine
-
-```mermaid
-flowchart TD
-    A["1. Inspect Workspace & Confirm File Glob"] --> B["2. Draft Single-Purpose Micro-Prompt"]
-    B --> C["3. Advise Clean Git Branch: git checkout -b chore/batch-run"]
-    C --> D["4. Provide Ready-to-Run Shell Loop"]
-    D --> E["5. Human User Runs Loop in Terminal"]
-    E --> F["6. Verify Changes: git diff --stat && test suite"]
-```
+| `@FILE_PATH` | Target file | Injects file contents directly into fresh micro-context. |
 
 ---
 
@@ -58,55 +58,44 @@ flowchart TD
 
 #### Windows (PowerShell)
 ```powershell
+# Stage 1: Advise isolated branch and set headless execution environment
 git checkout -b chore/batch-refactor
 $env:PI_SKIP_VERSION_CHECK = "1"
 $env:PI_GATES = "0"
 $env:NODE_OPTIONS = "--dns-result-order=ipv4first"
 
+# Stage 2: Execute bounded sequential loop across target files
 Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object {
     $file = $_.FullName
-    Write-Host "➡️ Processing: $($_.Name)"
-    pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    Write-Host "Processing: $($_.Name)"
+    pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "Refactor deprecated fetch() calls to use apiClient.get(). Do not alter type signatures."
 }
+
+# Stage 3: Post-run verification
 git diff --stat
 ```
 
 #### Linux / macOS (Bash)
 ```bash
+# Stage 1: Advise isolated branch and set headless execution environment
 git checkout -b chore/batch-refactor
 export PI_SKIP_VERSION_CHECK=1
 export PI_GATES=0
 export NODE_OPTIONS="--dns-result-order=ipv4first"
 
+# Stage 2: Execute bounded sequential loop across target files
 find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
-    echo "➡️ Processing: $file"
-    timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
+    echo "Processing: $file"
+    timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "Refactor deprecated fetch() calls to use apiClient.get(). Do not alter type signatures."
 done
+
+# Stage 3: Post-run verification
 git diff --stat
 ```
 
 ---
 
 ### Template 2: Resumable Batch Loop with State File (`.batch_done.txt`)
-
-#### Windows (PowerShell)
-```powershell
-$doneFile = ".batch_done.txt"
-if (!(Test-Path $doneFile)) { New-Item $doneFile -ItemType File | Out-Null }
-$env:PI_SKIP_VERSION_CHECK = "1"
-$env:PI_GATES = "0"
-$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
-
-Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { 
-    $done = Get-Content $doneFile
-    $done -notcontains $_.FullName -and $_.FullName -notmatch "node_modules|\.git"
-} | ForEach-Object {
-    $file = $_.FullName
-    Write-Host "Processing: $($_.Name)..."
-    pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"
-    if ($LASTEXITCODE -eq 0) { Add-Content -Path $doneFile -Value $file }
-}
-```
 
 #### Linux / macOS (Bash)
 ```bash
@@ -117,30 +106,13 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 find src/ -name "*.ts" -not -path "*/node_modules/*" | while read -r file; do
     if grep -Fxq "$file" .batch_done.txt; then
-        echo "⏭️ Skipping: $file"
+        echo "Skipping already completed: $file"
         continue
     fi
-    echo "➡️ Processing: $file"
-    if timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "<USER_TASK_PROMPT_HERE>"; then
+    echo "Processing: $file"
+    if timeout 90s pi -p --approve --no-session --tools "read,edit,write" --exclude-tools ask_question "@$file" "Add strict JSDoc comments to all exported functions."; then
         echo "$file" >> .batch_done.txt
     fi
 done
-```
-
----
-
-### Template 3: Read-Only Audit & Markdown Report Aggregation
-
-#### Windows (PowerShell)
-```powershell
-$report = "audit_report.md"
-"# Codebase Audit Report`n`n| File | Status | Issue |`n| :--- | :--- | :--- |" | Set-Content $report
-$env:PI_SKIP_VERSION_CHECK = "1"
-
-Get-ChildItem -Path src/ -Filter *.ts -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\.git" } | ForEach-Object {
-    $file = $_.FullName
-    Write-Host "Scanning: $($_.Name)"
-    $res = pi -p --approve --no-session --tools read --exclude-tools ask_question "@$file" "Audit this file for raw SQL strings. Output format: STATUS | ISSUE"
-    "| $($_.Name) | $res |" | Add-Content $report
-}
+git diff --stat
 ```
