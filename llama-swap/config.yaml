@@ -4,7 +4,7 @@
 # ==============================================================================
 host: "0.0.0.0"
 port: 8080
-globalTTL: 60
+globalTTL: 120
 includeAliasesInList: true
 healthCheckTimeout: 600
 
@@ -16,6 +16,8 @@ macros:
   # ACTIVE PROFILE: NVIDIA RTX 5080 (Windows / CUDA)
   # ============================================================================
   llama-server: "llama-server.exe --port ${PORT}"
+  strata-server: "strata.exe launch --port ${PORT} --no-tui --yes"
+  basalt-server: "${env.USERPROFILE}/Build/basalt/bin/Release/basalt.exe serve --port ${PORT} --host 127.0.0.1 --gpu 0"
   threads: 8
   threads_batch: 16
   batch: 2048
@@ -211,6 +213,31 @@ models:
 # HEAVY WEIGHT MODELS
 # ==============================================================================
 
+# --- QWEN 3.8 FLASH NEXT 125B (BASALT RUNNER) ---
+  qwen3.8-flash-next-basalt:
+    name: "Qwen 3.8 Flash Next 125B (Basalt NVFP4)"
+    description: "Qwen3.8-Flash-Next running on Basalt"
+    checkEndpoint: /health
+    ttl: 300
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: ${ctx}
+    cmd: |
+      ${basalt-server}
+      --model "${env.USERPROFILE}/Build/Models/Qwen3.8-FN-GSQ-RCO-IQ3_S.basalt"
+      --max-context ${ctx}
+      --vram-reserve-mib 800
+      --expert-cache auto
+      --resident-experts
+      --resident-budget-gib 40
+      --prefill auto
+      --vision dynamic
+      --kv int8
+      --reasoning-budget-tokens 32768
+      --alias qwen3.8-flash-next-basalt
+
 # --- QWEN 3.8 FLASH NEXT 125B ---
   qwen3.8-flash-next:
     name: "Unsloth Qwen 3.8 Flash Next"
@@ -314,11 +341,11 @@ models:
 #     q35:  qwen3.6-35ba3b
 #     g31:  gemma4-31b
 #     q27:  qwen3.8-27b
-#     qfn:  qwen3.8-flash-next
+#     qfn:  qwen3.8-flash-next-basalt
 #
 #   # evict_costs: Relative weight protecting heavy models from premature eviction
 #   evict_costs:
-#     qfn:  90  # Qwen 3.8 Flash Next (~100 GB)
+#     qfn:  95  # Qwen 3.8 Flash Next Basalt (~100 GB)
 #     q35:  50  # Qwen 3.6 35B MoE + MTP (~22 GB)
 #     g31:  45  # Gemma 4 31B Dense (~18 GB)
 #     q27:  45  # Qwen 3.8 27B Dense (~16 GB)

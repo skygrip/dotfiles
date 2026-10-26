@@ -86,6 +86,22 @@
           }
         },
         {
+          "id": "qwen3.8-flash-next-basalt",
+          "name": "Qwen 3.8 Flash Next 125B (Basalt)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "xhigh"
+          }
+        },
+        {
           "id": "qwen3.8-flash-next",
           "name": "Unsloth Qwen 3.8 Flash Next 125B MoE",
           "reasoning": true,
