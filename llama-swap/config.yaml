@@ -232,6 +232,7 @@ models:
       --expert-cache auto
       --resident-experts
       --resident-budget-gib 40
+      --prompt-cache 2
       --prefill auto
       --vision dynamic
       --kv int8
@@ -250,8 +251,6 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
-      --cache-ram 10240
-      -lm mmap
       -hf unsloth/Qwen3.8-Flash-Next-GGUF:UD-IQ4_XS
     filters:
       setParamsByID:

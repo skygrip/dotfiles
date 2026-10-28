@@ -13,14 +13,15 @@ Review BIOS settings:
 - Enable Memory Profile (XMP / DOCP / EXPO)
 - Enable Re-Size BAR
 - Enable Above 4G Decoding
-- Enable Virtualization Technology (Intel VT-x / AMD-V)
+- Enable Virtualization & IOMMU (Intel VT-x & VT-d / AMD SVM & IOMMU)
 - Set Restore on AC/Power Loss to Last State
 - Disable "Halt On Error" to prevent "no keyboard detected" errors
 - Disable CSM
 - Enable TPM
 - Enable Secure Boot
+- Disable OEM Software Auto-Install (ASUS Armoury Crate / Gigabyte Control Center / MSI Center)
 - Configure Fan Curves (Optional)
-- Enable Wake on LAN (`Power On By PCI-E`)
+- Enable Wake on LAN (`Power On By PCI-E`, ensure `ErP Ready` is Disabled)
 - Set a BIOS Password (Optional)
 
 ## 2. Windows 11 Setup & Debloat
@@ -43,7 +44,6 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Enables support for file paths longer than 260 characters (Win32 Long Path Support).
 - Automatically clears 'Recent Items' and application jump lists upon user logout.
 - Hides the "Gallery" folder from the File Explorer sidebar.
-- Hides the language bar from the taskbar.
 - Disables the "Let's finish setting up your device" notifications that appear after updates.
 - Hide "Learn about this picture" icon from the desktop wallpaper.
 - Uninstall and disable OneDrive
@@ -51,28 +51,36 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Start Menu: Disable recommendations and recently added apps
 - Accessibility: Disable Sticky/Filter/Toggle Keys
 - Multitasking: Disable Snap Windows and Shake to Minimize
-- Taskbar: Disable "Peek at desktop" button
+- Taskbar: Disable "Peek at desktop" button, Task View button, and Search box
 - File Explorer: Show hidden files and file extensions
 - File Explorer: Open to "This PC" instead of "Home"
 - File Explorer: Disable Office.com files and sync provider notifications
-- Enable Windows Features:
+- Security & Power: Disable Remote Assistance, local account security questions, and Hibernation (`Fast Startup`)
+- Memory & GPU Compute Optimization:
+  - Disables `SysMain` (Superfetch) and UWP `ApplicationPreLaunch`
+  - Sets WDDM GPU TDR timeout (`TdrDelay` / `TdrDdiDelay`) to 30 seconds
+  - Disables Microsoft Edge Startup Boost and background processes
+- Developer, Privacy & Gaming Tweaks:
+  - Enables Taskbar "End Task" option and Windows Developer Mode (native symlinks)
+  - Restricts Delivery Optimization to HTTP-only (disables P2P uploads)
+  - Disables background Xbox GameDVR recording and Windows Widgets (`WebExperience`)
+  - Removes Logitech Download Assistant (`LDA`) startup nagware stub
+- Enable Windows Features (WSL2 without Sandbox `vmmemCmZygote` overhead):
   - Virtual Machine Platform
   - Windows Hypervisor Platform
-  - Windows Sandbox
   - Windows Subsystem for Linux
 
 ### Manual Steps
 
-- Disable Widgets, Taskview, and Search from Taskbar settings
-- Unpin all default app tiles and disable "Show recently added apps" and "Show recommendations for tips, shortcuts, new apps".
+- Unpin default Start Menu app tiles.
 - Ensure Hardware Accelerated GPU Scheduling is enabled. `System > Display > Graphics > Change default graphics settings`.
 - Enable Core Isolation.
-- Disable Remote Assistance.
-- Set Date/Time to ISO time and add a UTC clock
-- Disable Window Snap and Title Bar Window Shake
+- Set Date/Time to ISO time and add a UTC clock.
 - Prevent the controller from opening Game Bar via the Game Bar Controller Settings.
 - Set lid close action to do nothing (Optional)
 - Set power button to shutdown not sleep workstation (Optional)
+- Adjust Search Index to exclude build folders
+- Grant **Lock pages in memory** (`SeLockMemoryPrivilege` for 2 MiB Hardware Large Pages): `secpol.msc` > `Local Policies` > `User Rights Assignment` > `Lock pages in memory` > Add your user account.
 - Enable BitLocker Drive Encryption.
   - If an eGPU is used, disable BitLocker UEFI PCR 2 Setting (`gpedit.msc` > ... > BitLocker > OS Drive > UEFI Firmware Configuration).
   - Optionally enforce TPM and PIN (`gpedit.msc` > ... > BitLocker > OS Drive > Require Additional Authentication at Startup).
@@ -145,8 +153,8 @@ Configure the following Host settings in the Parsec app:
   - OPTIONAL: Configure immediate reboot (NoAutoRebootWithLoggedOnUsers=0) This is required to force a reboot when a user is logged on.
   - `Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 0`
 
-- Use Task Scheduler to run `winget upgrade --all` weekly.
-  - `Register-ScheduledTask -TaskName "Weekly Winget Upgrade" -Action (New-ScheduledTaskAction -Execute "winget.exe" -Argument "upgrade --all --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am) -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest) -Description "Automatically updates all winget packages weekly." -Force`
+- Use Task Scheduler to run `winget upgrade --all` weekly (runs as current user so `winget` is in `PATH` and updates both user-scoped and machine-wide packages):
+  - `Register-ScheduledTask -TaskName "Weekly Winget Upgrade" -Action (New-ScheduledTaskAction -Execute "winget.exe" -Argument "upgrade --all --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am) -Principal (New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest) -Description "Automatically updates all winget packages weekly." -Force`
 - Enable Storage Sense (System > Storage) to run monthly
 
 ## Software
