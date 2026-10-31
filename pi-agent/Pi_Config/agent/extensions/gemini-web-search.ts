@@ -139,7 +139,7 @@ function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxL
 
 export const WebSearchSchema = Type.Object({
   query: Type.String({
-    description: "The search query to look up on the web."
+    description: "Descriptive natural language search query."
   })
 });
 
@@ -310,7 +310,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "web_search",
     label: "Web Search",
-    description: "Search Google for current facts, live documentation, and API changes (e.g. researching unfamiliar CLI errors or recent framework updates post-cutoff).",
+    description: "Search Google for current facts, live documentation, and API changes (e.g. researching unfamiliar CLI errors or recent framework updates).",
     annotations: {
       readOnlyHint: true,
       idempotentHint: true,
