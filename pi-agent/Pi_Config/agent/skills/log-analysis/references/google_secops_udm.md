@@ -6,19 +6,6 @@ This appendix provides a structured guide to the **Google SecOps (formerly Chron
 
 ## 1. UDM Core Architecture: The Noun-Verb Model
 
-Google SecOps structures all normalized security telemetry around a standard **Actor-Action-Target** model:
-
-```mermaid
-flowchart TD
-    META["<b>metadata</b> (Action & Timing)<br/>event_timestamp, event_type, product"]
-    
-    META --> PRINCIPAL["<b>principal</b> (Actor / Subject)<br/>user, host, IP, process"]
-    META --> TARGET["<b>target</b> (Object / Destination)<br/>file, host, IP, resource, email"]
-    META --> SRC_OBS["<b>src / observer / intermediary</b> (Network & Sensors)<br/>packet origin, sensor device, proxy"]
-    META --> SEC_RES["<b>security_result</b> (Detections & Verdicts)<br/>action (ALLOW/BLOCK), severity, rules"]
-    META --> NET_EXT["<b>network & extensions</b> (Protocol Telemetry)<br/>IP protocol, bytes, auth, HTTP"]
-```
-
 ### Core Top-Level Objects
 
 | Object | Data Structure | Role / Definition | Key Sub-Fields |

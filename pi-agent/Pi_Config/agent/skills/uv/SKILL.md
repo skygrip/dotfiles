@@ -22,70 +22,40 @@ Default execution engine, package resolver, runtime manager, and script runner f
 
 ---
 
-## 2. Command & Execution Modes Matrix
+## 2. Execution & PEP 723 Matrix
 
-| Execution Mode | Subcommand / Flags | Syntax Pattern | Capabilities & Behavioral Rules |
-| :--- | :--- | :--- | :--- |
-| **Standard Script / One-Liner** | `uv run` | `uv run python -c "CODE"` | Runs Python inside the project `.venv` (or ephemeral managed interpreter if outside a project). |
-| **Ephemeral Dependency Run** | `uv run --with PKG` | `uv run --with pandas,scipy SCRIPT` | Creates cached temporary venv with requested packages, executes script, and leaves zero disk mess. |
-| **PEP 723 Self-Contained Script**| `uv run SCRIPT` | `uv run SCRIPT` | Parses inline `# /// script` header block and provisions exact dependencies automatically. |
-| **Test & Linter Execution** | `uv run` / `uvx` | `uv run pytest -q`, `uvx ruff check .` | Runs test suites inside project `.venv` or standalone linters/formatters in isolated tool sandboxes. |
-| **Project Workspace** | `uv init`, `uv add` | `uv init DIR`, `uv add httpx` | Initializes `pyproject.toml` and updates `uv.lock` and `.venv` atomically. |
-| **Environment Sync** | `uv sync` | `uv sync --all-extras` | Reconciles local `.venv` with exact locked versions in `uv.lock`. |
-| **Pip Drop-In Compatibility** | `uv pip` | `uv pip compile reqs.in -o reqs.txt` | High-speed drop-in replacement for legacy `pip` and `pip-tools` workflows when required. |
-| **Offline / Reproducible Run** | `--offline`, `--frozen` | `uv run --frozen --offline SCRIPT` | Disables network calls and runs strictly from local wheel cache and existing lockfile. |
-
----
-
-## 3. PEP 723 Script Metadata & Environment Matrix
-
-For standalone utility scripts (`scripts/*.py` or scratch tools), embed a PEP 723 inline metadata block at the top of the file so `uv run script.py` resolves dependencies automatically without a `requirements.txt`:
+For standalone utility scripts (`scripts/*.py` or `.scratch/*.py`), embed a PEP 723 inline metadata block at the top of the file so `uv run script.py` resolves dependencies automatically without a `requirements.txt`:
 
 ```python
 # /// script
 # requires-python = ">=3.11"
-# dependencies = [
-#     "httpx>=0.27",
-#     "rich",
-# ]
+# dependencies = ["httpx>=0.27", "pydantic>=2.0"]
 # ///
-import httpx
-from rich import print
 ```
 
-| Configuration | Flag / Subcommand | Options / Syntax | Purpose / Behavioral Rule |
-| :--- | :--- | :--- | :--- |
-| **Stamp Inline Metadata** | `uv add --script` | `uv add --script SCRIPT PKG` | Programmatically inserts or updates the PEP 723 `# /// script` block inside a `.py` file. |
-| **On-the-Fly Injection** | `--with` | Comma-separated or repeated | Injects packages for a single invocation: `uv run --with "duckdb>=1.0" --with polars SCRIPT`. |
-| **Isolated From Project** | `--no-project` | Boolean flag | Ignores the current directory's `pyproject.toml` when running an unrelated scratch script. |
-| **Target Interpreter** | `--python` | Version (`3.12`, `3.13`) | Downloads and executes under the specified Python version: `uv run --python 3.12 SCRIPT`. |
-| **Selective Lock Upgrade** | `--upgrade-package` | `uv lock --upgrade-package PKG` | Upgrades a single package in `uv.lock` without disturbing the rest of the dependency graph. |
-| **Cache Maintenance** | `uv cache prune` | `uv cache prune` | Removes unused wheels and pre-built environments while keeping active caches hot. |
+| Mode / Flag | Syntax Pattern | Behavioral Rule |
+| :--- | :--- | :--- |
+| **Ephemeral Dependency Run** | `uv run --with pandas,scipy SCRIPT` | Creates cached temporary venv with requested packages and leaves zero disk mess. |
+| **Isolated From Project** | `uv run -q --no-project --with PKG SCRIPT` | Ignores current directory `pyproject.toml` and suppresses resolution logs (`-q`). |
+| **Stamp Inline PEP 723** | `uv add --script SCRIPT "httpx>=0.27"` | Programmatically inserts or updates the `# /// script` block inside a `.py` file. |
+| **Standalone CLI Tool** | `uvx ruff check .` | Runs standalone CLI tools in isolated sandboxes without installing into `.venv`. |
+| **Target Interpreter** | `uv run --python 3.12 SCRIPT` | Automatically fetches and runs under the specified Python version. |
+| **Offline / Locked Run** | `uv run --frozen --offline SCRIPT` | Disables network calls; runs strictly from local wheel cache and existing `uv.lock`. |
+| **Selective Lock Upgrade** | `uv lock --upgrade-package PKG` | Upgrades a single package in `uv.lock` without disturbing the rest of the graph. |
 
 ---
 
-## 4. High-Leverage Composite Examples
+## 3. High-Leverage Composite Examples
 
 ```bash
-# Stage 1: Default Python one-liner with ephemeral dependency injection and quiet stdout piping
+# Stage 1: Isolated Python one-liner with ephemeral dependency injection and quiet stdout piping
 uv run -q --no-project --with duckdb,polars python -c "
 import duckdb, json
 rows = duckdb.sql('SELECT 42 AS metric, true AS healthy').df().to_dict(orient='records')
 print(json.dumps(rows))
 " | jq -e '.[0].healthy == true'
 
-# Stage 2: Create and execute a self-contained PEP 723 script without a virtualenv
-cat << 'EOF' > parse_feed.py
-import httpx
-print("HTTPX loaded successfully:", httpx.__version__)
-EOF
+# Stage 2: Stamp and execute a self-contained PEP 723 script without a virtualenv
 uv add --script parse_feed.py "httpx>=0.27"
 uv run -q parse_feed.py
-
-# Stage 3: Project workspace initialization, dependency locking, and test verification
-uv init data-service
-cd data-service
-uv add pydantic httpx
-uv add --dev pytest
-uv run pytest --version
 ```

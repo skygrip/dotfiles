@@ -10,21 +10,6 @@ This playbook provides a complete technical guide to instruction-based image edi
 
 `comfyui-krea2edit` turns Krea 2 (RAW or Turbo) into an instruction-based editor using **Dual In-Context Conditioning**, matching the exact training geometry of the `krea2edit-trainer`:
 
-```mermaid
-flowchart TD
-    SRC["Source Image"]
-    INSTR["Edit Instruction"]
-
-    SRC -->|Visual Grounding| GROUND["<b>Krea2EditGroundedEncode</b><br/>(Qwen3-VL Vision-Language)"]
-    INSTR --> GROUND
-    SRC -->|Pixel Input| VAE["<b>VAEEncode</b><br/>(Pixel to Latent)"]
-
-    VAE -->|Clean Source Latents| PATCH["<b>Krea2EditModelPatch</b><br/>(3D-RoPE In-Context Tokens)"]
-
-    GROUND -->|Positive Conditioning| KSAMP_POS["KSampler.positive<br/>(Instruction + Visual Semantics)"]
-    PATCH -->|Patched DiT Model| KSAMP_MODEL["KSampler.model<br/>(In-Context Visual Anchor)"]
-```
-
 ### A. Appearance Path: In-Context DiT Patching & 3D RoPE Positioning
 `Krea2EditModelPatch` intercepts Krea 2's `SingleStreamDiT` forward pass, concatenating clean source latents into the sequence via 3D Rotary Position Embeddings (3D-RoPE):
 * **Frame Index Allocations:**

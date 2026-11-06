@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """
 VirusTotal Triage Summarizer for AI Agents
 Executes vt-cli to query a file hash and returns a compact JSON summary.
@@ -63,11 +67,11 @@ def summarize_hash(target_hash):
 
     # If malicious, query first 5 contacted IPs and domains
     if malicious > 0:
-        ip_res, _ = run_vt_command(["file", "contact_ips", clean_hash, "-I", "--limit", "5"])
+        ip_res, _ = run_vt_command(["file", "contacted_ips", clean_hash, "-I", "--limit", "5"])
         if ip_res and ip_res.returncode == 0:
             summary["contacted_ips"] = [line.strip() for line in ip_res.stdout.splitlines() if line.strip()]
 
-        domain_res, _ = run_vt_command(["file", "contact_domains", clean_hash, "-I", "--limit", "5"])
+        domain_res, _ = run_vt_command(["file", "contacted_domains", clean_hash, "-I", "--limit", "5"])
         if domain_res and domain_res.returncode == 0:
             summary["contacted_domains"] = [line.strip() for line in domain_res.stdout.splitlines() if line.strip()]
 

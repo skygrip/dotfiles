@@ -117,7 +117,7 @@
 
 ### 5. Multi-Character Staging & Anti-Split-Screen Protocol
 
-When generating multiple characters performing distinct actions in Anima (especially **Anima-Turbo at CFG 1.0** where negative prompts are inert), avoid meta-layout phrases (`split into`, `segmented into`, `two halves`) which cause literal panel borders. Anchor characters directly to continuous environmental props and enforce high-contrast attribute separation (see [**`SKILL.md` §3.D: Multi-Actor Environmental Staging**](../SKILL.md#d-multi-actor-environmental-staging--anti-split-screen-protocol)).
+When generating multiple characters performing distinct actions in Anima (especially **Anima-Turbo at CFG 1.0** where negative prompts are inert), avoid meta-layout phrases (`split into`, `segmented into`, `two halves`) which cause literal panel borders. Anchor characters directly to continuous environmental props and enforce high-contrast attribute separation (see [**`SKILL.md` §1 & §3**](../SKILL.md)).
 
 #### Anima-Specific Multi-Character Rules:
 1. **Camera Framing & Continuous Scene Anchors:** Prepend `wide shot` or `scenery` alongside the count tag in the Danbooru prefix (`2girls, wide shot, scenery, `) and use continuous wide phrasing in the prose (*"In a wide continuous shot..."*).
@@ -174,7 +174,7 @@ To maximize cross-attention density and prevent token dilution in Anima's Cosmos
 
 ### 8. Mitigating "Domain Leakage" (Real-World Gear & 2.5D Style Bleed)
 
-When prompting technical equipment, tactical gear, or suits that predominantly exist in photographic training data (e.g. `scuba gear`, `diving regulator`, `spacesuit`, `tactical armor`, `firefighter gear`, `gas mask`), photographic priors can leak into character faces and shaders (see [**`SKILL.md` §4.D: CircleStone Labs ANIMA**](../SKILL.md#d-circlestone-labs-anima-cosmos-2b--qwen3-anime-engine)).
+When prompting technical equipment, tactical gear, or suits that predominantly exist in photographic training data (e.g. `scuba gear`, `diving regulator`, `spacesuit`, `tactical armor`, `firefighter gear`, `gas mask`), photographic priors can leak into character faces and shaders (see [**`SKILL.md` §1**](../SKILL.md)).
 
 #### Anima Double-Shield Mitigation:
 1. **Positive 2D Medium Anchors (Prefix):** Prepend explicit 2D cel medium anchors alongside gear tags:
@@ -234,7 +234,7 @@ To achieve deep emotion in Anima, avoid flat labels like `sad` or `happy`. Use A
 
 ## 5. Dynamic Posing, Tactile Actions & 3-Plane Anime Staging
 
-Anima combines Danbooru perspective tags with rich narrative prose. For universal contrapposto rules, tactile blueprints, Kelvin lighting, and 3-plane optical staging, see [**`SKILL.md` §2–§4**](../SKILL.md#2-core-physical-pillars--optical-staging).
+Anima combines Danbooru perspective tags with rich narrative prose. For universal contrapposto rules, tactile blueprints, Kelvin lighting, and 3-plane optical staging, see [**`SKILL.md` §2–§3**](../SKILL.md).
 
 ### Danbooru Dynamic Posing Anchors (Anti-Stiffness)
 * **Perspective & Camera Angles:** `dynamic angle`, `dutch angle`, `from below`, `from above`, `worm's-eye view`, `pov`, `first-person view`, `selfie`, `dynamic foreshortening`.
@@ -244,7 +244,7 @@ Anima combines Danbooru perspective tags with rich narrative prose. For universa
 * **Lo-Fi & Retro Aesthetics vs. Clean Cel:** While `chromatic aberration` is standard in negative prompts for pristine modern cel animation, when deliberately generating gritty 1980s/90s retro OVA, cyberpunk, or found-footage anime, move `chromatic aberration` to positive tags (`retro anime screencap, vhs effect, subtle chromatic aberration, 1990s anime aesthetic`) and prune it from the negative prompt.
 
 ### Contrastive Relational Phrasing for Depth of Field (DoF)
-In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` cause ambiguous cross-attention blur across characters and linework. Always bind focus using **contrastive sentence fragments** with coordinating relational clauses (`while`, `as`, `against`) as detailed in [**`SKILL.md` §2.A: Contrastive Relational Phrasing**](../SKILL.md#a-3-plane-optical-depth-staging--lens-physics).
+In multi-entity or prop-heavy anime compositions, isolated tags like `depth of field`, `blurry background`, or `out of focus` cause ambiguous cross-attention blur across characters and linework. Always bind focus using **contrastive sentence fragments** with coordinating relational clauses (`while`, `as`, `against`) as detailed in [**`SKILL.md` §2**](../SKILL.md).
 
 ---
 
@@ -278,108 +278,26 @@ When prompting complex technical gear that predominantly exists in photographic 
 
 ## 7. Production-Ready Examples
 
-### Example 1: Theatrical Slice of Life / Atmospheric Anime (Makoto Shinkai Observatory Twilight)
-* **Configuration:** ANIMA-Aesthetic v1.0 | **Aspect Ratio:** `16:9` ($1344 \times 768$) | **Sampler/CFG:** `dpmpp_2m_sde_gpu` + `beta57` (38 steps, **CFG 4.0**) | **Artist:** `@shinkai makoto`
-
-**📝 Primary Positive Prompt:**
+### Example 1: Atmospheric Anime (`@shinkai makoto` | `16:9` $1344 \times 768$ | `dpmpp_2m_sde_gpu` + `beta57`, 38 steps, CFG 4.0)
 ```text
 1girl, solo, @shinkai makoto, astronomy researcher, observatory, brass telescope, twilight, starry sky, cel shading, anime screencap, 2d, clean lineart, vibrant anime aesthetic, Foreground: copper dome shutter edges dissolve in soft defocus. In the midground, the 24-year-old astronomy researcher shifts her weight onto her back heel, fingers turning the brass focus wheel with firm tactile resistance. Analytical focus tightens her inner brow with taut lower eyelids and a pinpoint star reflection. A 2600K amber horizon gradient melts into deep 8000K indigo night across distant cumulonimbus clouds.
 ```
 
-**🚫 Negative Prompt:**
-```text
-worst quality, low quality, semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, airbrush, oily skin, artist name, blurry, bad anatomy, deformed hands, extra fingers, missing fingers, floating limbs
-```
-
-**🔄 Iteration Pathway:**
-1. **Lighting / Atmosphere Shift:** Transition from twilight dusk (2600K amber / 8000K indigo) to deep midnight astrophotography with 10000K celestial bioluminescence and Milky Way nebula glow.
-2. **Optics / POV Shift:** Switch to an over-the-shoulder low-angle 24mm wide shot looking up past illuminated star charts on the desk toward the open dome ceiling.
-3. **Kinetic / FACS Shift:** Evoke quiet wonder—eyebrows softly arched upward and lips slightly parted in awe as a meteor streak reflects across her corneas.
-4. **Artist / Lineart Dialect Shift:** Swap `@shinkai makoto` for `@sadamoto yoshiyuki` or `@soejima shigenori` to bias toward crisp 90s key animation linework with flat cel paint fills and muted mechanical tones.
-
----
-
-### Example 2: Dynamic Kinetic Action / Shonen Energy (Studio Trigger & Persona 5 Chiaroscuro)
-* **Configuration:** ANIMA-Aesthetic v1.0 | **Aspect Ratio:** `16:9` ($1344 \times 768$) | **Sampler/CFG:** `dpmpp_2m_sde_gpu` + `beta57` (38–40 steps, **CFG 4.5**) | **Artists:** `@imaishi hiroyuki, @soejima shigenori`
-
-**📝 Primary Positive Prompt:**
+### Example 2: Kinetic Action (`@imaishi hiroyuki, @soejima shigenori` | `16:9` $1344 \times 768$ | `dpmpp_2m_sde_gpu` + `beta57`, 38 steps, CFG 4.5)
 ```text
 1boy, solo, @imaishi hiroyuki, @soejima shigenori, martial artist, sleeveless dogi, sash, wrist wraps, tsurime, jump kick, midair, from below, dynamic angle, dynamic foreshortening, cel shading, anime screencap, 2d, In the foreground, an out-of-focus vortex of glowing crimson maple leaves whips across the lens. In the midground, a 22-year-old martial artist leaps into a flying spin kick with twisted torso, clamping his lead fist and tightening his jaw in focused defiance. Crisp 3000K sunset rim light carves his silhouette against 8000K cyan wind glow as distant crags dissolve into soft twilight bokeh.
 ```
 
-**🚫 Negative Prompt:**
-```text
-worst quality, low quality, semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, realistic nose, airbrush, oily skin, artist name, blurry, jpeg artifacts, chromatic aberration, bad anatomy, deformed hands, extra limbs, stiff pose
-```
-
-**🔄 Iteration Pathway:**
-1. **Atmosphere & Lighting Shift:** Transition the scene to a 6500K moonlit midnight setting. Replace the 8000K cyan wind glow with an electric violet lightning aura, casting sharp raking specular highlights across the martial artist's dogi and wrist wraps.
-2. **Optics & Perspective Shift:** Lower the camera to extreme ground level with an 80-degree upward Dutch angle (`from below`, `extreme low angle`), shooting directly through the leaf cyclone to push dynamic foreshortening on the striking heel.
-3. **Kinetic & FACS Shift:** Swap the aerial spin kick for a grounded two-handed downward palm strike impact; modify facial tension to hard-furrowed brows and bared clenched teeth as shockwaves rupture the stone floor.
-4. **Stylistic / Artist Shift:** Swap `@soejima shigenori` to `@kubo tite` for stark high-contrast black-and-white ink balances (*Bleach*), or to `@toriyama akira` for rounded muscular planar cel shading and classic shonen momentum (*Dragon Ball*).
-
----
-
-### Example 3: Painterly Fine Art / Botanical Fantasy (Yoshida Akihiko & Fuzichoco Aesthetic)
-* **Configuration:** ANIMA-Aesthetic v1.0 | **Aspect Ratio:** `4:5` ($896 \times 1152$) | **Sampler/CFG:** `er_sde` + `beta57` (38 steps, **CFG 4.0**) | **Artists:** `@yoshida akihiko, @fuzichoco`
-
-**📝 Primary Positive Prompt:**
+### Example 3: Painterly Botanical Fantasy (`@yoshida akihiko, @fuzichoco` | `4:5` $896 \times 1152$ | `er_sde` + `beta57`, 38 steps, CFG 4.0)
 ```text
 1girl, solo, @yoshida akihiko, @fuzichoco, tareme, linen tunic, leather satchel, woven basket, ancient woodland, depth of field, Foreground: out-of-focus ferns frame the path. In the midground, the 26-year-old herbalist strides along the mossy trail in graceful contrapposto, delicate fingertips supporting the wicker handle, as a serene smile lifts her cheeks with relaxed lips. Dappled 4800K canopy sunbeams illuminate her shoulders against soft spore luminescence, while towering background tree roots dissolve into creamy circular bokeh discs.
 ```
 
-**🚫 Negative Prompt:**
-```text
-worst quality, low quality, artist name, blurry, jpeg artifacts, chromatic aberration, semi-realistic, 2.5d, 3d render, cgi, photorealistic, realistic face, airbrush, oily skin, bad anatomy, deformed hands, extra limbs, stiff pose
-```
-
-**🔄 Iteration Pathway:**
-1. **Atmosphere & Kelvin Shift:** Shift ambient lighting to `2800K dawn mist`, having directional golden amber crepuscular sunbeams slice through heavy canopy humidity to create high-contrast specular rim highlights across the tunic.
-2. **Optics & Perspective Shift:** Lower the camera to ground level embedded within the foreground ferns, tilting the lens $45^\circ$ upward along the ascending root trail for dramatic vertical depth.
-3. **Tactile Interaction & FACS Shift:** Have the herbalist pause mid-stride, extending an open palm to catch a drifting luminous spore while shifting the basket into the crook of her elbow, her expression transitioning into wide-eyed wonder with softly parted lips.
-4. **Stylistic & Medium Shift:** Replace artist conditioning with `(@amano yoshitaka:1.1)` for ethereal flowing watercolor washes and filigree ornamentation, or `@demizu posuka` for dense, whimsical botanical perspective.
-
----
-
-### Example 4: 1990s Retro Cel Sci-Fi / Mecha & Robotics (Young Flight Mechanic in Cliffside Hangar)
-* **Configuration:** ANIMA-Aesthetic v1.0 | **Aspect Ratio:** `16:9` ($1344 \times 768$) | **Sampler/CFG:** `dpmpp_2m_sde_gpu` + `beta57` (38 steps, **CFG 4.0**) | **Artists:** `@sadamoto yoshiyuki, @yamashita ikuto`
-
-**📝 Primary Positive Prompt:**
-```text
-1boy, solo, @sadamoto yoshiyuki, @yamashita ikuto, 1990s anime, retro anime, cel animation, cel shading, anime screencap, 2d, clean lineart, vibrant anime aesthetic, gouache background, cliffside hangar, glider chassis, denim overalls, work gloves, tsurime, sunset, Foreground: an out-of-focus spanner rack frames the lower edge. In the midground, the 24-year-old flight mechanic shifts his weight into taut contrapposto, cranking a socket wrench against hydraulic line resistance. Pinched brows and taut eyelids sharpen his focused gaze. A 9000K cyan telemetry display cuts across 2400K golden twilight as distant clouds dissolve into soft bokeh.
-```
-
-**🚫 Negative Prompt (with 2.5D Anti-Realism Shield):**
-```text
-worst quality, low quality, semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, realistic nose, airbrush, oily skin, smooth digital art, 3d model, artist name, blurry, jpeg artifacts, chromatic aberration, bad anatomy, deformed hands, extra limbs, stiff pose
-```
-
-**🔄 Iteration Pathway:**
-1. **Lighting / Atmosphere Shift:** Transition ambient light to 1800K deep twilight storm; replace the telemetry glow with high-voltage 12000K cobalt electric arcs discharging across the hydraulic manifold.
-2. **Optics / POV Shift:** Drop camera to a low-angle Dutch tilt beneath the glider's port wing spar, framing upward past the mechanic's wrench toward the cliff edge and open sea.
-3. **Kinetic / FACS Shift:** Mechanic releases the wrench and wipes grease from his cheekbone with the back of a canvas glove, shifting facial expression to an asymmetric smirk with gaze deflected 20° off-axis.
-4. **Artist / Aesthetic Shift:** Swap to `(@murata range:1.2)` for tactile dieselpunk brass fittings, rounded dials, and pastel leather tones (*Last Exile*), or `@redjuice` for hyper-precise micro-panel seams and glossy composite finishes (*Beatless*).
-
----
-
-### Example 5: Multi-Character Complex Staging / Asymmetric Action (Alchemy Workshop)
-* **Configuration:** ANIMA-Aesthetic v1.0 | **Aspect Ratio:** `16:9` ($1344 \times 768$) | **Sampler/CFG:** `dpmpp_2m_sde_gpu` + `beta57` (38 steps, **CFG 4.0**) | **Artists:** `@shinkai makoto, @soejima shigenori`
-
-**📝 Primary Positive Prompt:**
+### Example 4: Multi-Character Asymmetric Staging (`@shinkai makoto, @soejima shigenori` | `16:9` $1344 \times 768$ | `dpmpp_2m_sde_gpu` + `beta57`, 38 steps, CFG 4.0)
 ```text
 1boy, 1girl, wide shot, scenery, standing side by side, alchemy workshop, alembic, potions, window, airship, short hair, silver hair, braided hair, amber hair, robe, apron, rolled sleeves, @shinkai makoto, @soejima shigenori, cel shading, anime screencap, 2d, clean lineart, vibrant anime aesthetic, In a sunlit fantasy alchemy workshop, the 24-year-old male scholar on the left stands in a dark navy robe with short silver hair, his inner brows pinched tight and lower eyelids taut as his steady fingertips decant a glowing 9000K azure vial into the brass vessel with fine tweezers, while across the room on the right, the 22-year-old female assistant in a cream linen apron and braided amber hair leans over the timber sill, eyes wide with delight as her outstretched arm points toward the distant floating vessel, enveloped in warm 3000K golden sunlight.
 ```
-
-**🚫 Negative Prompt:**
-```text
-worst quality, low quality, split screen, multiple views, comic panel, manga panel, collage, border, diptych, triptych, grid, frame, partitioned, two shots, semi-realistic, 2.5d, 3d render, cgi, digital painting, photorealistic, realistic face, realistic nose, airbrush, oily skin, smooth digital art, 3d model, artist name, blurry, jpeg artifacts, chromatic aberration, bad anatomy, deformed hands, extra limbs, extra fingers, missing fingers, stiff pose, trait bleeding, color bleed
-```
-
-**🔄 Iteration Pathway:**
-1. **Atmosphere & Kelvin Contrast Shift (Midnight Bioluminescence):** Replace the 3000K golden sunlight with a deep 10000K starry indigo sky outside the window, amplifying the 9000K azure potion into the primary high-contrast key light casting specular highlights across the scholar's silver hair and brass alembic.
-2. **Optics & Depth-of-Field Perspective Shift (Over-the-Shoulder 3-Plane Staging):** Reposition camera to a dynamic low-angle 35mm perspective behind the alembic. Frame out-of-focus brass tubing in the foreground (25% defocus), keeping the 24-year-old scholar tack-sharp in the midground while the assistant and open sky dissolve into soft background bokeh.
-3. **Facial Emotion & Kinetic Role Reversal:** Render the male scholar with arched brows, parted lips, and an alarmed gaze as an unexpected burst of azure steam erupts from the vessel, while the female assistant turns back over her shoulder with an asymmetric smirk and narrowed eyes (`jitome`).
-4. **Stylistic Dialect & Key Animator Shift:** Swap `@shinkai makoto, @soejima shigenori` to `(@yoshida akihiko:1.1), @fuzichoco` for delicate botanical fantasy ornamentation and soft watercolor textures, or `@sadamoto yoshiyuki, @yamashita ikuto` for 1990s Gainax-era analog cel shading with sharp mechanical drafting lines.
+*(Multi-character negative prompt adds: `split screen, multiple views, comic panel, manga panel, collage, border, diptych, triptych, grid, frame, partitioned, two shots, trait bleeding, color bleed`)*
 
 
 

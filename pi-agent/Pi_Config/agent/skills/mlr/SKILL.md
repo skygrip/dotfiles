@@ -68,7 +68,7 @@ Chain verbs sequentially in a single execution pass: `mlr --csv VERB_A then VERB
 | **`fraction`** | `fraction -f val -g grp` | Computes percentage share of each row relative to group total. |
 | **`join`** | `join -j key -f LEFT_FILE RIGHT_FILE` | Inner (`-j`), Left (`--ul`), Right (`--ur`), or Full-outer joins. |
 | **`reshape`** | `reshape -i q1,q2 -o quarter,val` | Wide-to-long (melting) or long-to-wide (`reshape -s`). |
-| **`flatten` / `unflatten`** | `unflatten -f "."`, `flatten -f "."` | Converts nested JSON objects to dotted columns or vice-versa. |
+| **`flatten` / `unflatten`** | `unflatten -s "."`, `flatten -s "."` | Converts nested JSON objects to dotted columns or vice-versa (`.` is default separator; use `-f col` to target specific fields). |
 | **`sort`** | `sort -f text_col -nr desc_num` | Multi-key sort: string (`-f`), numeric (`-n`), numeric desc (`-nr`). |
 
 ---

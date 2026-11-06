@@ -11,16 +11,6 @@ Declarative 3D CAD modeling, BOSL2 relative attachments, and headless CLI render
 
 ## 1. Headless Compiler, Guardrails & Render Matrix
 
-```mermaid
-flowchart LR
-    A["Stage 1: Parameter Spec"] --> B["Stage 2: Parametric Implementation"]
-    B --> C["Stage 3: Multi-View Render"]
-    C --> D{"Stage 4: Vision Check"}
-    D -->|"Defect Detected"| E["Stage 5: Debug Modifiers (#, !, %)"]
-    E --> B
-    D -->|"Verified Fit"| F["Stage 6: Production Export (STL/3MF)"]
-```
-
 | Dimension / Trap | Operational Hazard & Behavior | Required Affirmative Protocol |
 | :--- | :--- | :--- |
 | **SSA Variable Scope** | OpenSCAD assigns variables at compile time; reassignment shadows only locally | Use ternary expressions: `x = cond ? 10 : 5;` or list comprehensions: `[for (i = [0:5]) i * 10]` |

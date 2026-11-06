@@ -24,17 +24,6 @@ Forensic schema discovery, multi-source timeline correlation, temporal anomaly d
 
 ## 2. Investigation Funnel Matrix
 
-```mermaid
-flowchart TD
-    LOGS["Enterprise Telemetry Streams<br/>(M365, EVTX, CloudTrail, Okta, UDM)"] --> DECIDE{"File State & Volume"}
-    DECIDE -->|"Raw / Compressed Streams"| S1["Stage 1: Streaming Filter & Grep<br/>(ripgrep -z | mlr)"]
-    DECIDE -->|"Structured Logs & Dumps"| S2["Stage 2: Behavioral SQL Correlation<br/>(DuckDB Windowing & Aggregations)"]
-    DECIDE -->|"Unstructured Anomalies"| S3["Stage 3: Statistical & ML Outliers<br/>(Z-Score / Isolation Forest / ck)"]
-    S1 --> REP["Stage 4: Structured Incident Triage Report"]
-    S2 --> REP
-    S3 --> REP
-```
-
 | Stage | Operation / Focus | Exact Tool Command | Finding Signal / Triaged Indicator |
 | :--- | :--- | :--- | :--- |
 | **Stage 1: Streaming Filter & Grep** | Regex & Stream Slice | `rg -z -i "PATTERN" logs/*.gz` | Fast discovery of critical exceptions, unauthorized codes, error floods. |
@@ -55,23 +44,7 @@ flowchart TD
 
 ---
 
-## 4. Structured Output / Finding Schema
-
-```markdown
-### Security Incident Triage: INCIDENT_ID
-* **Investigation Window:** START_TIME to END_TIME | Total Records: TOTAL_COUNT
-* **Correlated Actor & Entity:**
-  - Principal: `user@company.com` (Target: `AzureAD / Entra ID`)
-  - Source IP: `198.51.100.42` (ASN: ASN_NAME, Geolocation: GEO_LOC)
-* **Observed Threat Signals:**
-  - Rate Spike: 45 failed logons within 60 seconds (`EventID 4625`)
-  - Impossible Travel: Session transition from AU to US within 15 minutes
-* **Recommended Containment:** Revoke active refresh tokens; isolate compromised credential.
-```
-
----
-
-## 5. High-Leverage Composite Triage Examples
+## 4. High-Leverage Composite Triage Examples
 
 ```bash
 # Stage 1: Streaming Filter & Grep on compressed logs

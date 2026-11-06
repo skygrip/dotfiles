@@ -6,20 +6,6 @@ This appendix provides a structured guide to analyzing **Okta System Logs** expo
 
 ## 1. Okta System Log Architecture
 
-Okta records every user action, authentication attempt, administrative modification, and system event in a structured JSON object:
-
-```mermaid
-flowchart TD
-    EVT["<b>Okta System Log Event</b><br/>published, eventType, displayMessage"]
-    
-    EVT --> ACTOR["<b>actor</b> (Who initiated)<br/>id, alternateId (email), displayName, type"]
-    EVT --> CLIENT["<b>client</b> (Where from)<br/>ipAddress, userAgent, geographicalContext (city, country)"]
-    EVT --> OUTCOME["<b>outcome</b> (What happened)<br/>result (SUCCESS, FAILURE, DENY, CHALLENGE), reason"]
-    EVT --> TARGET["<b>target[]</b> (What was affected)<br/>id, type (User, App, Group, ApiToken), displayName"]
-    EVT --> SEC["<b>securityContext</b> (Threat Context)<br/>isProxy, asNumber, asOrg, isp, domain"]
-    EVT --> DEBUG["<b>debugContext</b> (Diagnostic Data)<br/>debugData (authnRequestId, threatSuspected, etc.)"]
-```
-
 ### Core Top-Level Fields
 
 | Field Path | Type | Description / Investigation Role |

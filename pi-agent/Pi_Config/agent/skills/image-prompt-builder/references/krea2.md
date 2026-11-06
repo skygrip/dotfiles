@@ -42,13 +42,6 @@ Ground-truth layer analysis reveals that the 12 tapped hidden layers form **4 fu
 ### The 8-Block Canonical Prompt Sequence
 To maximize Qwen3-VL token-attention efficiency, structure all natural language prompts in this exact 8-block sequence:
 
-```mermaid
-flowchart LR
-    B1["1. Lens & Shot Geometry"] --> B2["2. Lighting & Atmosphere"] --> B3["3. Subject Anchor"] --> B4["4. Environment & Surfaces"]
-    B4 --> B5["5. FACS Micro-Expression"]
-    B5 --> B6["6. Secondary Motion"] --> B7["7. Biomechanical Pose"] --> B8["8. Color & Film Grain"]
-```
-
 1. **Lens & Shot Geometry:** Focal length, aperture, angle, framing (*"85mm f/1.4 portrait prime lens, eye-level framing"*).
 2. **Lighting Physics in Kelvin:** Key light, fill, shadow falloff (*"2700K warm tungsten reading lamp casting high-contrast chiaroscuro"*).
 3. **Subject Anchor & Wardrobe:** Tangible textures (*"weary intelligence officer in a structured charcoal woolen coat"*).
@@ -65,7 +58,7 @@ flowchart LR
 ## 4. Emotional Context & FACS Micro-Facial Guidance in Krea 2
 
 Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to natural language descriptions of physical muscle tensions and **FACS Action Units** without needing booru tags.
-- For universal FACS muscle mechanics, catchlight rules, and anti-plasticity dermal anchors (micro-pores, goosebumps, skin folds), see [**`SKILL.md` §2.E**](../SKILL.md#e-facs-facial-mechanics--anti-plasticity-dermal-topography).
+- For universal FACS muscle mechanics, catchlight rules, and anti-plasticity dermal anchors (micro-pores, goosebumps, skin folds), see [**`SKILL.md` §3**](../SKILL.md).
 
 ### Krea 2 Specific Hardware & Encoder Rules:
 * **Encoder Rebalancing for Facial Nuance & Pores:** To maximize pore and expression fidelity in diffusion nodes, use the **Portrait & Micro-Emotion KGW preset** (boosting Band 4: `w9–w11`). The default learned projector suppresses deep layers `L23–L32`; rebalancing re-inflates these layers to capture high-frequency facial micro-geometry.
@@ -75,7 +68,7 @@ Because Krea 2 uses a multimodal **Qwen3-VL** encoder, it responds directly to n
 ## 5. Kinetic Posing, Tactile Actions & Optical Staging in Krea 2
 
 Krea 2 excels at continuous natural language prose describing spatial relationships, weight transfer, and camera perspectives without stiff mannequin artifacts.
-- For the universal 3-plane optical depth staging framework, camera angle matrix, DoF guidelines, contrapposto rules, and tactile blueprints, see [**`SKILL.md` §2**](../SKILL.md#2-core-physical-pillars--optical-staging).
+- For the universal 3-plane optical depth staging framework, camera angle matrix, DoF guidelines, contrapposto rules, and tactile blueprints, see [**`SKILL.md` §2–§3**](../SKILL.md).
 
 ### Krea 2 Specific Staging Schema:
 * **The "Core Four" Biomechanical Flow:** When constructing Block 7 of Krea 2's 8-block canonical sequence, weave together:
@@ -90,14 +83,6 @@ Krea 2 excels at continuous natural language prose describing spatial relationsh
 ## 6. Native Multimodal Image Prompting (Qwen3-VL Vision Tower)
 
 Unlike legacy diffusion architectures where the text encoder only processes strings of text tokens, **Krea 2 natively supports image prompting directly inside the CLIP/Text conditioning pipeline** via its integrated **Qwen3-VL-4B** vision-language encoder (`type: krea2`).
-
-```mermaid
-flowchart TD
-    IMG["Reference Image(s)"] --> VIT["<b>Qwen3-VL Vision Tower (ViT)</b><br/>Encodes vision tokens"]
-    TXT["Text Prompt"] --> CHATML["<b>Joint Multimodal ChatML Embedding</b><br/>12 Layer Taps: L2 to L35"]
-    VIT --> CHATML
-    CHATML --> OUT["KSampler.positive<br/>(Cross-Modal Conditioning)"]
-```
 
 ### The Native Multi-Image Template & `Picture N:` Syntax
 In Krea 2's native conditioning template, reference images are ingested as structured vision blocks:

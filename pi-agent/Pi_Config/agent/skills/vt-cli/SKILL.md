@@ -13,7 +13,7 @@ Automated threat intelligence, file hash reputation, C2 network infrastructure a
 
 | Primitive / Fast-Path / Trap | Operational Hazard & Behavior | Required Affirmative Protocol |
 | :--- | :--- | :--- |
-| **`uv run scripts/vt_summary.py`** | Manual CLI parsing floods context with thousands of lines | Primary fast-path: `uv run scripts/vt_summary.py SHA256` for 15-line triage JSON |
+| **`uv run ~/.pi/agent/skills/vt-cli/scripts/vt_summary.py`** | Manual CLI parsing floods context with thousands of lines | Primary fast-path: `uv run ~/.pi/agent/skills/vt-cli/scripts/vt_summary.py SHA256` for 15-line triage JSON |
 | **Interactive Shell Hang** | Invoking `vt init` prompts for interactive STDIN in subshells | Export API key: `export VTCLI_APIKEY="API_KEY"` (or set `$env:VTCLI_APIKEY="API_KEY"`) |
 | **OpSec Upload Leak** | Running file upload commands on confidential code uploads binaries publicly | Compute SHA256 locally first; query existing reputation via `vt file SHA256` |
 | **UK Spelling Trap** | The VirusTotal API rejects US spelling for sandbox behaviors | Always use UK spelling for behavioral endpoints: `vt file behaviours HASH` |
@@ -57,7 +57,7 @@ Automated threat intelligence, file hash reputation, C2 network infrastructure a
 
 ```bash
 # Stage 1: Fast-path triage using bundled helper script with JSON verification
-uv run scripts/vt_summary.py e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | jq '.stats'
+uv run ~/.pi/agent/skills/vt-cli/scripts/vt_summary.py e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | jq '{status, score, threat_label}'
 
 # Stage 2: Intelligence search & relationship pivot: find signed PE executables contacting C2
 MALWARE_HASHES=$(vt search 'type:peexe tag:signed net_communication:"198.51.100.23"' -I --limit 5)

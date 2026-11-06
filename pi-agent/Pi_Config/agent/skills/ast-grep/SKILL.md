@@ -58,12 +58,12 @@ Used in `--inline-rules` YAML strings or rule configurations:
 | **`all` / `any`** | Logical AND / OR | All sub-rules must match (`all`) or at least one must match (`any`). |
 | **`stopBy`** | Traversal boundary | Limits traversal depth for `inside` or `has` searches (`stopBy: end_of_function`). |
 
-| Strictness Mode | Match Behavior | Supported Languages (`-l`) |
+| Strictness Mode | Match Behavior | Typical Use Case |
 | :--- | :--- | :--- |
-| **`smart`** *(Default)* | Matches all pattern nodes, skipping unnamed trivia and formatting differences. | `ts`, `tsx`, `js`, `jsx` |
-| **`signature`** | Matches AST nodes except comments, ignoring exact text contents. | `python`, `py`, `rust`, `rs` |
-| **`relaxed`** | Matches named AST nodes; ignores all comments, types, and punctuation. | `go`, `java`, `c`, `cpp` |
-| **`cst`** | Exact match of every node in Concrete Syntax Tree (including trivia/punctuation). | `csharp`, `cs`, `html`, `css` |
+| **`smart`** *(Default)* | Matches all pattern nodes, skipping unnamed trivia and formatting differences. | General structural search and refactoring across all languages |
+| **`signature`** | Matches AST nodes except comments, ignoring exact text contents. | Matching function/type signatures regardless of body details |
+| **`relaxed`** | Matches named AST nodes; ignores all comments, types, and punctuation. | Matching across optional type annotations or syntax sugar |
+| **`cst`** | Exact match of every node in Concrete Syntax Tree (including trivia/punctuation). | Exact formatting/syntax-sensitive matches |
 
 ---
 
