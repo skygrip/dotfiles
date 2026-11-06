@@ -1,8 +1,6 @@
-Review our entire conversation history from this session to identify reusable learnings, non-obvious workarounds, debugging fixes, new tool configurations, or customized user preferences.
+Review our entire conversation history from this session to identify reusable learnings, non-obvious workarounds, debugging fixes, new tool configurations, or customized user preferences. Filter out one-off task specifics and retain only high-leverage, reusable knowledge.
 
-Load our `agent-config` skill guidelines. Filter out one-off task specifics and retain only high-leverage, reusable knowledge.
-
-### Classification & Persistence Rules:
+### Classification & Persistence Rules (edit `dotfiles/pi-agent/Pi_Config/agent/` first, then sync to `~/.pi/agent/`):
 1. **System Environment & CLI Preferences**:
    * Propose additions to `APPEND_SYSTEM.md` for tool preferences (e.g. `rg`, `fd`, `jq`, `uv`), path conventions, or terminal shell quirks.
 2. **Behavioral Guidelines & Guardrails**:
