@@ -8,6 +8,9 @@ globalTTL: 120
 includeAliasesInList: true
 healthCheckTimeout: 600
 
+# Capture logging limit for WebUI (Default: 5 MB, Set to 0 to disable capture logging)
+captureBuffer: 20
+
 # ==============================================================================
 # MACROS & ENVIRONMENT ALIASES
 # ==============================================================================
@@ -15,22 +18,20 @@ macros:
   # ============================================================================
   # ACTIVE PROFILE: NVIDIA RTX 5080 (Windows / CUDA)
   # ============================================================================
-  llama-server: "llama-server.exe --port ${PORT}"
-  strata-server: "strata.exe launch --port ${PORT} --no-tui --yes"
-  basalt-server: "${env.USERPROFILE}/Build/basalt/bin/Release/basalt.exe serve --port ${PORT} --host 127.0.0.1 --gpu 0"
+  llama-server: "${env.USERPROFILE}/Build/llama.cpp-cuda/llama-server.exe --port ${PORT}"
+  basalt-server: "${env.USERPROFILE}/Build/basalt/bin/Release/basalt.exe serve --port ${PORT}"
   threads: 8
   threads_batch: 16
   batch: 2048
   ubatch: 1024
   fit: on
-  fit_target: 512         # -fitt: VRAM safety headroom margin in MiB
+  fit_target: 800
   parallel_slots: 1
-  ncmoe_gemma26: "-ncmoe 14"
-  ncmoe_qwen35: "-ncmoe 18"
   gemma_template: "--chat-template-file ${env.USERPROFILE}/Build/dotfiles/llama-swap/templates/gemma4.jinja"
 
-  hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -fit ${fit} -fitt ${fit_target} -bs --no-mmproj-offload"
-  kv_args: "--kv-unified --parallel ${parallel_slots}"
+  hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -fit ${fit} -fitt ${fit_target} -lm mmap+mlock -bs --no-mmproj-offload"
+  ocr_hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -fit ${fit} -fitt ${fit_target} -lm mmap+mlock -bs --mmproj-offload"
+  kv_args: "--kv-unified --parallel ${parallel_slots} --cache-reuse 64"
 
   # ============================================================================
   # PROFILE: Apple Silicon Mac Studio 128GB (Unified Memory & Metal)
@@ -43,18 +44,17 @@ macros:
   # cache_ram: 65536      # --cache-ram: MiB allocated for unified KV cache
   # parallel_slots: 1
   # max_checkpoints: 8    # --ctx-checkpoints
-  # cache_reuse: 16       # --cache-reuse
-  # ncmoe_gemma26: ""     # 100% Metal GPU offload (no CPU offload needed)
-  # ncmoe_qwen35: ""      # 100% Metal GPU offload (no CPU offload needed)
+  # cache_reuse: 64       # --cache-reuse
   # gemma_template: "--chat-template-file ${env.HOME}/llama-swap/gemma4.jinja"
   #
   # hw_args: "-t ${threads} -tb ${threads_batch} -b ${batch} -ub ${ubatch} -lm mmap+mlock -bs --swa-full"
-  # kv_args: "--kv-unified --parallel ${parallel_slots} --cache-ram ${cache_ram} --cache-idle-slots --ctx-checkpoints ${max_checkpoints} --cache-reuse ${cache_reuse}"
+  # kv_args: "--kv-unified --parallel ${parallel_slots} --cache-ram ${cache_ram} --cache-idle-slots --cache-reuse ${cache_reuse}"
 
   # ============================================================================
   # SHARED BASELINE CONFIGURATION
   # ============================================================================
   ctx: 131072
+  ctx_basalt: 262144
   maxTokens: 32768
   ctk: q8_0
   ctv: q8_0
@@ -85,15 +85,7 @@ models:
       -hf unsloth/gemma-4-12b-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
-      --spec-draft-n-max 2
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.2
-          top_p: 0.90
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
+      --spec-draft-n-max 3
 
 # ==============================================================================
 # MOE Models
@@ -112,19 +104,10 @@ models:
       ${llama-server}
       ${default_args}
       ${gemma_template}
-      ${ncmoe_gemma26}
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.2
-          top_p: 0.90
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
 
 # --- QWEN 3.6 35B ---
   qwen3.6-35ba3b:
@@ -138,20 +121,10 @@ models:
     cmd: |
       ${llama-server}
       ${default_args}
-      ${ncmoe_qwen35}
       -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.7
-          top_p: 0.80
-          top_k: 40
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
 
 # ==============================================================================
 # 27B DENSE Models
@@ -173,15 +146,7 @@ models:
       -hf unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
-      --spec-draft-n-max 2
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.2
-          top_p: 0.90
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
+      --spec-draft-n-max 3
 
 # --- QWEN 3.8 27B ---
   qwen3.8-27b:
@@ -198,16 +163,7 @@ models:
       -hf unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
-      --spec-draft-n-max 2
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.7
-          top_p: 0.80
-          top_k: 40
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
+      --spec-draft-n-max 3
 
 # ==============================================================================
 # HEAVY WEIGHT MODELS
@@ -215,7 +171,7 @@ models:
 
 # --- QWEN 3.8 FLASH NEXT 125B (BASALT RUNNER) ---
   qwen3.8-flash-next-basalt:
-    name: "Qwen 3.8 Flash Next 125B (Basalt NVFP4)"
+    name: "Qwen 3.8 Flash Next 125B (Basalt)"
     description: "Qwen3.8-Flash-Next running on Basalt"
     checkEndpoint: /health
     ttl: 300
@@ -223,17 +179,13 @@ models:
       in: ["text", "image"]
       out: ["text"]
       tools: true
-      context: ${ctx}
+      context: ${ctx_basalt}
     cmd: |
       ${basalt-server}
       --model "${env.USERPROFILE}/Build/Models/Qwen3.8-FN-GSQ-RCO-IQ3_S.basalt"
-      --max-context ${ctx}
+      --max-context ${ctx_basalt}
       --vram-reserve-mib 800
-      --expert-cache auto
       --resident-experts
-      --resident-budget-gib 40
-      --prompt-cache 2
-      --prefill auto
       --vision dynamic
       --kv int8
       --reasoning-budget-tokens 32768
@@ -252,23 +204,6 @@ models:
       ${llama-server}
       ${default_args}
       -hf unsloth/Qwen3.8-Flash-Next-GGUF:UD-IQ4_XS
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.7
-          top_p: 0.80
-          top_k: 20
-          min_p: 0.0
-          presence_penalty: 1.5
-          chat_template_kwargs:
-            enable_thinking: false
-            reasoning_effort: "none"
-        "${MODEL_ID}:think_medium":
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          chat_template_kwargs:
-            reasoning_effort: "medium"
 
 # ==============================================================================
 # RESEARCH & ABLITERATED MODELS
@@ -290,15 +225,7 @@ models:
       -hf HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced:Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
-      --spec-draft-n-max 2
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.2
-          top_p: 0.90
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
+      --spec-draft-n-max 3
 
 # --- GEMMA 4 26B MOE ABLITERATED ---
   gemma4-26ba4b-abliterated:
@@ -313,19 +240,66 @@ models:
       ${llama-server}
       ${default_args}
       ${gemma_template}
-      ${ncmoe_gemma26}
       -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
       --spec-type draft-mtp
       --spec-draft-p-min 0.75
       --spec-draft-n-max 3
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:no_think":
-          temperature: 0.2
-          top_p: 0.90
-          min_p: 0.01
-          chat_template_kwargs:
-            enable_thinking: false
+
+# --- QWEN 3.8 FLASH NEXT 125B (BASALT RUNNER) ---
+  qwen3.8-flash-next-basalt-abliterated:
+    name: "Qwen 3.8 Flash Next 125B abliterated (Basalt)"
+    description: "Qwen3.8-Flash-Next abliterated running on Basalt"
+    checkEndpoint: /health
+    ttl: 300
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: true
+      context: ${ctx_basalt}
+    cmd: |
+      ${basalt-server}
+      --model "${env.USERPROFILE}/Build/Models/Qwen3.8-FN-GSQ-RCO-abliterated-IQ3_S.basalt"
+      --max-context ${ctx_basalt}
+      --vram-reserve-mib 800
+      --resident-experts
+      --vision dynamic
+      --kv int8
+      --reasoning-budget-tokens 32768
+      --alias qwen3.8-flash-next-basalt-abliterated
+
+# ==============================================================================
+# OCR & DOCUMENT PARSING MODELS
+# ==============================================================================
+
+# --- LIGHTON OCR 3 4B (GROUNDED MARKDOWN + BBOXES) ---
+  lightonocr3_4b:
+    name: "LightOnOCR 3 4B"
+    description: "prithivMLmods/LightOnOCR-3-4B-GGUF:Q8_0"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: false
+      context: 65536
+    cmd: |
+      ${llama-server}
+      --ctx-size 65536 -n 12288 -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${ocr_hw_args} --kv-unified --parallel 4 --cache-reuse 64 --jinja
+      --reasoning off
+      -hf prithivMLmods/LightOnOCR-3-4B-GGUF:Q8_0
+
+# --- LIGHTON OCR 3 0.8B (FAST GROUNDED MARKDOWN + BBOXES) ---
+  lightonocr3_08b:
+    name: "LightOnOCR 3 0.8B"
+    description: "prithivMLmods/LightOnOCR-3-0.8B-GGUF:Q8_0"
+    capabilities:
+      in: ["text", "image"]
+      out: ["text"]
+      tools: false
+      context: 65536
+    cmd: |
+      ${llama-server}
+      --ctx-size 65536 -n 12288 -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${ocr_hw_args} --kv-unified --parallel 4 --cache-reuse 64 --jinja
+      --reasoning off
+      -hf prithivMLmods/LightOnOCR-3-0.8B-GGUF:Q8_0
 
 # ==============================================================================
 # RESOURCE SWAP MATRIX CONCURRENT ROUTING
