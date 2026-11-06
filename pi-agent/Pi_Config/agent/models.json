@@ -10,9 +10,7 @@
           "name": "Unsloth Gemma 4 12B",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -26,9 +24,7 @@
           "name": "Unsloth Gemma 4 26B MoE",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -42,9 +38,7 @@
           "name": "Unsloth Qwen 3.6 35B MoE",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -58,9 +52,7 @@
           "name": "Unsloth Gemma 4 31B",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -74,9 +66,7 @@
           "name": "Unsloth Qwen 3.8 27B",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -87,12 +77,10 @@
         },
         {
           "id": "qwen3.8-flash-next-basalt",
-          "name": "Qwen 3.8 Flash Next 125B (Basalt)",
+          "name": "Basalt Qwen 3.8 Flash Next 125B MoE",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
           "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -106,9 +94,7 @@
           "name": "Unsloth Qwen 3.8 Flash Next 125B MoE",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
           "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -122,9 +108,7 @@
           "name": "HauhauCS Gemma 4 12B Abliterated",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
@@ -138,15 +122,27 @@
           "name": "HauhauCS Gemma 4 26B MoE Abliterated",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "cost": { "input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0 },
+          "maxTokens": 16384,
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
             "low": null,
             "medium": "medium",
             "high": null
+          }
+        },
+        {
+          "id": "qwen3.8-flash-next-basalt-abliterated",
+          "name": "Basalt Qwen 3.8 Flash Next 125B MoE Abliterated  ",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "maxTokens": 32768,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "xhigh"
           }
         }
       ]
