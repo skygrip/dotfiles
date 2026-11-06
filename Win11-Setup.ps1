@@ -282,12 +282,22 @@ Function EnableWindowsFeatures {
 }
 
 Function OptimizeMemoryAndPrefetch {
-    Write-Output "Disabling SysMain and Application Pre-launch..."
+    Write-Output "Configuring Memory Management (MMAgent) and SysMain..."
+
+    # Ensure in-memory compression is active (keeps cold OS/background apps compact in RAM)
+    try { Enable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue } catch {}
+
+    # Disable Application Pre-launch (prevents dormant UWP apps from spawning in background)
+    try { Disable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue } catch {}
+    # Disable SysMain (stops background SuperFetch disk reads on NVMe)
     Stop-Service SysMain -ErrorAction SilentlyContinue
     Set-Service SysMain -StartupType Disabled -ErrorAction SilentlyContinue
     $appxPolicy = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Appx"
     If (!(Test-Path $appxPolicy)) { New-Item -Path $appxPolicy -Force | Out-Null }
     Set-ItemProperty -Path $appxPolicy -Name "AllowPrelaunch" -Value 0 -Type DWord -Force
+
+    # Disable Page Combining (eliminates continuous background CPU overhead of RAM deduplication)
+    try { Disable-MMAgent -PageCombining -ErrorAction SilentlyContinue } catch {}
 }
 
 Function SetGpuTdrDelay {

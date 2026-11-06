@@ -80,6 +80,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 - Set lid close action to do nothing (Optional)
 - Set power button to shutdown not sleep workstation (Optional)
 - Adjust Search Index to exclude build folders
+- Tweak Pagefile Settings to include addional drives
 - Grant **Lock pages in memory** (`SeLockMemoryPrivilege` for 2 MiB Hardware Large Pages): `secpol.msc` > `Local Policies` > `User Rights Assignment` > `Lock pages in memory` > Add your user account.
 - Enable BitLocker Drive Encryption.
   - If an eGPU is used, disable BitLocker UEFI PCR 2 Setting (`gpedit.msc` > ... > BitLocker > OS Drive > UEFI Firmware Configuration).
@@ -194,7 +195,7 @@ Configure the following Host settings in the Parsec app:
 | Application                                                                                                            | Winget ID                                          |
 | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | [Afterburner Beta](https://www.guru3d.com/download/msi-afterburner-beta-download/)                                     | winget install -e --id Guru3D.Afterburner.Beta     |
-| [AIDA64](https://aida64.co.uk/download)                                                                                | winget install -e --id FinalWire.AIDA64.Extreme    |
+| [btop4win](https://github.com/aristocratos/btop4win)                                                                   | winget install -e --id aristocratos.btop4win       |
 | [HWInfo](https://www.hwinfo.com/download/)                                                                             | winget install -e --id REALiX.HWiNFO               |
 | [Microsoft.PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) | winget install -e --id Microsoft.PowerShell        |
 | [Rivatuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/)              | winget install -e --id Guru3D.RTSS                 |
@@ -276,6 +277,7 @@ Configure the following Host settings in the Parsec app:
 | Application                                                          | Winget ID / Install Command                     |
 | -------------------------------------------------------------------- | ----------------------------------------------- |
 | [AnythingLLM](https://useanything.com/)                              | winget install -e --id MintplexLabs.AnythingLLM |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli)            | npm install -g @google/gemini-cli               |
 | [Google Antigravity](https://antigravity.google)                     | winget install -e --id Google.Antigravity       |
 | [Google Antigravity CLI](https://antigravity.google)                 | winget install -e --id Google.AntigravityCLI    |
 | [Jan](https://jan.ai/)                                               | winget install -e --id Jan.Jan                  |
@@ -285,7 +287,7 @@ Configure the following Host settings in the Parsec app:
 | [Stability Matrix](https://github.com/LykosAI/StabilityMatrix)       |                                                 |
 | [Topaz Photo AI](https://www.topazlabs.com/topaz-photo-ai)           | winget install -e --id TopazLabs.TopazPhotoAI   |
 
-For advanced AI configurations, global settings, prompt templates, local LLM endpoints, and custom agent extensions, see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-agent/README.md), and [Llama-Swap](./llama-swap/README.md).
+Also see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-agent/README.md), and [Llama-Swap](./llama-swap/README.md).
 
 ### IDEs & Editors
 
@@ -320,7 +322,9 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Miller (mlr)](https://miller.readthedocs.io/)                                                                          | winget install -e --id Miller.Miller                           |
 | [mutool (MuPDF)](https://mupdf.com/)                                                                                   | winget install -e --id ArtifexSoftware.mutool                  |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                                  | winget install -e --id Microsoft.SQLServerManagementStudio     |
-| [Microsoft Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.BuildTools       |
+| [Microsoft Visual Studio 2022 Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.2022.BuildTools  |
+| [Microsoft Visual Studio 2026 Build Tools](https://visualstudio.microsoft.com/downloads/)                               | winget install -e --id Microsoft.VisualStudio.2026.BuildTools  |
+| [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)                                                              | winget install -e --id ShiningLight.OpenSSL.Dev                |
 | [Pandoc](https://pandoc.org/)                                                                                           | winget install -e --id JohnMacFarlane.Pandoc                   |
 | [Podman](https://github.com/containers/podman/)                                                                         | winget install -e --id RedHat.Podman                           |
 | [Postman](https://www.getpostman.com/downloads/)                                                                        | winget install -e --id Postman.Postman --scope user            |
@@ -337,6 +341,7 @@ For advanced AI configurations, global settings, prompt templates, local LLM end
 | [Snyk CLI](https://snyk.io/)                                                                                            | npm install -g snyk                                            |
 | [xh](https://github.com/ducaale/xh)                                                                                    | winget install -e --id ducaale.xh                              |
 | [yq](https://github.com/mikefarah/yq)                                                                                  | winget install -e --id MikeFarah.yq                            |
+| [zoxide](https://github.com/ajeetdsouza/zoxide)                                                                        | winget install -e --id ajeetdsouza.zoxide                      |
 
 ### Remote Access & Virtualization Tools
 
@@ -745,29 +750,19 @@ copy-item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PuTTY (64-bit)\P
 
 ## Windows Terminal Configuration
 
-### Sync to OneDrive
-
-> **Note:** If OneDrive was uninstalled during the initial debloat step, ensure OneDrive is installed or replace `$Env:OneDrive` with an alternative sync location (e.g. Proton Drive or Google Drive).
-
-To setup the sync do the following
-
-```powershell
-mkdir $Env:OneDrive\Backups\Terminal
-cp $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\* $env:OneDrive\Backups\Terminal\
-```
-
-To use an existing sync do the following
-
-```powershell
-rmdir $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
-cmd  /c mklink /J $Env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState $env:OneDrive\Backups\Terminal
-```
-
 ### Initial Setup
 
-Set Windows terminal theme to "One Half Dark"
+Set Windows terminal default color scheme to "One Half Dark" across all profiles under `profiles.defaults` in `settings.json`:
 
-Add some profiles
+```json
+  "profiles": {
+    "defaults": {
+      "colorScheme": "One Half Dark"
+    }
+  }
+```
+
+Add some profiles under `profiles.list`:
 
 ```json
     {
@@ -788,6 +783,23 @@ Add some profiles
       "hidden": false,
       "suppressApplicationTitle": true
     },
+```
+
+### zoxide (Smart Directory Navigation)
+
+Install `zoxide` via winget:
+
+```powershell
+winget install -e --id ajeetdsouza.zoxide
+```
+
+Add the `zoxide` initialization hook to your user PowerShell profile (`$PROFILE`):
+
+```powershell
+if (!(Test-Path -Path $PROFILE)) {
+    New-Item -ItemType File -Path $PROFILE -Force
+}
+Add-Content -Path $PROFILE -Value 'Invoke-Expression (& { (zoxide init powershell | Out-String) })'
 ```
 
 ## R setup
@@ -843,9 +855,10 @@ uv tool install docling
 # --- OPTIONAL: Enable GPU Acceleration for Docling ---
 
 # Option A: NVIDIA GPU (CUDA) - Required for fast local OCR & VLM pipelines
-uv pip install torch torchvision --reinstall --index-url https://download.pytorch.org/whl/cu132 --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip install torch torchvision --reinstall --index-url https://download.pytorch.org/whl/cu128 --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 uv pip uninstall onnxruntime --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 uv pip install onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip install triton-windows flash-linear-attention --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 
 # Verify GPU detection (CUDA):
 & "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c "import torch; ok = torch.cuda.is_available(); dev = torch.cuda.get_device_name(0) if ok else None; print(f'CUDA Available: {ok} | Device: {dev}')"
@@ -853,6 +866,7 @@ uv pip install onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\p
 # Option B: AMD/Intel GPU (DirectML) - Acceleration for standard OCR/layout models
 uv pip uninstall onnxruntime onnxruntime-gpu --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 uv pip install onnxruntime-directml --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
+uv pip install flash-linear-attention --python "$env:APPDATA\uv\tools\docling\Scripts\python.exe"
 
 # Verify GPU detection (DirectML):
 & "$env:APPDATA\uv\tools\docling\Scripts\python.exe" -c 'import onnxruntime as ort; print("Available Providers:", ort.get_available_providers()); print("DML Ready:", "DmlExecutionProvider" in ort.get_available_providers())'
@@ -875,6 +889,65 @@ To use BOSL2 in your `.scad` scripts, include it at the top of your file:
 ```openscad
 include <BOSL2/std.scad>
 ```
+
+## llama.cpp CUDA Setup & Updater
+
+`winget install -e --id ggml.llamacpp` installs the Vulkan build. For native NVIDIA GPU performance, use the GitHub CLI (`gh`) to fetch the latest precompiled CUDA release and runtime DLLs directly into `$HOME\Build\llama.cpp-cuda`:
+
+### Install and Update Script (Binaries & CUDA Runtime DLLs)
+
+```powershell
+# Query the latest build tag (including pre-releases)
+$tag = (gh release list -R ggml-org/llama.cpp --limit 1 --json tagName --jq '.[0].tagName')
+Write-Host "Fetching llama.cpp release: $tag" -ForegroundColor Cyan
+
+$destDir = "$HOME\Build\llama.cpp-cuda"
+$tempDir = "$env:TEMP\llama-update-$tag"
+New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+# Download the main CUDA binary bundle and cudart runtime dependencies
+gh release download $tag -R ggml-org/llama.cpp `
+  -p "llama-*-bin-win-cuda-13.4-x64.zip" `
+  -p "cudart-llama-bin-win-cuda-13.4-x64.zip" `
+  --dir $tempDir --clobber
+
+# Extract into target folder
+Get-ChildItem -Path $tempDir -Filter "*.zip" | ForEach-Object {
+    Write-Host "Extracting $($_.Name)..." -ForegroundColor Yellow
+    Expand-Archive -Path $_.FullName -DestinationPath $destDir -Force
+}
+
+# Cleanup
+Remove-Item -Recurse -Force $tempDir
+Write-Host "Successfully updated $destDir to $tag" -ForegroundColor Green
+```
+
+## Basalt Runner Setup
+
+[Basalt](https://github.com/jesdga95/basalt) is a high-performance LLM inference engine supporting large MoE architectures with resident expert caching and dynamic vision.
+
+### Build and Setup
+
+```powershell
+# Navigate to Build directory
+cd "$HOME\Build"
+
+# Clone repository
+git clone https://github.com/jesdga95/basalt
+cd basalt
+
+# Configure and build Release binary with CMake
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release -j
+
+# Set up Python virtual environment and dependencies
+uv venv
+uv pip install -r requirements.txt
+```
+
+The compiled binary will be located at:
+`$HOME\Build\basalt\bin\Release\basalt.exe`
 
 ## WSL2
 
