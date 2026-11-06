@@ -306,7 +306,7 @@ export async function runPromptCleanerTests() {
   // ----------------------------------------------------
   // Section 3: System Prompt Boilerplate Stripping
   // ----------------------------------------------------
-  await asyncTest("System Prompt Hygiene: strips <tools> and <docs> XML blocks", async () => {
+  await asyncTest("System Prompt Hygiene: strips <tools> XML block while preserving <docs> and <rules>", async () => {
     const registeredEvents = new Map();
     const mockPi = {
       on(event, handler) { registeredEvents.set(event, handler); }
@@ -339,8 +339,8 @@ Pi documentation (read only when the user asks about pi itself):
     const result = await beforeAgentStartHook({ systemPrompt: xmlPrompt });
     assert.ok(!result.systemPrompt.includes("<tools>"), "Must strip <tools> block");
     assert.ok(!result.systemPrompt.includes("</tools>"), "Must strip </tools> block");
-    assert.ok(!result.systemPrompt.includes("<docs>"), "Must strip <docs> block");
-    assert.ok(!result.systemPrompt.includes("</docs>"), "Must strip </docs> block");
+    assert.ok(result.systemPrompt.includes("<docs>"), "Must preserve <docs> block");
+    assert.ok(result.systemPrompt.includes("</docs>"), "Must preserve </docs> block");
     assert.ok(result.systemPrompt.includes("<rules>"), "Must preserve rules section");
     assert.ok(result.systemPrompt.includes("Always emit path first"), "Must preserve prompt rules");
   });

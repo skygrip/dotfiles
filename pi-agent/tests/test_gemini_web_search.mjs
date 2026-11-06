@@ -379,7 +379,7 @@ export async function runGeminiTests() {
 
       // Verify request payload
       assert.ok(capturedUrl.includes("generativelanguage.googleapis.com"));
-      assert.ok(capturedUrl.includes("gemini-flash-lite-latest:generateContent"));
+      assert.ok(capturedUrl.includes("gemini-flash-latest:generateContent"));
       assert.equal(capturedHeaders["x-goog-api-key"], "mock-synthetic-key");
       assert.deepEqual(capturedBody.tools, [{ google_search: {} }]);
       assert.equal(capturedBody.contents[0].parts[0].text, "typescript 5.6 features");
@@ -389,11 +389,11 @@ export async function runGeminiTests() {
       assert.ok(res.content[0].text.includes("### Sources"));
       assert.ok(res.content[0].text.includes("[TypeScript 5.6 Release](https://devblogs.microsoft.com/typescript)"));
 
-      // Verify usage
+      // Verify usage (includes $0.035 per-query Google Search grounding fee)
       assert.equal(res.usage.input, 150);
       assert.equal(res.usage.output, 50);
       assert.equal(res.usage.totalTokens, 200);
-      assert.ok(res.usage.cost.total > 0);
+      assert.ok(res.usage.cost.total >= 0.035, "Total cost must include $0.035 search query grounding fee");
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -527,7 +527,7 @@ export async function runGeminiTests() {
 
     // 2. renderResult isPartial (live streaming indicator)
     const partialRender = webSearch.renderResult(
-      { content: [{ type: "text", text: "Searching Google with gemini-flash-lite-latest for 'deno'..." }] },
+      { content: [{ type: "text", text: "Searching Google with gemini-flash-latest for 'deno'..." }] },
       { isPartial: true },
       mockCtx.ui.theme
     );
@@ -553,14 +553,14 @@ export async function runGeminiTests() {
     const completedRender = webSearch.renderResult(
       {
         content: [{ type: "text", text: "Summary text\nLine 2\nLine 3" }],
-        details: { query: "deno", model: "gemini-flash-lite-latest", durationMs: 1200, fullContent: "Full text" }
+        details: { query: "deno", model: "gemini-flash-latest", durationMs: 1200, fullContent: "Full text" }
       },
       { expanded: false },
       mockCtx.ui.theme
     );
     const completedStr = completedRender.text || completedRender.toString();
     assert.ok(completedStr.includes("SEARCH COMPLETED"));
-    assert.ok(completedStr.includes("gemini-flash-lite-latest"));
+    assert.ok(completedStr.includes("gemini-flash-latest"));
     assert.ok(completedStr.includes("(1.2s)"));
 
     // 6. renderResult Collapsed View with ctrl+o hint

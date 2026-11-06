@@ -22,19 +22,17 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   *Source Directory*: [Pi_Config/agent/extensions/](./Pi_Config/agent/extensions/)
     *   `permissions-gate.ts`: Pre-execution security barriers intercepting dangerous commands (bash & powershell), secret credential exfiltration (`.env`, `.ssh`, API keys), and out-of-workspace file operations across `read`, `write`, `edit`, `grep`, `find`, and `ls`.
     *   `gemini-web-search.ts`: Grounded Google web search powered by Gemini API with source citations and standard tool annotations (`openWorldHint`, `readOnlyHint`).
-    *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, Readability, and Turndown markdown parsing.
-    *   `prompt-cleaner.ts`: Strips prompt boilerplate (`<tools>` and `<docs>` blocks) and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
+    *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, and Defuddle markdown extraction.
+    *   `prompt-cleaner.ts`: Strips prompt boilerplate (`<tools>` block), normalizes Windows paths, and anchors `path`-first argument ordering for local/open-weight models (e.g. Gemma, Qwen).
     *   `write-diff.ts`: Overrides native `write` tool using `createWriteToolDefinition` and dynamic `ctx.cwd`, rendering real-time syntax-highlighted unified diffs, new file previews, and no-change indicators.
     *   `ask-question.ts`: Interactive TUI-based decision dialogs with `model-only` exposure to prevent prompt bloat while remaining invokable.
     *   `sequential-thinking.ts`: Step-by-step reasoning scratchpad with idempotent read-only tool annotations.
 *   **Workspace Skills (`skills/`)**: Checklists and instruction sets loaded via the `use` command.
     *   *Source Directory*: [Pi_Config/agent/skills/](./Pi_Config/agent/skills/)
-    *   `agent-config`: Configuration blueprints, templates, and setup guidelines.
     *   `ast-grep`: Structural AST-based code search and in-place transformations across languages.
-    *   `batch-automator`: Headless `pi -p` shell loops for bulk refactoring and docstring generation.
     *   `ck`: Fast lexical, hybrid, and semantic codebase search with Tree-sitter extraction.
     *   `doc-malware-triage`: Safely dissect malicious Office documents, stagers, and PDFs without host execution.
-    *   `docling`: Convert PDFs, Office documents, and scans to clean Markdown or JSON chunks.
+    *   `docling`: Convert PDFs, Office documents, and scans to clean Markdown or JSON.
     *   `duckdb`: High-performance in-process SQL analytics on Parquet, CSV, JSONL, and SQLite.
     *   `gh`: GitHub CLI workflows for PRs, issues, Actions CI triage, and GraphQL queries.
     *   `image-prompt-builder`: Optical staging, Kelvin physics, and prompts across modern AI image engines.
@@ -43,10 +41,10 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
     *   `openscad`: Syntax reference, CSG modeling rules, and parametric templates for 3D parts.
     *   `pe-malware-triage`: Dissect Windows executables, Linux binaries, and payloads statically.
     *   `pii-detection`: Audit datasets, emails, and logs for sensitive personal information.
-    *   `plan-execute`: Architecture, planning, and task execution framework with phase gates.
     *   `secret-scanning`: Detect and verify leaked API keys, tokens, and credentials via TruffleHog.
     *   `semgrep`: Multi-language static application security testing (SAST) and security linting.
     *   `snyk`: Dependency vulnerability scanning (SCA), container tests, and IaC security.
+    *   `uv`: Default Python execution engine, PEP 723 inline dependencies, and isolated environments.
     *   `vt-cli`: VirusTotal threat intelligence, hash lookups, and IOC validation.
     *   `yq`: Query, mutate, and convert YAML, TOML, XML, and JSON preserving comments.
 
@@ -91,7 +89,7 @@ echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
 
 #### Install Extension Dependencies & Plugins
 
-All runtime packages required by custom extensions (`turndown`, `got-scraping`, `linkedom`, `@mozilla/readability`, `playwright-core`) are tracked in `Pi_Config/agent/npm/package.json`. Install them into Pi's isolated npm environment:
+All runtime packages required by custom extensions (`defuddle`, `got-scraping`, `playwright-core`) are tracked in `Pi_Config/agent/npm/package.json`. Install them into Pi's isolated npm environment:
 
 **PowerShell (Windows):**
 ```powershell
@@ -113,7 +111,7 @@ To sync all skills, extensions, prompts, configurations, and extension dependenc
 Copy-Item -Path ".\Pi_Config\agent\*" -Destination "$HOME\.pi\agent" -Recurse -Force
 
 # 2. Sync portable skills to Antigravity:
-Copy-Item -Path ".\Pi_Config\agent\skills\*" -Destination "$HOME\.gemini\config\skills" -Exclude @("agent-config", "batch-automator") -Recurse -Force
+Copy-Item -Path ".\Pi_Config\agent\skills\*" -Destination "$HOME\.gemini\config\skills" -Recurse -Force
 
 # 3. Ensure extension dependencies are installed:
 npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
@@ -125,7 +123,7 @@ npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
 rsync -av --exclude="node_modules" --exclude="package-lock.json" ./Pi_Config/agent/ "$HOME/.pi/agent/"
 
 # 2. Sync portable skills to Antigravity:
-rsync -av --exclude="agent-config" --exclude="batch-automator" ./Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
+rsync -av ./Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
 
 # 3. Ensure extension dependencies are installed:
 npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit

@@ -63,9 +63,7 @@ export function getJitiLoader() {
     "typebox/system": path.join(typeboxBase, "typebox", "build", "system", "index.mjs"),
     "typebox/format": path.join(typeboxBase, "typebox", "build", "format", "index.mjs"),
     "typebox/schema": path.join(typeboxBase, "typebox", "build", "schema", "index.mjs"),
-    "@mozilla/readability": path.join(localNpmNodeModules, "@mozilla/readability", "index.js"),
-    "linkedom": path.join(localNpmNodeModules, "linkedom", "cjs", "index.js"),
-    "turndown": path.join(localNpmNodeModules, "turndown", "lib", "turndown.cjs.js"),
+    "defuddle": path.join(localNpmNodeModules, "defuddle", "dist", "index.js"),
     "got-scraping": path.join(localNpmNodeModules, "got-scraping", "dist", "index.js"),
     "playwright-core": path.join(localNpmNodeModules, "playwright-core", "index.js")
   };

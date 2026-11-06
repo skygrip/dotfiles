@@ -12,7 +12,7 @@
  * 4. sequential-thinking (Intermediate reasoning scratchpad)
  * 5. ask-question (Interactive prompt modals & mutex queue)
  * 6. gemini-web-search (Google grounded web search & citations)
- * 7. fetch-url (Web scraping, Readability, Chrome CDP & Turndown)
+ * 7. fetch-url (Web scraping, Defuddle, Chrome CDP & WAF/JS fallback)
  *
  * Usage:
  *   node pi-agent/tests/run_all_tests.mjs              # Run all 7 suites

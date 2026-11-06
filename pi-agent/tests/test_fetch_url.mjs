@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs";
+import * as http from "node:http";
 import { loadExtension, isOfflineMode } from "./test_harness.mjs";
 
 function loadFetchUrlModule() {
@@ -91,10 +92,12 @@ export async function runFetchUrlTests() {
     const ftpRes = await fetchTool.execute("call_ftp", { url: "ftp://ftp.example.com/file.txt" }, undefined, undefined, mockCtx);
     assert.ok(ftpRes.content[0].text.includes("Invalid protocol") || ftpRes.content[0].text.includes("Error"));
 
-    // 2. Localhost permitted for local development (should fail with network error, not SSRF security block)
+    // 2. Localhost permitted for local development (should fail with network error, not protocol block)
+    await fetchEngineCmd.handler("got-scraping", mockCtx);
     const localRes = await fetchTool.execute("call_local", { url: "http://localhost:59999/status" }, undefined, undefined, mockCtx);
+    await fetchEngineCmd.handler("auto", mockCtx);
     const localText = localRes.content[0].text.toLowerCase();
-    assert.ok(!localText.includes("ssrf") && !localText.includes("blocked internal"), "Localhost must not be blocked by SSRF filter");
+    assert.ok(!localText.includes("invalid protocol"), "Localhost must be permitted");
   });
 
   // Test 3: Pre-Request Permission Gate & Headless Safety
@@ -258,8 +261,8 @@ export async function runFetchUrlTests() {
     assert.equal(sniffContentType(binBytes, "application/octet-stream").category, "binary");
   });
 
-  // Test 8: DOM Normalization, Readability & Absolute URL Rewriting
-  await test("DOM & Readability: converts HTML to clean markdown and rewrites relative URLs to absolute", async () => {
+  // Test 8: DOM Normalization, Defuddle & Absolute URL Rewriting
+  await test("DOM & Defuddle: converts HTML to clean markdown and rewrites relative URLs to absolute", async () => {
     const { htmlToMarkdown } = mod;
     assert.ok(typeof htmlToMarkdown === "function", "htmlToMarkdown must be exported");
 
@@ -346,7 +349,7 @@ export async function runFetchUrlTests() {
     assert.ok(!imgUrls.some(u => u.includes("avatar")), "Must filter out avatars");
   });
 
-  // Test 10: Image Deduplication (Option 2)
+  // Test 10: Image Deduplication
   if (!isOfflineMode()) {
     await test("Image Deduplication: preserves contextual inline images and avoids bottom appendix duplicates", async () => {
       // Test on Google's WebP gallery comparison page
@@ -497,13 +500,273 @@ export async function runFetchUrlTests() {
     });
   }
 
+  // Test 15: WAF Header & JavaScript-Required Fallback Routing (Local HTTP Server)
+  await test("WAF & JS Fallback Routing: detects Cloudflare/Vercel/AWS/DataDome/Imperva/Kasada & empty SPA shells and routes to Chrome", async () => {
+    const server = http.createServer((req, res) => {
+      switch (req.url) {
+        case "/waf/cloudflare":
+          res.writeHead(200, { "content-type": "text/html", "cf-mitigated": "challenge" });
+          res.end("<html><body>Just a moment...</body></html>");
+          break;
+        case "/waf/vercel":
+          res.writeHead(200, { "content-type": "text/html", "x-vercel-mitigated": "challenge" });
+          res.end("<html><body>Vercel Security Checkpoint</body></html>");
+          break;
+        case "/waf/aws":
+          res.writeHead(200, { "content-type": "text/html", "x-amzn-waf-action": "challenge" });
+          res.end("<html><body>AWS WAF</body></html>");
+          break;
+        case "/waf/datadome":
+          res.writeHead(200, { "content-type": "text/html", "x-datadome": "protected" });
+          res.end("<html><body>DataDome</body></html>");
+          break;
+        case "/waf/imperva":
+          res.writeHead(403, { "content-type": "text/html", "x-cdn": "Imperva" });
+          res.end("<html><body>Incapsula incident</body></html>");
+          break;
+        case "/waf/kasada":
+          res.writeHead(429, { "content-type": "text/html", "x-kpsdk-ct": "0123456789" });
+          res.end("<html><body>Kasada</body></html>");
+          break;
+        case "/spa/empty":
+          res.writeHead(200, { "content-type": "text/html" });
+          res.end("<!doctype html><html><head><title>Vite SPA</title><script type='module' src='/app.js'></script></head><body><div id='root'></div></body></html>");
+          break;
+        case "/spa/noscript":
+          res.writeHead(200, { "content-type": "text/html" });
+          res.end("<!doctype html><html><head><title>App</title></head><body><div class='no-js'>You need to enable JavaScript to run this app.</div></body></html>");
+          break;
+        default:
+          res.writeHead(404);
+          res.end();
+      }
+    });
+
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = server.address().port;
+    const baseUrl = `http://127.0.0.1:${port}`;
+
+    try {
+      // 1. Verify each WAF & SPA case is caught in got-scraping mode
+      await fetchEngineCmd.handler("got-scraping", mockCtx);
+
+      const expectedBlocks = [
+        ["/waf/cloudflare", "Blocked by Cloudflare challenge"],
+        ["/waf/vercel", "Blocked by Vercel Attack Challenge"],
+        ["/waf/aws", "Blocked by AWS WAF challenge"],
+        ["/waf/datadome", "Blocked by DataDome"],
+        ["/waf/imperva", "Blocked by Imperva/Incapsula"],
+        ["/waf/kasada", "Blocked by Kasada"],
+        ["/spa/empty", "JavaScript rendering required"],
+        ["/spa/noscript", "JavaScript rendering required"]
+      ];
+
+      for (const [route, expectedReason] of expectedBlocks) {
+        const res = await fetchTool.execute("test_waf", { url: `${baseUrl}${route}` }, undefined, undefined, mockCtx);
+        assert.ok(
+          res.details?.error?.includes(expectedReason),
+          `Route ${route} should fail with '${expectedReason}', got: '${res.details?.error}'`
+        );
+      }
+
+      // 2. Verify auto mode sets fallbackReason and routes to Chrome CDP on both WAF and JS-shell pages
+      await fetchEngineCmd.handler("auto", mockCtx);
+
+      for (const [route, expectedReason] of [
+        ["/waf/cloudflare", "Blocked by Cloudflare challenge"],
+        ["/spa/empty", "JavaScript rendering required"]
+      ]) {
+        const updates = [];
+        const ac = new AbortController();
+        const onUpdate = (u) => {
+          const txt = u?.content?.[0]?.text || "";
+          updates.push(txt);
+          if (txt.includes("falling back to Chrome User Session (CDP)")) {
+            ac.abort();
+          }
+        };
+
+        const res = await fetchTool.execute("test_auto_fallback", { url: `${baseUrl}${route}` }, ac.signal, onUpdate, mockCtx);
+        assert.ok(
+          res.details?.fallbackReason?.includes(expectedReason),
+          `Auto mode on ${route} must record fallbackReason '${expectedReason}', got: '${res.details?.fallbackReason}'`
+        );
+        assert.ok(
+          updates.some((u) => u.includes("falling back to Chrome User Session (CDP)")),
+          `Auto mode on ${route} must emit fallback transition update to Chrome CDP`
+        );
+      }
+    } finally {
+      server.close();
+      await fetchEngineCmd.handler("auto", mockCtx);
+    }
+  });
+
+  // Test 16: Live JavaScript-Required Site Routing (help.zscaler.com)
+  if (!isOfflineMode()) {
+    await test("Live JS-Required Site (help.zscaler.com): detects unhydrated SPA shell and routes to Chrome fallback", async () => {
+      await fetchEngineCmd.handler("auto", mockCtx);
+      const updates = [];
+      const ac = new AbortController();
+      const onUpdate = (u) => {
+        const txt = u?.content?.[0]?.text || "";
+        updates.push(txt);
+        if (txt.includes("falling back to Chrome User Session (CDP)")) {
+          ac.abort();
+        }
+      };
+
+      const res = await fetchTool.execute(
+        "live_zscaler_spa",
+        { url: "https://help.zscaler.com/zia/configuring-ssltls-inspection-policy" },
+        ac.signal,
+        onUpdate,
+        mockCtx
+      );
+
+      assert.ok(
+        res.details?.fallbackReason?.includes("JavaScript rendering required"),
+        `Must detect unhydrated JS shell on help.zscaler.com, got fallbackReason: '${res.details?.fallbackReason}'`
+      );
+      assert.ok(
+        updates.some((u) => u.includes("falling back to Chrome User Session (CDP)")),
+        "Must escalate help.zscaler.com from got-scraping to Chrome CDP in auto mode"
+      );
+    });
+  }
+
+  // Test 17: Chrome CDP Event-Driven Wait Pipeline (CAPTCHA Solve + Navigation Recovery + MutationObserver)
+  await test("Chrome CDP Wait Pipeline: handles CAPTCHA bringToFront, cross-navigation recovery, and MutationObserver settle", async () => {
+    const { waitForChromePageReady } = mod;
+    assert.ok(typeof waitForChromePageReady === "function", "waitForChromePageReady must be exported");
+
+    // 1. Simulate a Cloudflare CAPTCHA page where solving triggers a navigation ("Execution context was destroyed")
+    let stage = "challenge";
+    let broughtToFront = false;
+    let loadStateWaits = 0;
+    let settleCalled = false;
+    const updates = [];
+
+    const mockPage = {
+      async bringToFront() {
+        broughtToFront = true;
+      },
+      async waitForLoadState() {
+        loadStateWaits++;
+      },
+      async evaluate() {
+        // First check: on challenge screen; after navigation: challenge cleared
+        return stage === "challenge";
+      },
+      async waitForFunction(_fn, arg) {
+        if (stage === "challenge") {
+          // Simulate user solving CAPTCHA and triggering full-page reload
+          stage = "hydrated";
+          throw new Error("page.waitForFunction: Execution context was destroyed, most likely because of a navigation.");
+        }
+        if (arg && typeof arg.debounceMs === "number") {
+          settleCalled = true;
+        }
+        return true;
+      }
+    };
+
+    await waitForChromePageReady(mockPage, {
+      onUpdate: (u) => updates.push(u?.content?.[0]?.text || ""),
+      challengeTimeoutMs: 5000,
+      settleTimeoutMs: 1000,
+      quietMs: 50
+    });
+
+    assert.equal(broughtToFront, true, "Must bring Chrome tab to front when CAPTCHA is detected");
+    assert.ok(
+      updates.some((u) => u.includes("Security challenge / CAPTCHA detected in Chrome")),
+      "Must notify user via onUpdate when CAPTCHA is detected"
+    );
+    assert.ok(loadStateWaits >= 1, "Must wait for domcontentloaded after navigation context destruction");
+    assert.equal(settleCalled, true, "Must run MutationObserver DOM settler after challenge resolves");
+
+    // 2. Simulate an unsolved CAPTCHA timing out cleanly
+    const stuckPage = {
+      async bringToFront() {},
+      async waitForLoadState() {},
+      async evaluate() { return true; },
+      async waitForFunction() {
+        await new Promise((r) => setTimeout(r, 30));
+        throw new Error("Timeout");
+      }
+    };
+
+    await assert.rejects(
+      () => waitForChromePageReady(stuckPage, { challengeTimeoutMs: 80, settleTimeoutMs: 50, quietMs: 20 }),
+      /Timed out waiting for CAPTCHA/
+    );
+
+    // 3. Live Real-Chrome Integration (when online & Chrome binary is installed)
+    if (!isOfflineMode()) {
+      const { createRequire } = await import("node:module");
+      const piReq = createRequire(path.join(os.homedir(), ".pi", "agent", "npm", "package.json"));
+      const { chromium } = piReq("playwright-core");
+      const { htmlToMarkdown } = mod;
+
+      let browser = null;
+      try {
+        browser = await chromium.launch({ channel: "chrome", headless: true });
+      } catch {}
+
+      if (browser) {
+        let solved = false;
+        const captchaServer = http.createServer((req, res) => {
+          if (!solved) {
+            solved = true;
+            res.writeHead(403, { "content-type": "text/html" });
+            res.end(`<!doctype html><html><head><title>Just a moment...</title></head><body>
+              <div id="challenge-running">Checking your browser...</div>
+              <script>setTimeout(() => { window.location.reload(); }, 300);</script>
+            </body></html>`);
+          } else {
+            res.writeHead(200, { "content-type": "text/html" });
+            res.end(`<!doctype html><html><head><title>Solved Article</title></head><body>
+              <article><h1>Welcome After CAPTCHA</h1><p>${"This is the hydrated article content after solving the security challenge. ".repeat(6)}</p></article>
+            </body></html>`);
+          }
+        });
+        await new Promise((r) => captchaServer.listen(0, "127.0.0.1", r));
+        const port = captchaServer.address().port;
+
+        try {
+          // 3a. Real Chrome solving a 403 challenge reload -> 200 article
+          const page = await browser.newPage();
+          await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "domcontentloaded" });
+          await waitForChromePageReady(page);
+          const parsedCaptcha = htmlToMarkdown(await page.content(), page.url());
+          assert.equal(parsedCaptcha.title, "Solved Article");
+          assert.ok(parsedCaptcha.markdown.includes("Welcome After CAPTCHA"), "Must extract post-CAPTCHA article");
+          await page.close();
+
+          // 3b. Real Chrome hydrating help.zscaler.com SPA via MutationObserver + Defuddle
+          const zPage = await browser.newPage();
+          await zPage.goto("https://help.zscaler.com/zia/configuring-ssltls-inspection-policy", { waitUntil: "domcontentloaded" });
+          await waitForChromePageReady(zPage);
+          const parsedZscaler = htmlToMarkdown(await zPage.content(), zPage.url());
+          assert.ok(parsedZscaler.title.includes("Configuring SSL/TLS Inspection Policy"), "Must extract hydrated Zscaler title");
+          assert.ok(parsedZscaler.markdown.length > 5000, "Must extract full hydrated Zscaler article (>5,000 chars)");
+          await zPage.close();
+        } finally {
+          captchaServer.close();
+          await browser.close();
+        }
+      }
+    }
+  });
+
   return results;
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 
 if (isMain || process.argv[1]?.endsWith("test_fetch_url.mjs")) {
-  console.log("Running Fetch URL Comprehensive Test Suite (14 Tests)...");
+  console.log("Running Fetch URL Comprehensive Test Suite (17 Tests)...");
   runFetchUrlTests().then((res) => {
     let allPassed = true;
     for (const r of res) {
