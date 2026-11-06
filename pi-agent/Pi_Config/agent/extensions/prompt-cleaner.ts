@@ -8,8 +8,7 @@
  * Core Capabilities & Architecture:
  * -------------------------------------------------------------------------------------
  * 1. System Prompt Boilerplate Stripping (`before_agent_start`):
- *    - Intercepts the generated system prompt before LLM dispatch and strips <tools> and
- *      <docs> XML blocks.
+ *    - Intercepts the generated system prompt before LLM dispatch and strips the <tools> XML block.
  *    - Enables API-native JSON Schema tool definitions to drive model behavior directly,
  *      eliminating prompt contradiction and reclaiming valuable context window tokens.
  *
@@ -155,11 +154,8 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event) => {
     let prompt = event.systemPrompt;
 
-    // Remove hardcoded <tools> and <docs> blocks
-    prompt = prompt.replace(
-      /(?:<tools>[\s\S]*?<\/tools>\s*|<docs>[\s\S]*?<\/docs>\s*)/g,
-      ""
-    );
+    // Remove hardcoded <tools> block
+    prompt = prompt.replace(/<tools>[\s\S]*?<\/tools>\s*/g, "");
 
     // Normalize Windows backslashes in system prompt paths
     prompt = normalizeWindowsPaths(prompt);

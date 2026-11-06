@@ -11,13 +11,13 @@ import { Text } from "@earendil-works/pi-tui";
  *
  * Configuration & CLI Flags:
  * - Gemini API Key: Resolved from GEMINI_API_KEY / GOOGLE_API_KEY env vars or Pi ModelRegistry (google).
- * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-flash-lite-latest").
+ * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-flash-latest").
  * - `--no-search-gate`: CLI flag to disable confirmation prompts for web search.
  * - `PI_SEARCH_GATE`: Environment variable override (set to "0" or "false" to disable).
  * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
  */
 
-const DEFAULT_MODEL = "gemini-flash-lite-latest";
+const DEFAULT_MODEL = "gemini-flash-latest";
 const DEFAULT_API_HOST = "https://generativelanguage.googleapis.com";
 const CONFIRM_TIMEOUT_MS = 30000; // 30s confirmation auto-dismiss
 const COLLAPSED_PREVIEW_LINES = 6;
@@ -25,9 +25,10 @@ const COLLAPSED_PREVIEW_LINES = 6;
 export const DEFAULT_MAX_LINES = 2000;
 export const DEFAULT_MAX_BYTES = 50 * 1024; // 50 KB output ceiling
 
-// Rates for gemini-flash-lite-latest (USD per 1M tokens)
-const INPUT_PRICE_PER_M = 0.075;
-const OUTPUT_PRICE_PER_M = 0.30;
+// Rates for gemini-flash-latest (USD per 1M tokens + per-query Google Search grounding fee)
+const INPUT_PRICE_PER_M = 0.30;
+const OUTPUT_PRICE_PER_M = 2.50;
+const SEARCH_QUERY_COST = 0.035; // $35 per 1,000 grounded search requests
 
 /**
  * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
@@ -92,12 +93,16 @@ export function truncateHead(content: string, options: { maxLines?: number; maxB
 /**
  * Computes Pi Usage object from Gemini usageMetadata.
  */
-export function computeGeminiUsage(usageMeta?: { promptTokenCount?: number; candidatesTokenCount?: number }) {
+export function computeGeminiUsage(usageMeta?: {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  thoughtsTokenCount?: number;
+}) {
   const input = usageMeta?.promptTokenCount ?? 0;
-  const output = usageMeta?.candidatesTokenCount ?? 0;
+  const output = (usageMeta?.candidatesTokenCount ?? 0) + (usageMeta?.thoughtsTokenCount ?? 0);
   const inputCost = (input / 1_000_000) * INPUT_PRICE_PER_M;
   const outputCost = (output / 1_000_000) * OUTPUT_PRICE_PER_M;
-  const totalCost = inputCost + outputCost;
+  const totalCost = inputCost + outputCost + SEARCH_QUERY_COST;
 
   return {
     input,

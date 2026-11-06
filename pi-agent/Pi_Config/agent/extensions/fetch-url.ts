@@ -1,4 +1,10 @@
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import {
+  resizeImage,
+  formatDimensionNote,
+  convertToPng,
+  type ExtensionAPI,
+  type ExtensionContext
+} from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { createRequire } from "node:module";
@@ -11,7 +17,7 @@ import { pathToFileURL } from "node:url";
  * Lean URL Fetch & Web Extraction Extension for Pi Coding Agent
  *
  * Tools & Commands:
- * - `fetch_url`: Safe HTTP retrieval with got-scraping, redirect validation, Chrome CDP browser fallback (piggybacking on active user Chrome session), Readability/Turndown parsing, and multimodal vision.
+ * - `fetch_url`: HTTP retrieval with got-scraping, WAF & JS-shell detection, Chrome CDP browser fallback (via DevToolsActivePort), Defuddle markdown extraction, and multimodal vision.
  * - `/fetch-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
  * - `/fetch-engine`: Slash command to set retrieval engine ([auto|chrome|got-scraping|status]).
  *
@@ -37,7 +43,7 @@ export type FetchEngine = "auto" | "chrome" | "got-scraping";
  * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
  */
 function isGateInitiallyEnabled(gateKey: string, flagName: string, pi?: ExtensionAPI): boolean {
-  if (pi && typeof pi.getFlag === "function" && pi.getFlag(flagName) === true) {
+  if (pi?.getFlag(flagName) === true) {
     return false;
   }
   if (process.argv.includes(`--${flagName}`) || process.argv.includes("--no-gates")) {
@@ -63,12 +69,10 @@ let gateEnabled = isGateInitiallyEnabled("PI_FETCH_GATE", "no-fetch-gate");
  * Resolves the initial fetch engine setting from flags or environment variables.
  */
 function getInitialEngine(pi?: ExtensionAPI): FetchEngine {
-  if (pi && typeof pi.getFlag === "function") {
-    const val = pi.getFlag("fetch-engine");
-    if (typeof val === "string") {
-      const lower = val.trim().toLowerCase();
-      if (lower === "chrome" || lower === "got-scraping" || lower === "auto") return lower;
-    }
+  const flagVal = pi?.getFlag("fetch-engine");
+  if (typeof flagVal === "string") {
+    const lower = flagVal.trim().toLowerCase();
+    if (lower === "chrome" || lower === "got-scraping" || lower === "auto") return lower;
   }
 
   const argvArg = process.argv.find(a => a.startsWith("--fetch-engine="));
@@ -101,100 +105,52 @@ function loadDependency<T = any>(name: string): T {
   }
 }
 
-let cachedReadability: any = null;
-let cachedParseHTML: any = null;
-let cachedTurndown: any = null;
-let cachedResizeImage: any = null;
-let cachedFormatDimensionNote: any = null;
-let cachedConvertToPng: any = null;
-
-/**
- * Lazy loader for Pi's built-in Rust/WASM Photon image resizing and conversion engine.
- * Pi core exports are natively available to all extensions inside Pi's runtime environment.
- */
-async function getImageResizer() {
-  if (!cachedResizeImage || !cachedConvertToPng) {
-    try {
-      const mod = await import("@earendil-works/pi-coding-agent");
-      if (typeof mod.resizeImage === "function") cachedResizeImage = mod.resizeImage;
-      if (typeof mod.formatDimensionNote === "function") cachedFormatDimensionNote = mod.formatDimensionNote;
-      if (typeof mod.convertToPng === "function") cachedConvertToPng = mod.convertToPng;
-    } catch {}
-  }
-
-  return {
-    resizeImage: cachedResizeImage,
-    formatDimensionNote: cachedFormatDimensionNote,
-    convertToPng: cachedConvertToPng
-  };
-}
-
+let cachedDefuddle: any = null;
+let cachedToMarkdown: any = null;
+let cachedParseLinkedomHTML: any = null;
 let cachedGotScraping: any = null;
+let cachedPlaywright: any = null;
 
 /**
  * Lazy loader for got-scraping anti-bot HTTP client (ESM module).
- * Loads directly via dynamic import from Pi's isolated npm directory (~/.pi/agent/npm/).
  */
 async function getGotScraping() {
   if (!cachedGotScraping) {
-    try {
-      const directPath = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules", "got-scraping", "dist", "index.js");
-      const fileUrl = pathToFileURL(directPath).href;
-      const mod = await import(fileUrl);
-      cachedGotScraping = mod.gotScraping || mod.default || mod;
-    } catch {}
+    const directPath = path.join(os.homedir(), ".pi", "agent", "npm", "node_modules", "got-scraping", "dist", "index.js");
+    const mod = await import(pathToFileURL(directPath).href);
+    cachedGotScraping = mod.gotScraping;
   }
   return cachedGotScraping;
 }
-
-let cachedPlaywright: any = null;
 
 /**
  * Lazy loader for Playwright browser automation engine.
  */
 function getPlaywright() {
   if (!cachedPlaywright) {
-    try {
-      const mod = loadDependency("playwright-core");
-      cachedPlaywright = mod.chromium || mod;
-    } catch {}
+    cachedPlaywright = loadDependency("playwright-core").chromium;
   }
   return cachedPlaywright;
 }
 
 /**
- * Lazy loader for Readability, LinkeDOM, and Turndown parsers.
+ * Lazy loader for Defuddle HTML-to-Markdown parser.
  */
 function getParsers() {
-  if (!cachedReadability) {
-    try {
-      const readMod = loadDependency("@mozilla/readability");
-      cachedReadability = readMod.Readability || readMod;
-    } catch {}
+  if (!cachedDefuddle) {
+    cachedDefuddle = loadDependency("./node_modules/defuddle/dist/defuddle.js").Defuddle;
   }
-  if (!cachedParseHTML) {
-    try {
-      const linkeMod = loadDependency("linkedom");
-      cachedParseHTML = linkeMod.parseHTML || linkeMod;
-    } catch {}
+  if (!cachedToMarkdown) {
+    cachedToMarkdown = loadDependency("./node_modules/defuddle/dist/markdown.js").toMarkdown;
   }
-  if (!cachedTurndown) {
-    try {
-      const TurnClass = loadDependency("turndown");
-      const instance = new TurnClass({
-        headingStyle: "atx",
-        codeBlockStyle: "fenced",
-        hr: "---"
-      });
-      instance.remove(["script", "style", "noscript", "iframe", "svg"]);
-      cachedTurndown = instance;
-    } catch {}
+  if (!cachedParseLinkedomHTML) {
+    cachedParseLinkedomHTML = loadDependency("./node_modules/defuddle/dist/utils/linkedom-compat.js").parseLinkedomHTML;
   }
 
   return {
-    Readability: cachedReadability,
-    parseHTML: cachedParseHTML,
-    turndown: cachedTurndown
+    Defuddle: cachedDefuddle,
+    toMarkdown: cachedToMarkdown,
+    parseLinkedomHTML: cachedParseLinkedomHTML
   };
 }
 
@@ -408,120 +364,119 @@ function validateRemoteUrl(rawUrl: string | URL): URL {
   return url;
 }
 
+function getHeaderString(headers: Record<string, any>, key: string): string {
+  const val = headers?.[key];
+  if (Array.isArray(val)) return String(val[0] || "").toLowerCase();
+  return typeof val === "string" ? val.toLowerCase() : "";
+}
+
 /**
- * Fetches remote URL safely with redirect following (up to 5 hops), 5MB size ceiling, and anti-bot handling via got-scraping / fetch.
+ * Deterministic WAF & anti-bot response header inspection.
+ */
+export function detectWafHeaderBlock(headers: Record<string, any>, statusCode: number): string | null {
+  if (!headers) return null;
+
+  const cfMitigated = getHeaderString(headers, "cf-mitigated");
+  const server = getHeaderString(headers, "server");
+  if (cfMitigated.includes("challenge") || (server === "cloudflare" && (statusCode === 403 || statusCode === 503))) {
+    return "Blocked by Cloudflare challenge";
+  }
+
+  const vercelMitigated = getHeaderString(headers, "x-vercel-mitigated");
+  const vercelChallenge = getHeaderString(headers, "x-vercel-challenge");
+  if (vercelMitigated.includes("challenge") || vercelChallenge === "1") {
+    return "Blocked by Vercel Attack Challenge";
+  }
+
+  const amznWafAction = getHeaderString(headers, "x-amzn-waf-action");
+  const amznErrType = getHeaderString(headers, "x-amzn-errortype");
+  if (amznWafAction === "challenge" || amznWafAction === "captcha" || amznErrType.includes("waf")) {
+    return "Blocked by AWS WAF challenge";
+  }
+
+  const datadome = getHeaderString(headers, "x-datadome");
+  const datadomeRes = getHeaderString(headers, "x-datadome-response");
+  const datadomeCid = getHeaderString(headers, "x-datadome-cid");
+  if (datadome === "protected" || datadomeRes === "blocked" || (datadomeCid && (statusCode === 401 || statusCode === 403))) {
+    return "Blocked by DataDome";
+  }
+
+  const xCdn = getHeaderString(headers, "x-cdn");
+  if ((xCdn.includes("incapsula") || xCdn.includes("imperva")) && statusCode >= 400) {
+    return "Blocked by Imperva/Incapsula";
+  }
+
+  const kasada = getHeaderString(headers, "x-kpsdk-ct");
+  if (kasada && (statusCode === 403 || statusCode === 429)) {
+    return "Blocked by Kasada";
+  }
+
+  return null;
+}
+
+/**
+ * Fetches remote URL safely with redirect following (up to 5 hops), 5MB size ceiling, and anti-bot handling via got-scraping.
  */
 async function fetchSafeRemote(
   rawUrl: string,
   signal?: AbortSignal,
   timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<{ rawBuffer: Uint8Array; contentType: string; finalUrl: string }> {
-  let currentUrl = validateRemoteUrl(rawUrl);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  const combinedSignal = signal
-    ? AbortSignal.any([signal, controller.signal])
-    : controller.signal;
-
+  const initialUrl = validateRemoteUrl(rawUrl);
   const gotScraping = await getGotScraping();
 
-  try {
-    for (let redirectCount = 0; redirectCount <= 5; redirectCount++) {
-      let responseStatus = 0;
-      let contentType = "";
-      let rawBuffer: Uint8Array | null = null;
-      let locationHeader: string | undefined;
+  let sizeLimitError: Error | null = null;
 
-      const reqHeaders: Record<string, string> = {
-        referer: `${currentUrl.origin}/`
-      };
+  const req = gotScraping(initialUrl.toString(), {
+    responseType: "buffer",
+    maxRedirects: 5,
+    sessionToken: {},
+    timeout: { request: timeoutMs },
+    signal
+  });
 
-      // 1. Primary path: got-scraping (browser TLS emulation, HTTP/2, auto-generated browser headers)
-      if (gotScraping) {
-        try {
-          const res = await gotScraping(currentUrl.toString(), {
-            method: "GET",
-            responseType: "buffer",
-            followRedirect: false,
-            throwHttpErrors: false,
-            headers: reqHeaders,
-            timeout: { request: timeoutMs },
-            signal: combinedSignal,
-            retry: {
-              limit: 2,
-              methods: ["GET", "HEAD"],
-              statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
-              maxRetryAfter: 10000
-            }
-          });
-
-          responseStatus = res.statusCode;
-          contentType = (Array.isArray(res.headers["content-type"]) ? res.headers["content-type"][0] : res.headers["content-type"]) || "";
-          rawBuffer = new Uint8Array(res.rawBody || res.body);
-          locationHeader = typeof res.headers.location === "string" ? res.headers.location : undefined;
-        } catch (gotErr: any) {
-          if (gotErr.name === "AbortError" || combinedSignal.aborted) throw gotErr;
-          responseStatus = 0;
-        }
-      }
-
-      // 2. Secondary fallback path: Native fetch
-      if (responseStatus === 0 || rawBuffer === null) {
-        const fetchRes = await fetch(currentUrl, {
-          method: "GET",
-          signal: combinedSignal,
-          redirect: "manual",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": `${currentUrl.origin}/`
-          }
-        });
-
-        responseStatus = fetchRes.status;
-        locationHeader = fetchRes.headers.get("location") || undefined;
-        contentType = fetchRes.headers.get("content-type") || "";
-
-        if ([301, 302, 303, 307, 308].includes(responseStatus)) {
-          // Handled below in redirect loop
-        } else if (fetchRes.ok) {
-          const arrayBuf = await fetchRes.arrayBuffer();
-          rawBuffer = new Uint8Array(arrayBuf);
-        } else {
-          throw new Error(`HTTP ${fetchRes.status}: ${fetchRes.statusText || "Request failed"}`);
-        }
-      }
-
-      // Handle redirects
-      if ([301, 302, 303, 307, 308].includes(responseStatus)) {
-        if (!locationHeader) throw new Error(`Received redirect ${responseStatus} with no Location header`);
-        if (redirectCount === 5) throw new Error("Too many redirects (exceeded 5 hops)");
-        currentUrl = validateRemoteUrl(new URL(locationHeader, currentUrl));
-        continue;
-      }
-
-      if (responseStatus >= 400) {
-        throw new Error(`HTTP ${responseStatus}: Request failed`);
-      }
-
-      if (!rawBuffer) {
-        rawBuffer = new Uint8Array(0);
-      }
-
-      if (rawBuffer.length > MAX_FETCH_BYTES) {
-        throw new Error(`Response size (${(rawBuffer.length / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`);
-      }
-
-      return { rawBuffer, contentType, finalUrl: currentUrl.toString() };
+  // Upfront Content-Length (progress.total at transferred=0) & mid-stream transfer guard
+  req.on("downloadProgress", (progress: { transferred: number; total?: number }) => {
+    if (!progress || sizeLimitError) return;
+    if (typeof progress.total === "number" && progress.total > MAX_FETCH_BYTES) {
+      sizeLimitError = new Error(
+        `Response Content-Length (${(progress.total / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`
+      );
+      req.cancel();
+    } else if (progress.transferred > MAX_FETCH_BYTES) {
+      sizeLimitError = new Error(
+        `Response size (${(progress.transferred / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_FETCH_BYTES / 1024 / 1024}MB`
+      );
+      req.cancel();
     }
+  });
 
-    throw new Error("Too many redirects fetching URL");
-  } finally {
-    clearTimeout(timeoutId);
+  let res: any;
+  try {
+    res = await req;
+  } catch (gotErr: any) {
+    if (sizeLimitError) throw sizeLimitError;
+    throw gotErr;
   }
+
+  if (sizeLimitError) throw sizeLimitError;
+
+  const responseStatus: number = res.statusCode;
+  const contentType: string = res.headers["content-type"] || "";
+  const rawBuffer = new Uint8Array(res.rawBody);
+  const finalUrl = res.url || initialUrl.toString();
+
+  // Check deterministic WAF / anti-bot mitigation headers
+  const wafHeaderReason = detectWafHeaderBlock(res.headers, responseStatus);
+  if (wafHeaderReason) {
+    throw new Error(`${wafHeaderReason} (HTTP ${responseStatus})`);
+  }
+
+  if (responseStatus >= 400) {
+    throw new Error(`HTTP ${responseStatus}: Request failed`);
+  }
+
+  return { rawBuffer, contentType, finalUrl };
 }
 
 /**
@@ -565,7 +520,6 @@ async function getActiveChromeEndpoint(userDataDir?: string): Promise<{ wsEndpoi
 }
 
 let cachedBrowser: any = null;
-let cachedIsUserSession = false;
 let cdpIdleTimer: NodeJS.Timeout | null = null;
 const CDP_IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 min idle before releasing CDP socket
 
@@ -574,7 +528,7 @@ function resetCdpIdleTimer(): void {
   cdpIdleTimer = setTimeout(() => {
     disconnectCdpBrowser().catch(() => {});
   }, CDP_IDLE_TIMEOUT_MS);
-  cdpIdleTimer.unref?.();
+  cdpIdleTimer.unref();
 }
 
 export async function disconnectCdpBrowser(): Promise<void> {
@@ -587,7 +541,6 @@ export async function disconnectCdpBrowser(): Promise<void> {
       await cachedBrowser.disconnect().catch(() => {});
     } catch {}
     cachedBrowser = null;
-    cachedIsUserSession = false;
   }
 }
 
@@ -598,20 +551,24 @@ export async function disconnectCdpBrowser(): Promise<void> {
  */
 async function getOrCreateChromeCDPBrowser(
   chromium: any,
-  onUpdate?: (update: any) => void
-): Promise<{ browser: any; isUserSession: boolean }> {
+  onUpdate?: (update: any) => void,
+  signal?: AbortSignal
+): Promise<any> {
+  if (signal?.aborted) {
+    throw new Error("Request aborted");
+  }
   if (cachedBrowser) {
     try {
-      if (typeof cachedBrowser.isConnected === "function" && cachedBrowser.isConnected()) {
+      if (cachedBrowser.isConnected()) {
         resetCdpIdleTimer();
-        return { browser: cachedBrowser, isUserSession: cachedIsUserSession };
+        return cachedBrowser;
       }
     } catch {
       cachedBrowser = null;
     }
   }
 
-  // 1. Auto-detect active user Chrome session via DevToolsActivePort
+  // Auto-detect active user Chrome session via DevToolsActivePort
   const activeUserEndpoint = await getActiveChromeEndpoint();
   if (!activeUserEndpoint) {
     throw new Error(
@@ -628,7 +585,19 @@ async function getOrCreateChromeCDPBrowser(
 
   let browser: any = null;
   try {
-    browser = await chromium.connectOverCDP(activeUserEndpoint.wsEndpoint, { timeout: 30000 });
+    const connectPromise = chromium.connectOverCDP(activeUserEndpoint.wsEndpoint, { timeout: 30000 });
+    if (signal) {
+      connectPromise.catch(() => {});
+      browser = await Promise.race([
+        connectPromise,
+        new Promise((_, reject) => {
+          if (signal.aborted) return reject(new Error("Request aborted"));
+          signal.addEventListener("abort", () => reject(new Error("Request aborted")), { once: true });
+        })
+      ]);
+    } else {
+      browser = await connectPromise;
+    }
   } catch (err: any) {
     const msg = err instanceof Error ? err.message : String(err);
     const name = err?.name || "";
@@ -656,24 +625,286 @@ async function getOrCreateChromeCDPBrowser(
     );
   }
 
-  const isUserSession = true;
   cachedBrowser = browser;
-  cachedIsUserSession = isUserSession;
 
-  browser.on?.("disconnected", () => {
+  browser.on("disconnected", () => {
     if (cachedBrowser === browser) {
       cachedBrowser = null;
-      cachedIsUserSession = false;
     }
   });
 
   resetCdpIdleTimer();
-  return { browser, isUserSession };
+  return browser;
+}
+
+/**
+ * Event-driven Chrome page readiness pipeline:
+ * 1. Detects active WAF / CAPTCHA challenges, brings the tab to front, and waits up to 60s across navigations for user completion.
+ * 2. Auto-dismisses common consent / cookie banners.
+ * 3. Uses an in-page MutationObserver (childList + characterData, no attributes) to resolve as soon as content hydrates and the DOM is quiet for `quietMs`.
+ */
+export async function waitForChromePageReady(
+  page: any,
+  options?: {
+    signal?: AbortSignal;
+    onUpdate?: (update: any) => void;
+    challengeTimeoutMs?: number;
+    settleTimeoutMs?: number;
+    quietMs?: number;
+  }
+): Promise<void> {
+  const signal = options?.signal;
+  const challengeTimeoutMs = options?.challengeTimeoutMs ?? 60000;
+  const settleTimeoutMs = options?.settleTimeoutMs ?? 8000;
+  const quietMs = options?.quietMs ?? 500;
+
+  const isContextDestroyedError = (err: any): boolean => {
+    const msg = String(err?.message || err || "");
+    return (
+      msg.includes("Execution context was destroyed") ||
+      msg.includes("Cannot find context with specified id") ||
+      msg.includes("navigation") ||
+      msg.includes("Target closed")
+    );
+  };
+
+  // Detect whether the page is currently displaying a WAF / CAPTCHA interstitial
+  const checkIsChallenge = async (): Promise<boolean> => {
+    try {
+      return await page.evaluate(() => {
+        const title = document.title || "";
+        if (
+          /(just a moment|security checkpoint|checking your browser|attention required|verify you are human|human verification|ddos-guard|access denied.*cloudflare|browser verification)/i.test(
+            title
+          )
+        ) {
+          return true;
+        }
+        const hardSelector =
+          '#challenge-running, #cf-challenge-running, #challenge-stage, #challenge-form, #turnstile-wrapper, .cf-turnstile, iframe[src*="challenges.cloudflare.com"], iframe[src*="captcha-delivery.com"], iframe[src*="datadome"], #amzn-captcha-modal, script[src*="awswaf"], iframe[src*="_Incapsula_Resource"], #px-captcha, #results-inprogress, .resultbox';
+        if (document.querySelector(hardSelector)) return true;
+
+        const bodyText = (document.body?.innerText || "").trim();
+        if (
+          /(verify (you are|that you are) human|checking your browser|checking that you're not a bot|enable javascript and cookies to continue)/i.test(
+            bodyText
+          )
+        ) {
+          return true;
+        }
+
+        if (
+          bodyText.length < 800 &&
+          document.querySelector('iframe[src*="hcaptcha.com"], iframe[src*="recaptcha/api2"], .g-recaptcha, .h-captcha')
+        ) {
+          return true;
+        }
+        return false;
+      });
+    } catch (err) {
+      if (isContextDestroyedError(err)) return true;
+      return false;
+    }
+  };
+
+  // Stage 1: Challenge / CAPTCHA Gate (0ms if normal page, up to 60s if challenge detected)
+  if (await checkIsChallenge()) {
+    await page.bringToFront?.().catch(() => {});
+    options?.onUpdate?.({
+      content: [
+        {
+          type: "text",
+          text: "🔒 Security challenge / CAPTCHA detected in Chrome — please complete it on screen (waiting up to 60s)..."
+        }
+      ]
+    });
+
+    const challengeStart = Date.now();
+    let solved = false;
+    while (Date.now() - challengeStart < challengeTimeoutMs) {
+      if (signal?.aborted) throw new Error("Request aborted");
+      const remaining = challengeTimeoutMs - (Date.now() - challengeStart);
+      if (remaining <= 0) break;
+
+      try {
+        await page.waitForFunction(
+          () => {
+            const title = document.title || "";
+            if (
+              /(just a moment|security checkpoint|checking your browser|attention required|verify you are human|human verification|ddos-guard|access denied.*cloudflare|browser verification)/i.test(
+                title
+              )
+            ) {
+              return false;
+            }
+            const hardSelector =
+              '#challenge-running, #cf-challenge-running, #challenge-stage, #challenge-form, #turnstile-wrapper, .cf-turnstile, iframe[src*="challenges.cloudflare.com"], iframe[src*="captcha-delivery.com"], iframe[src*="datadome"], #amzn-captcha-modal, script[src*="awswaf"], iframe[src*="_Incapsula_Resource"], #px-captcha, #results-inprogress, .resultbox';
+            if (document.querySelector(hardSelector)) return false;
+
+            const bodyText = (document.body?.innerText || "").trim();
+            if (
+              /(verify (you are|that you are) human|checking your browser|checking that you're not a bot|enable javascript and cookies to continue)/i.test(
+                bodyText
+              )
+            ) {
+              return false;
+            }
+
+            if (
+              bodyText.length < 800 &&
+              document.querySelector('iframe[src*="hcaptcha.com"], iframe[src*="recaptcha/api2"], .g-recaptcha, .h-captcha')
+            ) {
+              return false;
+            }
+            return true;
+          },
+          undefined,
+          { timeout: Math.min(2500, remaining) }
+        );
+
+        await page.waitForLoadState?.("domcontentloaded", { timeout: 5000 }).catch(() => {});
+        if (!(await checkIsChallenge())) {
+          solved = true;
+          break;
+        }
+      } catch (err: any) {
+        if (signal?.aborted) throw new Error("Request aborted");
+        if (isContextDestroyedError(err)) {
+          // Solving the CAPTCHA triggered a navigation/reload; wait for new DOM and re-check
+          await page.waitForLoadState?.("domcontentloaded", { timeout: 10000 }).catch(() => {});
+          if (!(await checkIsChallenge())) {
+            solved = true;
+            break;
+          }
+          continue;
+        }
+      }
+    }
+
+    if (!solved && (await checkIsChallenge())) {
+      throw new Error("Timed out waiting for CAPTCHA / security challenge in Chrome to be solved.");
+    }
+  }
+
+  // Stage 2: Auto-dismiss common consent / age gate buttons if present
+  try {
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit']"));
+      const consentBtn = buttons.find((el) => {
+        const txt = (el.textContent || (el as HTMLInputElement).value || "").trim();
+        return /^(accept|accept all|i agree|allow all|yes|confirm|enter|agree|continue|ok|proceed)$/i.test(txt);
+      });
+      if (consentBtn) {
+        (consentBtn as HTMLElement).click();
+      }
+    });
+  } catch {}
+
+  // Stage 2.5: Fast-path for non-HTML / static documents (JSON, plain text, images, media, PDF)
+  try {
+    const isStaticDoc = await page.evaluate(() => {
+      const type = (document.contentType || "").toLowerCase();
+      return (
+        type.includes("json") ||
+        type.startsWith("image/") ||
+        type.startsWith("text/plain") ||
+        type.startsWith("text/csv") ||
+        type.startsWith("audio/") ||
+        type.startsWith("video/") ||
+        type === "application/pdf" ||
+        type === "application/octet-stream"
+      );
+    });
+    if (isStaticDoc) {
+      return;
+    }
+  } catch {}
+
+  // Stage 3: Navigation-safe MutationObserver DOM settler (childList + characterData)
+  const settleStart = Date.now();
+  while (Date.now() - settleStart < settleTimeoutMs) {
+    if (signal?.aborted) throw new Error("Request aborted");
+    const remaining = settleTimeoutMs - (Date.now() - settleStart);
+    if (remaining <= 0) break;
+
+    try {
+      await page.waitForFunction(
+        ({ debounceMs }: { debounceMs: number }) =>
+          new Promise<boolean>((resolve) => {
+            const hasMeaningfulContent = () => {
+              // Ignore if major container is explicitly marked busy
+              if (document.querySelector("[aria-busy='true']")) {
+                const mainEl = document.querySelector("article, main, [role='main']") as HTMLElement | null;
+                if (!mainEl || mainEl.getAttribute("aria-busy") === "true") return false;
+              }
+
+              const mainEl = document.querySelector("article, main, [role='main']") as HTMLElement | null;
+              if (mainEl) {
+                const mainText = (mainEl.innerText || mainEl.textContent || "").trim();
+                return mainText.length >= 100 && !/^(loading|please wait|fetching|retrieving)\b/i.test(mainText);
+              }
+              if (!document.body) return false;
+              let noiseLen = 0;
+              const noiseEls = document.body.querySelectorAll(
+                "#onetrust-consent-sdk, #CybotCookiebotDialog, [id*='cookie' i], [class*='cookie-banner' i], [class*='consent' i], nav, header, footer, .skeleton, [class*='skeleton' i], [class*='shimmer' i]"
+              );
+              for (const el of Array.from(noiseEls)) {
+                noiseLen += ((el as HTMLElement).innerText || el.textContent || "").trim().length;
+              }
+              const bodyText = (document.body.innerText || document.body.textContent || "").trim();
+              const netLen = bodyText.length - noiseLen;
+              if (netLen >= 100 && !/^(loading|please wait|fetching|retrieving)\b/i.test(bodyText)) return true;
+              if (netLen > 0 && document.readyState === "complete" && document.querySelectorAll("script").length === 0) {
+                return true;
+              }
+              if (netLen > 0 && document.querySelector("pre, table") && !/^(loading|please wait|fetching)\b/i.test(bodyText)) return true;
+              return false;
+            };
+
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const armTimer = () => {
+              if (timer !== undefined) clearTimeout(timer);
+              if (!hasMeaningfulContent()) return;
+              timer = setTimeout(() => {
+                observer.disconnect();
+                resolve(true);
+              }, debounceMs);
+            };
+
+            const observer = new MutationObserver(() => {
+              armTimer();
+            });
+
+            const root = document.body || document.documentElement;
+            if (root) {
+              observer.observe(root, {
+                childList: true,
+                subtree: true,
+                characterData: true
+              });
+            }
+
+            armTimer();
+          }),
+        { debounceMs: quietMs },
+        { timeout: Math.max(remaining, quietMs + 50) }
+      );
+      break;
+    } catch (err: any) {
+      if (signal?.aborted) throw new Error("Request aborted");
+      if (isContextDestroyedError(err)) {
+        await page.waitForLoadState?.("domcontentloaded", { timeout: 5000 }).catch(() => {});
+        continue;
+      }
+      // Timeout reached (e.g. very short page or continuous live ticker) — proceed with current DOM
+      break;
+    }
+  }
 }
 
 /**
  * Browser renderer via Playwright connecting directly to live desktop Chrome via Remote Debugging.
- * Automatically piggybacks on the user's active Chrome session via DevToolsActivePort or CDP port.
+ * Automatically piggybacks on the user's active Chrome session via DevToolsActivePort.
  */
 async function fetchViaChromeCDP(
   rawUrl: string,
@@ -682,13 +913,9 @@ async function fetchViaChromeCDP(
   const signal = options?.signal;
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const chromium = getPlaywright();
-  if (!chromium) {
-    throw new Error("Playwright is not available. Please install playwright-core in ~/.pi/agent/npm/");
-  }
-
   const validUrl = validateRemoteUrl(rawUrl);
-  const { browser, isUserSession } = await getOrCreateChromeCDPBrowser(chromium, options?.onUpdate);
+  const chromium = getPlaywright();
+  const browser = await getOrCreateChromeCDPBrowser(chromium, options?.onUpdate, signal);
   resetCdpIdleTimer();
 
   let page: any = null;
@@ -705,50 +932,39 @@ async function fetchViaChromeCDP(
       }, { once: true });
     }
 
-    const navResponse = await page.goto(validUrl.toString(), {
+    let latestStatus = 0;
+    let latestStatusText = "";
+    let latestNavResponse: any = null;
+
+    page.on?.("response", (res: any) => {
+      try {
+        if (res.request?.().isNavigationRequest?.() && res.frame?.() === page.mainFrame?.()) {
+          latestStatus = res.status?.() ?? latestStatus;
+          latestStatusText = res.statusText?.() ?? latestStatusText;
+          latestNavResponse = res;
+        }
+      } catch {}
+    });
+
+    const initialNavResponse = await page.goto(validUrl.toString(), {
       waitUntil: "domcontentloaded",
       timeout: timeoutMs
     });
 
-    // 1. Wait for challenge (Vercel/Cloudflare) to resolve
-    try {
-      await page.waitForFunction(() => {
-        const t = document.title || "";
-        return !t.includes("Security Checkpoint") && !t.includes("Just a moment") && !t.includes("Checking your browser");
-      }, { timeout: 10000 });
-    } catch {}
-
-    // 2. Auto-dismiss common consent / age gate buttons if present
-    let dismissedModal = false;
-    try {
-      dismissedModal = await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit']"));
-        const consentBtn = buttons.find(el => {
-          const txt = (el.textContent || (el as HTMLInputElement).value || "").trim();
-          return /^(accept|accept all|i agree|allow all|yes|confirm|enter|agree|continue|ok|proceed)$/i.test(txt);
-        });
-        if (consentBtn) {
-          (consentBtn as HTMLElement).click();
-          return true;
-        }
-        return false;
-      });
-    } catch {}
-
-    // 3. Wait briefly for network idle
-    try {
-      await page.waitForLoadState("networkidle", { timeout: 4000 });
-    } catch {}
-
-    // 4. Stabilization grace period for SPA hydration and post-consent DOM mounting
-    try {
-      await page.waitForTimeout(dismissedModal ? 1500 : 1000);
-    } catch {
-      await new Promise(r => setTimeout(r, 1000));
+    if (initialNavResponse && !latestNavResponse) {
+      latestNavResponse = initialNavResponse;
+      latestStatus = initialNavResponse.status?.() ?? 0;
+      latestStatusText = initialNavResponse.statusText?.() ?? "";
     }
 
-    if (navResponse && navResponse.status() >= 400) {
-      throw new Error(`HTTP ${navResponse.status()}: ${navResponse.statusText() || "Request failed"}`);
+    await waitForChromePageReady(page, { signal, onUpdate: options?.onUpdate });
+
+    const navResponse = latestNavResponse || initialNavResponse;
+    if (latestStatus >= 400) {
+      const bodyLen = await page.evaluate(() => (document.body?.innerText || "").trim().length).catch(() => 0);
+      if (bodyLen < 200) {
+        throw new Error(`HTTP ${latestStatus}: ${latestStatusText || "Request failed"}`);
+      }
     }
 
     const pageTitle = await page.title();
@@ -776,6 +992,8 @@ async function fetchViaChromeCDP(
       effectiveMime.startsWith("video/") ||
       effectiveMime === "application/pdf" ||
       effectiveMime === "application/octet-stream";
+    const isJsonResource = effectiveMime.includes("application/json") || effectiveMime.includes("application/problem+json") || docInfo.contentType.includes("json");
+    const isTextResource = effectiveMime.startsWith("text/plain") || effectiveMime.startsWith("text/csv") || docInfo.contentType.startsWith("text/plain");
 
     if (isImageResource && navResponse) {
       try {
@@ -786,7 +1004,7 @@ async function fetchViaChromeCDP(
             contentType: effectiveMime || "image/png",
             finalUrl,
             pageTitle,
-            isUserSession
+            isUserSession: true
           };
         }
       } catch {}
@@ -801,10 +1019,60 @@ async function fetchViaChromeCDP(
             contentType: effectiveMime || "application/octet-stream",
             finalUrl,
             pageTitle,
-            isUserSession
+            isUserSession: true
           };
         }
       } catch {}
+    }
+
+    if (isJsonResource) {
+      if (navResponse) {
+        try {
+          const bodyBuf = await navResponse.body();
+          if (bodyBuf && bodyBuf.length > 0) {
+            return {
+              rawBuffer: new Uint8Array(bodyBuf),
+              contentType: effectiveMime || "application/json",
+              finalUrl,
+              pageTitle,
+              isUserSession: true
+            };
+          }
+        } catch {}
+      }
+      const rawText = await page.evaluate(() => document.querySelector("pre")?.innerText || document.body?.innerText || "").catch(() => "");
+      return {
+        rawBuffer: new TextEncoder().encode(rawText),
+        contentType: effectiveMime || "application/json",
+        finalUrl,
+        pageTitle,
+        isUserSession: true
+      };
+    }
+
+    if (isTextResource) {
+      if (navResponse) {
+        try {
+          const bodyBuf = await navResponse.body();
+          if (bodyBuf && bodyBuf.length > 0) {
+            return {
+              rawBuffer: new Uint8Array(bodyBuf),
+              contentType: effectiveMime || "text/plain",
+              finalUrl,
+              pageTitle,
+              isUserSession: true
+            };
+          }
+        } catch {}
+      }
+      const rawText = await page.evaluate(() => document.querySelector("pre")?.innerText || document.body?.innerText || "").catch(() => "");
+      return {
+        rawBuffer: new TextEncoder().encode(rawText),
+        contentType: effectiveMime || "text/plain",
+        finalUrl,
+        pageTitle,
+        isUserSession: true
+      };
     }
 
     const htmlContent = await page.content();
@@ -865,7 +1133,7 @@ async function fetchViaChromeCDP(
     }).catch(() => ({ images: [] }));
 
     const rawBuffer = new TextEncoder().encode(htmlContent);
-    return { rawBuffer, contentType: "text/html; charset=utf-8", finalUrl, pageTitle, images: pageAssets.images, isUserSession };
+    return { rawBuffer, contentType: "text/html; charset=utf-8", finalUrl, pageTitle, images: pageAssets.images, isUserSession: true };
   } finally {
     // Only close the tab. The persistent CDP browser connection stays active in the pool.
     try {
@@ -910,7 +1178,7 @@ export function extractImagesFromHtml(document: any, baseUrl: string): Array<Pag
   const imgElements = document.querySelectorAll?.("article img, main img, figure img, [role='main'] img, img") || [];
   for (const el of imgElements) {
     if (images.length >= 15) break;
-    const src = el.getAttribute("src") || el.getAttribute("data-src") || "";
+    const src = el.getAttribute("src") || el.getAttribute("data-src") || el.getAttribute("data-original") || el.getAttribute("data-lazy-src") || "";
     if (!src) continue;
 
     const w = parseInt(el.getAttribute("width") || "0", 10);
@@ -935,76 +1203,22 @@ export function extractImagesFromHtml(document: any, baseUrl: string): Array<Pag
 }
 
 /**
- * Converts raw HTML into clean Markdown via Readability and Turndown, with regex fallback.
+ * Converts raw HTML into clean Markdown via Defuddle.
  */
 export function htmlToMarkdown(html: string, pageUrl: string): { title: string; markdown: string; images?: Array<PageImageItem> } {
-  const { Readability, parseHTML, turndown } = getParsers();
+  const { Defuddle, toMarkdown, parseLinkedomHTML } = getParsers();
+  const document = parseLinkedomHTML(html, pageUrl);
 
-  if (parseHTML && Readability && turndown) {
-    try {
-      const { document } = parseHTML(html);
+  const docTitle = document.title?.trim() || "";
+  const extractedImages = extractImagesFromHtml(document, pageUrl);
 
-      // Normalize relative image and link URLs to absolute URLs so inline markdown has valid URLs
-      // Also promote data-src / data-original for modern lazy-loaded images
-      for (const img of document.querySelectorAll("img")) {
-        const rawSrc = img.getAttribute("data-src") ||
-          img.getAttribute("data-original") ||
-          img.getAttribute("data-lazy-src") ||
-          img.getAttribute("src");
-        if (rawSrc) {
-          try {
-            img.setAttribute("src", new URL(rawSrc, pageUrl).href);
-          } catch {}
-        }
-        img.removeAttribute("srcset");
-      }
-      for (const a of document.querySelectorAll("a[href]")) {
-        const href = a.getAttribute("href");
-        if (href && !href.startsWith("#")) {
-          try {
-            a.setAttribute("href", new URL(href, pageUrl).href);
-          } catch {}
-        }
-      }
+  const options = { url: pageUrl, markdown: true };
+  const result = new Defuddle(document as unknown as Document, options).parse();
+  toMarkdown(result, options, pageUrl);
 
-      const docTitle = document.title?.trim() || "";
-      const extractedImages = extractImagesFromHtml(document, pageUrl);
-
-      const reader = new Readability(document as unknown as Document);
-      const article = reader.parse();
-
-      if (article && article.content) {
-        const md = turndown.turndown(article.content).trim();
-        const title = article.title?.trim() || docTitle || pageUrl;
-        return { title, markdown: md, images: extractedImages };
-      }
-
-      const bodyHtml = document.body?.innerHTML || html;
-      const basicMd = turndown.turndown(bodyHtml).trim();
-      return { title: docTitle || pageUrl, markdown: basicMd, images: extractedImages };
-    } catch {}
-  }
-
-  // Regex fallback if DOM parser packages are not available
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : pageUrl;
-
-  const stripped = html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
-    .replace(/<header[\s\S]*?<\/header>/gi, "")
-    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
-    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return { title, markdown: stripped };
+  const title = result.title?.trim() || docTitle || pageUrl;
+  const markdown = (result.content || "").trim();
+  return { title, markdown, images: extractedImages };
 }
 
 /**
@@ -1264,41 +1478,31 @@ export default function (pi: ExtensionAPI) {
         // ROUTE 1: Multimodal Vision Image (.png, .jpg, .webp)
         // ----------------------------------------------------
         if (sniffed.category === "image") {
-          const { resizeImage, formatDimensionNote, convertToPng } = await getImageResizer();
           let processedData = Buffer.from(rawBuffer!).toString("base64");
           let processedMime = sniffed.mimeType;
 
-          // Convert WebP to PNG using Pi's built-in in-process Photon WASM engine.
-          // This guarantees universal compatibility across local vision models (llama.cpp) without needing Chrome.
-          if (processedMime === "image/webp" && convertToPng) {
-            try {
-              const converted = await convertToPng(processedData, "image/webp");
-              if (converted && converted.data) {
-                processedData = converted.data;
-                processedMime = "image/png";
-              }
-            } catch {}
+          // Convert WebP to PNG using Pi's built-in in-process Photon WASM engine
+          if (processedMime === "image/webp") {
+            const converted = await convertToPng(processedData, "image/webp");
+            if (converted?.data) {
+              processedData = converted.data;
+              processedMime = "image/png";
+            }
           }
 
           let dimNote = "";
           let finalW: number | undefined;
           let finalH: number | undefined;
 
-          if (resizeImage) {
-            try {
-              const imageBytes = new Uint8Array(Buffer.from(processedData, "base64"));
-              const res = await resizeImage(imageBytes, processedMime, { maxWidth: 2000, maxHeight: 2000 });
-              if (res) {
-                processedData = res.data;
-                processedMime = res.mimeType;
-                finalW = res.width;
-                finalH = res.height;
-                if (formatDimensionNote) {
-                  const note = formatDimensionNote(res);
-                  if (note) dimNote = `\n${note}`;
-                }
-              }
-            } catch {}
+          const imageBytes = new Uint8Array(Buffer.from(processedData, "base64"));
+          const res = await resizeImage(imageBytes, processedMime, { maxWidth: 2000, maxHeight: 2000 });
+          if (res) {
+            processedData = res.data;
+            processedMime = res.mimeType;
+            finalW = res.width;
+            finalH = res.height;
+            const note = formatDimensionNote(res);
+            if (note) dimNote = `\n${note}`;
           }
 
           const caption = `Image from ${finalUrl} (${processedMime})${dimNote}`;
@@ -1424,7 +1628,80 @@ export default function (pi: ExtensionAPI) {
 
         if (sniffed.category === "html") {
           onUpdate?.({ content: [{ type: "text", text: `Parsing markdown from ${finalUrl}...` }] });
-          const parsed = htmlToMarkdown(rawContent, finalUrl);
+          let parsed = htmlToMarkdown(rawContent, finalUrl);
+
+          const isChallengePage = /(?:browser verification|checking that you're not a bot|verify you are human|just a moment\.\.\.|security checkpoint|attention required)/i.test(
+            (parsed.title || "") + " " + (parsed.markdown || "").slice(0, 500)
+          );
+
+          const isJsShell = !parsed.markdown ||
+            (parsed.markdown.length < 200 && /enable\s+javascript|javascript\s+is\s+(?:required|disabled)|requires?\s+javascript/i.test(parsed.markdown)) ||
+            isChallengePage;
+
+          if (isJsShell && !usedBrowser) {
+            const jsReason = isChallengePage
+              ? "Security challenge / anti-bot interstitial detected"
+              : "JavaScript rendering required (empty or unhydrated SPA shell)";
+            if (effectiveEngine === "auto") {
+              fallbackReason = jsReason;
+              onUpdate?.({
+                content: [{
+                  type: "text",
+                  text: `Fetch failed with got-scraping (${fallbackReason}); falling back to Chrome User Session (CDP)...`
+                }]
+              });
+              try {
+                const browserRes = await fetchViaChromeCDP(targetUrl, { signal, onUpdate });
+                rawBuffer = browserRes.rawBuffer;
+                finalUrl = browserRes.finalUrl;
+                pageTitle = browserRes.pageTitle || "";
+                discoveredBrowserImages = browserRes.images || [];
+                rawHeaderMime = browserRes.contentType;
+                usedBrowser = true;
+                viaCDP = true;
+                isUserSession = browserRes.isUserSession || false;
+
+                const fallbackSniffed = sniffContentType(rawBuffer, rawHeaderMime);
+                if (fallbackSniffed.category === "json") {
+                  let jsonText = "";
+                  try {
+                    jsonText = new TextDecoder(fallbackSniffed.charset).decode(rawBuffer);
+                  } catch {
+                    jsonText = new TextDecoder("utf-8").decode(rawBuffer);
+                  }
+                  try {
+                    const parsedObj = JSON.parse(jsonText);
+                    jsonText = JSON.stringify(parsedObj, null, 2);
+                  } catch {}
+                  const formatted = `# JSON Data: ${finalUrl}\n**URL**: ${finalUrl}\n\n\`\`\`json\n${jsonText.trim()}\n\`\`\``;
+                  const truncation = truncateHead(formatted, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
+                  return {
+                    content: [{ type: "text", text: truncation.content }],
+                    details: {
+                      url: finalUrl,
+                      contentType: "application/json",
+                      durationMs: Date.now() - startTime,
+                      engine: effectiveEngine,
+                      fallbackReason,
+                      usedBrowser,
+                      viaCDP,
+                      isUserSession
+                    } as FetchToolDetails,
+                    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }
+                  };
+                }
+
+                rawContent = new TextDecoder(fallbackSniffed.charset).decode(rawBuffer);
+                parsed = htmlToMarkdown(rawContent, finalUrl);
+              } catch (cdpErr: any) {
+                const cdpMsg = cdpErr instanceof Error ? cdpErr.message : String(cdpErr);
+                throw new Error(`Failed to retrieve page: ${cdpMsg}`);
+              }
+            } else {
+              throw new Error(jsReason);
+            }
+          }
+
           title = pageTitle || parsed.title;
           markdown = parsed.markdown;
           // Prefer browser-extracted images if available, otherwise static parsed images
@@ -1559,19 +1836,19 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ----------------------------------------------------
-  // 4. Lifecycle Events
+  // 3. Lifecycle Events
   // ----------------------------------------------------
   pi.on("session_start", async (_event, ctx) => {
     fetchDialogQueue = Promise.resolve();
     (globalThis as any).__piDialogQueue = Promise.resolve();
-    if (typeof pi.getFlag === "function" && pi.getFlag("no-fetch-gate") === true) {
+    if (pi.getFlag("no-fetch-gate") === true) {
       gateEnabled = false;
     }
     if (!gateEnabled) {
       ctx.ui.setStatus("fetch-gate", "🌐 Fetch-Gate: OFF");
     }
 
-    const engineFlag = pi.getFlag?.("fetch-engine");
+    const engineFlag = pi.getFlag("fetch-engine");
     if (typeof engineFlag === "string" && ["auto", "chrome", "got-scraping"].includes(engineFlag.toLowerCase())) {
       currentEngine = engineFlag.toLowerCase() as FetchEngine;
     }

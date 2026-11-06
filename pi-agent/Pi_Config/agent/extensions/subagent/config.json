@@ -1,6 +1,19 @@
 {
-	"globalConcurrencyLimit": 1,
-	"parallel": {
-		"concurrency": 1
-	}
+  "globalConcurrencyLimit": 1,
+  "maxActiveAsyncRunsPerSession": 1,
+  "parallel": {
+    "concurrency": 1
+  },
+  "maxSubagentDepth": 1,
+  "defaultSubagentContext": "fresh",
+  "toolActivation": "eager",
+  "toolDescriptionMode": "compact",
+  "disabledFeatures": [
+    "watchdog",
+    "panes",
+    "preflight",
+    "lane-metadata",
+    "lane-management",
+    "external-machines"
+  ]
 }
