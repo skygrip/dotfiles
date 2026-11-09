@@ -377,7 +377,7 @@ export function extractPathTokens(command: string): string[] {
   // 2. Directory traversals: .. or ../ or ./.. or ./../foo or ../../foo
   // 3. Windows drives: C:\foo or C:/foo
   // 4. Root/system/shell paths: /c/foo, /mnt/c/foo, /cygdrive/c/foo, /etc/foo, /var/foo, /Users/foo, etc.
-  const pathRegex = /(?:^|[\s"'=<>|&;])((?:(?:\$env:(?:userprofile|home)|\$home|%userprofile%)(?:[\/\\][\w.\\\/-]+)+|~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:(?:mnt|cygdrive)\/[a-zA-Z](?:\/|$)|[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
+  const pathRegex = /(?:^|[\s"'=<>|&;(])((?:(?:\$env:(?:userprofile|home)|\$home|%userprofile%)(?:[\/\\][\w.\\\/-]+)+|~(?:[\/\\][\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:(?:mnt|cygdrive)\/[a-zA-Z](?:\/|$)|[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
 
   const results: string[] = [];
   let match: RegExpExecArray | null;

@@ -144,7 +144,7 @@ function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxL
 
 export const WebSearchSchema = Type.Object({
   query: Type.String({
-    description: "Descriptive natural language search query."
+    description: "A complete, grammatical natural-language question starting with How, What, Why, Which, or Does and ending with '?'. Include exact package names, version numbers, language/OS, and verbatim error messages (e.g. 'How do I configure custom TLS certificates in Bun fetch() when getting SELF_SIGNED_CERT_IN_CHAIN?')."
   })
 });
 
@@ -315,7 +315,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "web_search",
     label: "Web Search",
-    description: "Search Google for current facts, live documentation, and API changes (e.g. researching unfamiliar CLI errors or recent framework updates).",
+    description: "Search Google via a grounded AI research model for current facts, live documentation, API signatures, and CLI/error troubleshooting. Formulate `query` as a complete, context-rich question ending in '?'.",
     annotations: {
       readOnlyHint: true,
       idempotentHint: true,

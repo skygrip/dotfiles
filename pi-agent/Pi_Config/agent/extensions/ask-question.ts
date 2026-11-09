@@ -167,6 +167,9 @@ export default function (pi: ExtensionAPI) {
       openWorldHint: false
     },
     description: "Prompt the user with an interactive decision menu, choice selection, or yes/no confirmation dialog (e.g. when there is ambiguity on an architectural decision or confirming destructive operations).",
+    promptGuidelines: [
+      "Call `ask_question` when requirements are ambiguous, architectural trade-offs exist, or before deleting tracked project files (outside `./.scratch/`)."
+    ],
     parameters: AskQuestionSchema,
 
     /**
