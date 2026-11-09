@@ -37,6 +37,10 @@ export interface LlamaSwapModelEntry {
 	capabilities?: {
 		vision?: boolean;
 		function_calling?: boolean;
+		tools?: boolean;
+		in?: string[];
+		out?: string[];
+		context?: number;
 	};
 	meta?: {
 		n_ctx?: number;
@@ -69,13 +73,50 @@ export const MULTI_LEVEL_THINKING_MAP: ThinkingLevelMap = {
 	xhigh: null,
 };
 
+const CORE_THINKING_LEVELS: readonly (keyof ThinkingLevelMap)[] = [
+	"off",
+	"minimal",
+	"low",
+	"medium",
+	"high",
+];
+
+function normalizeThinkingLevelMap(
+	customMap: ThinkingLevelMap | undefined,
+	fallbackMap: ThinkingLevelMap,
+): ThinkingLevelMap {
+	if (!customMap || typeof customMap !== "object") {
+		return fallbackMap;
+	}
+	const normalized: ThinkingLevelMap = {
+		...customMap,
+		xhigh: Object.hasOwn(customMap, "xhigh") ? customMap.xhigh : null,
+	};
+	for (const level of CORE_THINKING_LEVELS) {
+		if (!Object.hasOwn(customMap, level)) {
+			normalized[level] = null;
+		}
+	}
+	return normalized;
+}
+
 export function normalizeServerUrl(value: string): string {
 	const trimmed = value.trim();
 	if (!trimmed) {
 		throw new Error("Server URL must not be empty");
 	}
 	const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//iu.test(trimmed);
-	const withProtocol = hasScheme ? trimmed : `http://${trimmed}`;
+	let withProtocol = trimmed;
+	if (!hasScheme) {
+		const hostPort = trimmed.split("/")[0] ?? "";
+		const isLocalOrIp =
+			/^(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|\[::1\])(?::\d+)?$/iu.test(
+				hostPort,
+			);
+		const hasExplicitNonHttpsPort = /:(?!443$)\d+$/u.test(hostPort);
+		const useHttps = /:443$/u.test(hostPort) || (!isLocalOrIp && !hasExplicitNonHttpsPort && hostPort.includes("."));
+		withProtocol = `${useHttps ? "https" : "http"}://${trimmed}`;
+	}
 	const url = new URL(withProtocol);
 	if (url.protocol !== "http:" && url.protocol !== "https:") {
 		throw new Error("Server URL must use http or https");
@@ -86,13 +127,21 @@ export function normalizeServerUrl(value: string): string {
 	return url.toString().replace(/\/$/u, "");
 }
 
+export function tryNormalizeServerUrl(value: string | undefined): string | undefined {
+	if (typeof value !== "string" || !value.trim()) return undefined;
+	try {
+		return normalizeServerUrl(value);
+	} catch {
+		return undefined;
+	}
+}
+
 export function inferenceBaseUrl(serverUrl: string): string {
 	return `${normalizeServerUrl(serverUrl)}/v1`;
 }
 
 function credentialServerUrl(credential: ApiKeyCredential | undefined): string | undefined {
-	const value = credential?.env?.LLAMA_SWAP_URL;
-	return typeof value === "string" && value.trim() ? normalizeServerUrl(value) : undefined;
+	return tryNormalizeServerUrl(credential?.env?.LLAMA_SWAP_URL);
 }
 
 function credentialFriendlyName(credential: ApiKeyCredential | undefined): string | undefined {
@@ -199,7 +248,9 @@ export async function fetchCatalog(
 ): Promise<LlamaSwapModelEntry[]> {
 	const normalizedUrl = normalizeServerUrl(serverUrl);
 	const headers = new Headers();
-	if (apiKey) headers.set("Authorization", `Bearer ${apiKey}`);
+	if (apiKey && apiKey !== DEFAULT_API_KEY) {
+		headers.set("Authorization", `Bearer ${apiKey}`);
+	}
 	const timeout = AbortSignal.timeout(15_000);
 	const combinedSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
@@ -235,17 +286,24 @@ export function toPiModel(
 	const contextWindow =
 		(typeof entry.context_window === "number" && entry.context_window > 0 ? entry.context_window : undefined) ??
 		(typeof entry.context_length === "number" && entry.context_length > 0 ? entry.context_length : undefined) ??
+		(typeof entry.capabilities?.context === "number" && entry.capabilities.context > 0
+			? entry.capabilities.context
+			: undefined) ??
 		(typeof entry.meta?.n_ctx === "number" && entry.meta.n_ctx > 0 ? entry.meta.n_ctx : undefined) ??
 		131072;
 
 	const isVision =
 		entry.capabilities?.vision === true ||
+		entry.capabilities?.in?.includes("image") === true ||
 		entry.architecture?.input_modalities?.includes("image") === true;
+
+	const supportsTools =
+		entry.capabilities?.function_calling ?? entry.capabilities?.tools;
 
 	const reasoning =
 		typeof meta.reasoning === "boolean"
 			? meta.reasoning
-			: entry.capabilities?.function_calling !== false;
+			: supportsTools !== false;
 
 	const isMultiLevelModel =
 		entry.id.toLowerCase().includes("basalt") ||
@@ -261,12 +319,9 @@ export function toPiModel(
 		defaultMaxTokens;
 	const maxTokens = Math.min(configuredMaxTokens, contextWindow);
 
+	const fallbackThinkingMap = isMultiLevelModel ? MULTI_LEVEL_THINKING_MAP : BINARY_THINKING_MAP;
 	const thinkingLevelMap: ThinkingLevelMap | undefined = reasoning
-		? meta.thinkingLevelMap && typeof meta.thinkingLevelMap === "object"
-			? meta.thinkingLevelMap
-			: isMultiLevelModel
-				? MULTI_LEVEL_THINKING_MAP
-				: BINARY_THINKING_MAP
+		? normalizeThinkingLevelMap(meta.thinkingLevelMap, fallbackThinkingMap)
 		: undefined;
 
 	return {
@@ -331,10 +386,11 @@ export function createInstanceProvider(
 			return stored;
 		}
 
-		if (allowEnvFallback && process.env.LLAMA_SWAP_URL?.trim()) {
+		const envUrl = allowEnvFallback ? tryNormalizeServerUrl(process.env.LLAMA_SWAP_URL) : undefined;
+		if (envUrl) {
 			const envServer: StoredLlamaSwapServer = {
 				name: instanceId,
-				serverUrl: normalizeServerUrl(process.env.LLAMA_SWAP_URL),
+				serverUrl: envUrl,
 				apiKey: process.env.LLAMA_SWAP_API_KEY?.trim() || DEFAULT_API_KEY,
 			};
 			currentServer = envServer;
@@ -375,7 +431,6 @@ export function createInstanceProvider(
 					const catalog = await fetchCatalog(serverUrl, apiKey, interaction.signal, fetchImpl);
 					currentServer = { name: instanceId, serverUrl, apiKey };
 					models = catalog.map((entry) => toPiModel(entry, serverUrl, instanceId));
-					saveInstanceToAuthJson(authPath, currentServer);
 
 					return {
 						type: "api_key",
@@ -479,8 +534,15 @@ export function createInstanceProvider(
 			});
 		},
 		stream: (model, context, streamOpts) =>
-			stream(model, context, streamOpts as ProviderStreamOptions | undefined),
-		streamSimple: (model, context, streamOpts) => streamSimple(model, context, streamOpts),
+			stream(model, context, {
+				...(streamOpts as ProviderStreamOptions | undefined),
+				...(options.fetchImpl && !streamOpts?.fetch ? { fetch: options.fetchImpl } : {}),
+			}),
+		streamSimple: (model, context, streamOpts) =>
+			streamSimple(model, context, {
+				...streamOpts,
+				...(options.fetchImpl && !streamOpts?.fetch ? { fetch: options.fetchImpl } : {}),
+			}),
 	};
 }
 
@@ -530,13 +592,13 @@ export default function llamaSwapExtension(
 	}
 
 	// 2. Support ambient LLAMA_SWAP_URL environment variable when no servers are stored
-	const envUrl = process.env.LLAMA_SWAP_URL?.trim();
-	if (envUrl && storedServers.size === 0) {
+	const envUrl = tryNormalizeServerUrl(process.env.LLAMA_SWAP_URL);
+	if (envUrl && registeredInstances.size === 0 && !storedServers.has(LLAMA_SWAP_PROVIDER_ID)) {
 		const envName = process.env.LLAMA_SWAP_NAME?.trim() || LLAMA_SWAP_PROVIDER_ID;
 		const envKey = process.env.LLAMA_SWAP_API_KEY?.trim() || DEFAULT_API_KEY;
 		if (envName !== LLAMA_SWAP_PROVIDER_ID) {
 			registerOrUpdateInstance(
-				{ name: envName, serverUrl: normalizeServerUrl(envUrl), apiKey: envKey },
+				{ name: envName, serverUrl: envUrl, apiKey: envKey },
 				[],
 				true,
 			);
@@ -609,7 +671,9 @@ export default function llamaSwapExtension(
 					}
 					const url =
 						credentialServerUrl(credential) ??
-						(storedServers.size === 0 ? (await ctx.env("LLAMA_SWAP_URL"))?.trim() : undefined);
+						(registeredInstances.size === 0
+							? tryNormalizeServerUrl(await ctx.env("LLAMA_SWAP_URL"))
+							: undefined);
 					return url ? { type: "api_key", source: `llama-swap (${url})` } : undefined;
 				},
 				resolve: async ({ ctx, credential }): Promise<AuthResult | undefined> => {
@@ -617,11 +681,12 @@ export default function llamaSwapExtension(
 					if (namedTarget && namedTarget !== LLAMA_SWAP_PROVIDER_ID) {
 						return undefined;
 					}
-					const rawUrl =
+					const serverUrl =
 						credentialServerUrl(credential) ??
-						(storedServers.size === 0 ? (await ctx.env("LLAMA_SWAP_URL"))?.trim() : undefined);
-					if (!rawUrl) return undefined;
-					const serverUrl = normalizeServerUrl(rawUrl);
+						(registeredInstances.size === 0
+							? tryNormalizeServerUrl(await ctx.env("LLAMA_SWAP_URL"))
+							: undefined);
+					if (!serverUrl) return undefined;
 					const apiKey =
 						credential?.key?.trim() ||
 						(await ctx.env("LLAMA_SWAP_API_KEY"))?.trim() ||
@@ -668,13 +733,14 @@ export default function llamaSwapExtension(
 			if (envName && envName !== LLAMA_SWAP_PROVIDER_ID) {
 				return;
 			}
-			const fallbackUrl = targetUrl ?? (storedServers.size === 0 ? process.env.LLAMA_SWAP_URL?.trim() : undefined);
-			if (!fallbackUrl) return;
+			const serverUrl =
+				targetUrl ??
+				(registeredInstances.size === 0 ? tryNormalizeServerUrl(process.env.LLAMA_SWAP_URL) : undefined);
+			if (!serverUrl) return;
 
 			const shouldFetch = (context.allowNetwork || rootModels.length === 0) && !process.env.PI_OFFLINE;
 			if (!shouldFetch || context.signal.aborted) return;
 
-			const serverUrl = normalizeServerUrl(fallbackUrl);
 			const apiKey = cred?.key?.trim() || process.env.LLAMA_SWAP_API_KEY?.trim() || DEFAULT_API_KEY;
 
 			let catalog: LlamaSwapModelEntry[];
@@ -695,8 +761,15 @@ export default function llamaSwapExtension(
 			});
 		},
 		stream: (model, context, streamOpts) =>
-			stream(model, context, streamOpts as ProviderStreamOptions | undefined),
-		streamSimple: (model, context, streamOpts) => streamSimple(model, context, streamOpts),
+			stream(model, context, {
+				...(streamOpts as ProviderStreamOptions | undefined),
+				...(options.fetchImpl && !streamOpts?.fetch ? { fetch: options.fetchImpl } : {}),
+			}),
+		streamSimple: (model, context, streamOpts) =>
+			streamSimple(model, context, {
+				...streamOpts,
+				...(options.fetchImpl && !streamOpts?.fetch ? { fetch: options.fetchImpl } : {}),
+			}),
 	};
 
 	pi.registerProvider(rootProvider);

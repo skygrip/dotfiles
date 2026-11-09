@@ -148,8 +148,12 @@ export async function runLlamaSwapTests() {
     assert.equal(normalizeServerUrl("https://swap.local:9000/api/v1?foo=1#bar"), "https://swap.local:9000/api");
   });
 
-  test("URL Normalization: prepends http:// when protocol is omitted and rejects invalid schemes", () => {
+  test("URL Normalization: infers http:// for local/IP/custom-port and https:// for bare domains or :443", () => {
     assert.equal(normalizeServerUrl("127.0.0.1:8080"), "http://127.0.0.1:8080");
+    assert.equal(normalizeServerUrl("swap.local:443/v1/"), "https://swap.local");
+    assert.equal(normalizeServerUrl("swap.example.com"), "https://swap.example.com");
+    assert.equal(normalizeServerUrl("swap.example.com/v1"), "https://swap.example.com");
+    assert.equal(normalizeServerUrl("swap.example.com:8080"), "http://swap.example.com:8080");
     assert.equal(inferenceBaseUrl("192.168.1.50:8080/v1/"), "http://192.168.1.50:8080/v1");
     assert.throws(() => normalizeServerUrl(""), /empty/i);
     assert.throws(() => normalizeServerUrl("ftp://127.0.0.1:8080"), /http or https/);
@@ -173,7 +177,8 @@ export async function runLlamaSwapTests() {
       minimal: null,
       low: null,
       medium: "medium",
-      high: null
+      high: null,
+      xhigh: null
     });
     assert.equal(model.compat.supportsReasoningEffort, true);
     assert.equal(model.compat.maxTokensField, "max_tokens");
@@ -217,6 +222,28 @@ export async function runLlamaSwapTests() {
     assert.equal(bareBasalt.contextWindow, 262144);
     assert.equal(bareBasalt.maxTokens, 32768);
     assert.deepEqual(bareBasalt.thinkingLevelMap, MULTI_LEVEL_THINKING_MAP);
+
+    const configYamlStyle = toPiModel(
+      {
+        id: "yaml-style-model",
+        capabilities: {
+          in: ["text", "image"],
+          out: ["text"],
+          tools: false,
+          context: 65536
+        },
+        metadata: {
+          maxTokens: 12288
+        }
+      },
+      "https://swap.local:8443",
+      "node-2"
+    );
+    assert.equal(configYamlStyle.contextWindow, 65536);
+    assert.equal(configYamlStyle.maxTokens, 12288);
+    assert.equal(configYamlStyle.reasoning, false);
+    assert.deepEqual(configYamlStyle.input, ["text", "image"]);
+    assert.equal(configYamlStyle.baseUrl, "https://swap.local:8443/v1");
   });
 
   // -------------------------------------------------------------------------
@@ -235,6 +262,14 @@ export async function runLlamaSwapTests() {
     assert.equal(capturedUrl, "http://127.0.0.1:8080/v1/models");
     assert.equal(capturedAuth, "Bearer secret-token");
     assert.equal(entries.length, 3);
+
+    // Default placeholder key ("not-needed") should not send an Authorization header
+    let defaultKeyAuth = null;
+    await fetchCatalog("https://swap.local:8443/", "not-needed", undefined, async (_url, init) => {
+      defaultKeyAuth = init.headers.get("Authorization");
+      return new Response(JSON.stringify({ data: SAMPLE_CATALOG }), { status: 200 });
+    });
+    assert.equal(defaultKeyAuth, null);
   });
 
   await asyncTest("Catalog Fetch: throws descriptive error on HTTP failure or malformed payload", async () => {
