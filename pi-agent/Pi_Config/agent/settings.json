@@ -1,3 +1,10 @@
 {
-  "defaultTools": ["-bash", "+powershell"]
+  "defaultTools": [
+    "-bash",
+    "+powershell"
+  ],
+  "packages": [
+    "npm:pi-subagents"
+  ]
 }
+

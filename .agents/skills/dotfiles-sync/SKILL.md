@@ -49,6 +49,7 @@ Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destin
 
 # Stage 4: Extension NPM Dependency Install
 npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
+pi install npm:pi-subagents
 
 # Stage 5: Cryptographic Hash Verification Check
 Get-FileHash (Join-Path $HOME "Build\dotfiles\pi-agent\Pi_Config\agent\skills\image-prompt-builder\SKILL.md"), `
@@ -65,6 +66,7 @@ rsync -aq "$HOME/Build/dotfiles/pi-agent/Pi_Config/agent/skills/" "$HOME/.gemini
 
 # Stage 4: Extension NPM Dependency Install
 npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit
+pi install npm:pi-subagents
 
 # Stage 5: Cryptographic Hash Verification Check
 sha256sum "$HOME/Build/dotfiles/pi-agent/Pi_Config/agent/skills/image-prompt-builder/SKILL.md" \

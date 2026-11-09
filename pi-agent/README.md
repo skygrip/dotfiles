@@ -88,16 +88,18 @@ echo 'export PATH="$HOME/.pi/agent/bin:$PATH"' >> ~/.bashrc
 
 #### Install Extension Dependencies & Plugins
 
-All runtime packages required by custom extensions (`defuddle`, `got-scraping`, `playwright-core`) are tracked in `Pi_Config/agent/npm/package.json`. Install them into Pi's isolated npm environment:
+All runtime packages required by custom extensions (`defuddle`, `got-scraping`, `pi-subagents`, `playwright-core`) are tracked in `Pi_Config/agent/npm/package.json`. Install them into Pi's isolated npm environment:
 
 **PowerShell (Windows):**
 ```powershell
 npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
+pi install npm:pi-subagents
 ```
 
 **Bash / Zsh (Linux / macOS):**
 ```bash
 npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit
+pi install npm:pi-subagents
 ```
 
 #### Syncing Skills, Extensions & Config
@@ -114,6 +116,7 @@ Copy-Item -Path ".\Pi_Config\agent\skills\*" -Destination "$HOME\.gemini\config\
 
 # 3. Ensure extension dependencies are installed:
 npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
+pi install npm:pi-subagents
 ```
 
 **Linux / macOS (Bash):**
@@ -126,6 +129,7 @@ rsync -av ./Pi_Config/agent/skills/ "$HOME/.gemini/config/skills/"
 
 # 3. Ensure extension dependencies are installed:
 npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit
+pi install npm:pi-subagents
 ```
 
 #### Running Extension Tests
