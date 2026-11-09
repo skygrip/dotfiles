@@ -12,14 +12,13 @@ The global configuration is typically stored in `~/.pi/agent/`. In this reposito
 
 ### Key Components
 
-*   **Model Configurations (`models.json`)**: Defines connection parameters for LLM providers.
-    *   *Source*: [Pi_Config/agent/models.json](./Pi_Config/agent/models.json)
 *   **Core Behavioral Instructions (`AGENTS.md`)**: Defines the agent's persona, troubleshooting logic, and execution rules.
     *   *Source*: [Pi_Config/agent/AGENTS.md](./Pi_Config/agent/AGENTS.md)
 *   **Environmental Constraints (`APPEND_SYSTEM.md`)**: Hardcodes platform-specific parameters (PowerShell defaults, line endings, etc.).
     *   *Source*: [Pi_Config/agent/APPEND_SYSTEM.md](./Pi_Config/agent/APPEND_SYSTEM.md)
-*   **Custom TypeScript Extensions (`extensions/`)**: Tools that expand Pi's capabilities.
+*   **Custom TypeScript Extensions (`extensions/`)**: Tools and providers that expand Pi's capabilities.
     *   *Source Directory*: [Pi_Config/agent/extensions/](./Pi_Config/agent/extensions/)
+    *   `llama-swap.ts`: Dynamic multi-instance `llama-swap` provider registration supporting arbitrary named endpoints (`/login llama-swap`), live `/v1/models` catalog discovery, vision capability detection, and per-model `thinkingLevelMap` metadata.
     *   `permissions-gate.ts`: Pre-execution security barriers intercepting dangerous commands (bash & powershell), secret credential exfiltration (`.env`, `.ssh`, API keys), and out-of-workspace file operations across `read`, `write`, `edit`, `grep`, `find`, and `ls`.
     *   `gemini-web-search.ts`: Grounded Google web search powered by Gemini API with source citations and standard tool annotations (`openWorldHint`, `readOnlyHint`).
     *   `fetch-url.ts`: Web page, text, and multimodal asset retrieval with got-scraping, Chrome CDP browser fallback, and Defuddle markdown extraction.
@@ -152,6 +151,7 @@ node tests/test_fetch_url.mjs
 node tests/test_prompt_cleaner.mjs
 node tests/test_write_diff.mjs
 node tests/test_sequential_thinking.mjs
+node tests/test_llama_swap.mjs
 ```
 
 #### Extension CLI Flags, Environment Variables & Slash Commands

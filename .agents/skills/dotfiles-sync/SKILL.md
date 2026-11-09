@@ -33,7 +33,7 @@ flowchart TD
 | Target Runtime | Target Global Path | Source Directory in Dotfiles | Inclusion Policy |
 | :--- | :--- | :--- | :--- |
 | **Pi Agent Global** | `~/.pi/agent/` | `pi-agent/Pi_Config/agent/` | Complete synchronization of all prompts, extensions, skills, and settings. |
-| **Antigravity Global** | `~/.gemini/config/skills/` | `pi-agent/Pi_Config/agent/skills/` | Sync portable skills; exclude Pi-only skills (`agent-config`, `batch-automator`). |
+| **Antigravity Global** | `~/.gemini/config/skills/` | `pi-agent/Pi_Config/agent/skills/` | Complete synchronization of all shared portable skills. |
 | **Pi NPM Environment** | `~/.pi/agent/npm/` | `pi-agent/Pi_Config/agent/npm/` | Extension dependency root for JITI runtime execution. |
 
 ---
@@ -45,7 +45,7 @@ flowchart TD
 ```powershell
 # Stage 3: Native Copy Execution (Pi Agent + Antigravity portable skills)
 Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\*" -Destination (Join-Path $HOME ".pi\agent") -Recurse -Force
-Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination (Join-Path $HOME ".gemini\config\skills") -Exclude @("agent-config", "batch-automator") -Recurse -Force
+Copy-Item -Path "$HOME\Build\dotfiles\pi-agent\Pi_Config\agent\skills\*" -Destination (Join-Path $HOME ".gemini\config\skills") -Recurse -Force
 
 # Stage 4: Extension NPM Dependency Install
 npm --prefix (Join-Path $HOME ".pi\agent\npm") install --no-fund --no-audit
@@ -59,9 +59,9 @@ Get-FileHash (Join-Path $HOME "Build\dotfiles\pi-agent\Pi_Config\agent\skills\im
 ### Example 2: Full Synchronization (Linux / macOS / WSL)
 
 ```bash
-# Stage 3: Native Copy Execution (excluding node_modules and Pi-only skills)
+# Stage 3: Native Copy Execution (excluding node_modules)
 rsync -aq --exclude="node_modules" --exclude="package-lock.json" "$HOME/Build/dotfiles/pi-agent/Pi_Config/agent/" "$HOME/.pi/agent/"
-rsync -aq --exclude="agent-config" --exclude="batch-automator" "$HOME/Build/dotfiles/pi-agent/Pi_Config/agent/skills/" "$HOME/.gemini/config/skills/"
+rsync -aq "$HOME/Build/dotfiles/pi-agent/Pi_Config/agent/skills/" "$HOME/.gemini/config/skills/"
 
 # Stage 4: Extension NPM Dependency Install
 npm --prefix "$HOME/.pi/agent/npm" install --no-fund --no-audit

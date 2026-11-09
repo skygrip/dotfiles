@@ -19,7 +19,7 @@ macros:
   # ACTIVE PROFILE: NVIDIA RTX 5080 (Windows / CUDA)
   # ============================================================================
   llama-server: "${env.USERPROFILE}/Build/llama.cpp-cuda/llama-server.exe --port ${PORT}"
-  basalt-server: "${env.USERPROFILE}/Build/basalt/bin/Release/basalt.exe serve --port ${PORT}"
+  basalt-server: "${env.USERPROFILE}/Build/basalt/bin/basalt.exe serve --port ${PORT}"
   threads: 8
   threads_batch: 16
   batch: 2048
@@ -78,6 +78,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -100,6 +109,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -118,6 +136,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -139,6 +166,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -157,6 +193,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -180,6 +225,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx_basalt}
+    metadata:
+      reasoning: true
+      maxTokens: 32768
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: "low"
+        medium: "medium"
+        high: "xhigh"
     cmd: |
       ${basalt-server}
       --model "${env.USERPROFILE}/Build/Models/Qwen3.8-FN-GSQ-RCO-IQ3_S.basalt"
@@ -200,6 +254,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 32768
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: "low"
+        medium: "medium"
+        high: "xhigh"
     cmd: |
       ${llama-server}
       ${default_args}
@@ -218,6 +281,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -236,6 +308,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx}
+    metadata:
+      reasoning: true
+      maxTokens: 16384
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: null
+        medium: "medium"
+        high: null
     cmd: |
       ${llama-server}
       ${default_args}
@@ -256,6 +337,15 @@ models:
       out: ["text"]
       tools: true
       context: ${ctx_basalt}
+    metadata:
+      reasoning: true
+      maxTokens: 32768
+      thinkingLevelMap:
+        off: "none"
+        minimal: null
+        low: "low"
+        medium: "medium"
+        high: "xhigh"
     cmd: |
       ${basalt-server}
       --model "${env.USERPROFILE}/Build/Models/Qwen3.8-FN-GSQ-RCO-abliterated-IQ3_S.basalt"
@@ -280,6 +370,9 @@ models:
       out: ["text"]
       tools: false
       context: 65536
+    metadata:
+      reasoning: false
+      maxTokens: 12288
     cmd: |
       ${llama-server}
       --ctx-size 65536 -n 12288 -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${ocr_hw_args} --kv-unified --parallel 4 --cache-reuse 64 --jinja
@@ -295,6 +388,9 @@ models:
       out: ["text"]
       tools: false
       context: 65536
+    metadata:
+      reasoning: false
+      maxTokens: 12288
     cmd: |
       ${llama-server}
       --ctx-size 65536 -n 12288 -ctk ${ctk} -ctv ${ctv} -fa ${fa} ${ocr_hw_args} --kv-unified --parallel 4 --cache-reuse 64 --jinja

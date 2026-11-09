@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, getPackageDir, isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import * as path from "node:path";
 import * as os from "node:os";
 
@@ -147,7 +147,7 @@ export const DANGEROUS_BASH_PATTERNS: DangerousPattern[] = [
   }
 ];
 
-export const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
+export const BASH_CREDENTIAL_ACCESS_REGEX = /(?:^|[\s\/'"\\])(?:\.env(?:\.[\w-]+)?|\.ssh(?:[\\\/][\w.-]+)?|\.aws(?:[\\\/][\w.-]+)?|\.kube(?:[\\\/]config)?|\.pi[\\\/]agent[\\\/]auth\.json|\.git-credentials|\.npmrc|\.pypirc|\.netrc|\.docker[\\\/]config\.json|\.gnupg[\\\/]?|\.bash_history|\.zsh_history|etc[\\\/]shadow|etc[\\\/]master\.passwd|id_rsa|id_ed25519|id_ecdsa|id_dsa|service_account.*\.json|client_secret.*\.json|\w+\.(?:pem|key|p12|pfx))\b/i;
 
 export const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/])\.env(?:\.[\w-]+)?$/i,
@@ -155,6 +155,7 @@ export const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/])(?:id_rsa|id_ed25519|id_ecdsa|id_dsa)$/i,
   /(?:^|[\\\/])\.aws(?:[\\\/](?:credentials|config))?$/i,
   /(?:^|[\\\/])\.kube(?:[\\\/]config)?$/i,
+  /(?:^|[\\\/])\.pi[\\\/]agent[\\\/]auth\.json$/i,
   /(?:^|[\\\/])\.git-credentials$/i,
   /(?:^|[\\\/])\.npmrc$/i,
   /(?:^|[\\\/])\.pypirc$/i,
@@ -167,15 +168,20 @@ export const CREDENTIAL_FILE_PATTERNS = [
   /(?:^|[\\\/])(?:service_account|client_secret).*\.json$/i
 ];
 
-export function isOutsideWorkspace(targetPath: string): boolean {
+export function isOutsideWorkspace(targetPath: string, workspaceRoot?: string): boolean {
   if (!targetPath) return false;
-  const workspaceRoot = getWorkspaceRoot();
+  const root = workspaceRoot || getWorkspaceRoot();
 
-  // Local filesystem path resolution with ~ and drive normalization
-  const normTarget = normalizePath(targetPath);
-  const normRoot = path.resolve(workspaceRoot).replace(/\\/g, "/");
-  const rel = path.relative(normRoot, normTarget);
-  return rel.startsWith("..") || path.isAbsolute(rel);
+  // Local filesystem path resolution with ~, @, unicode spaces, and shell drive normalization
+  const normTarget = normalizePath(targetPath, root);
+  const normRoot = normalizePath(root);
+
+  const cmpTarget = process.platform === "win32" ? normTarget.toLowerCase() : normTarget;
+  const cmpRoot = process.platform === "win32" ? normRoot.toLowerCase() : normRoot;
+
+  const rel = path.relative(cmpRoot, cmpTarget);
+  if (!rel) return false;
+  return rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || path.isAbsolute(rel);
 }
 
 export function isCredentialFile(targetPath: string): boolean {
@@ -212,13 +218,36 @@ export function getWorkspaceRoot(): string {
   return process.cwd();
 }
 
+const UNICODE_SPACES = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g;
+
+/**
+ * Convert Git Bash, MSYS, Cygwin, and WSL drive paths (/c/..., /mnt/c/..., /cygdrive/c/...)
+ * to a form native Windows APIs accept (C:/...).
+ */
+export function normalizeWindowsShellPath(filePath: string): string {
+  if (!filePath.startsWith("/") || filePath.startsWith("//") || filePath.includes("\\")) {
+    return filePath;
+  }
+  const match = filePath.match(/^\/(?:mnt\/|cygdrive\/)?([a-z])(?:\/(.*))?$/i);
+  if (!match) {
+    return filePath;
+  }
+  const suffix = match[2] ?? "";
+  return `${match[1].toUpperCase()}:/${suffix}`;
+}
+
 /**
  * Normalizes and expands paths for uniform analysis.
  */
-function normalizePath(targetPath: string): string {
+export function normalizePath(targetPath: string, baseDir?: string): string {
   if (!targetPath) return "";
   const home = os.homedir().replace(/\\/g, "/");
-  let p = targetPath.trim().replace(/^['"]+|['"]+$/g, "").replace(/\\/g, "/");
+  let p = targetPath
+    .trim()
+    .replace(UNICODE_SPACES, " ")
+    .replace(/^['"]+|['"]+$/g, "")
+    .replace(/^@/, "")
+    .replace(/\\/g, "/");
 
   // Tilde and shell/PowerShell home variable expansion
   if (p === "~" || p.startsWith("~/")) {
@@ -230,13 +259,19 @@ function normalizePath(targetPath: string): string {
       .replace(/^%userprofile%(?:\/|$)/i, `${home}/`);
   }
 
-  // Windows drive normalization: /c/Users/... -> C:/Users/...
-  if (process.platform === "win32" && /^\/([a-zA-Z])\//.test(p)) {
-    p = p.replace(/^\/([a-zA-Z])\//, (_, drive) => `${drive.toUpperCase()}:/`);
+  // Windows shell drive normalization: /c/..., /mnt/c/..., /cygdrive/c/... -> C:/...
+  if (process.platform === "win32") {
+    p = normalizeWindowsShellPath(p);
   }
 
+  const resolvedBase = baseDir
+    ? (process.platform === "win32"
+        ? normalizeWindowsShellPath(baseDir.trim().replace(/\\/g, "/"))
+        : baseDir.trim().replace(/\\/g, "/"))
+    : getWorkspaceRoot();
+
   try {
-    return path.resolve(p).replace(/\\/g, "/");
+    return (path.isAbsolute(p) ? path.resolve(p) : path.resolve(resolvedBase, p)).replace(/\\/g, "/");
   } catch {
     return p;
   }
@@ -244,48 +279,81 @@ function normalizePath(targetPath: string): string {
 
 /**
  * Checks if a target path is located inside the global Pi or Agent skills directory.
- * Handles ~ expansion, Windows/POSIX slashes, Git Bash drive prefixes, and environment variables.
+ * Handles ~ expansion, Windows/POSIX slashes, Git Bash/WSL/Cygwin drive prefixes, and environment variables.
  */
 export function isGlobalSkillPath(targetPath: string): boolean {
   if (!targetPath) return false;
 
   const home = os.homedir().replace(/\\/g, "/").toLowerCase();
-  let norm = targetPath.trim().replace(/\\/g, "/").toLowerCase();
+  const norm = normalizePath(targetPath).toLowerCase();
 
-  // Strip wrapping quotes
-  norm = norm.replace(/^['"]+|['"]+$/g, "");
-
-  // Expand environment variables & tildes
-  norm = norm
-    .replace(/^~(?:\/|$)/, `${home}/`)
-    .replace(/^\$home(?:\/|$)/, `${home}/`)
-    .replace(/^%userprofile%(?:\/|$)/, `${home}/`)
-    .replace(/^\$env:userprofile(?:\/|$)/, `${home}/`)
-    .replace(/^\$env:home(?:\/|$)/, `${home}/`);
-
-  // Normalize MSYS2 / Git Bash /c/Users -> C:/Users
-  if (process.platform === "win32" && /^\/([a-z])\//i.test(norm)) {
-    norm = norm.replace(/^\/([a-z])\//i, (_, drive) => `${drive.toUpperCase()}:/`);
-  }
+  const skillDirs = [
+    `${home}/.pi/agent/skills`,
+    `${home}/.agents/skills`,
+    `${home}/.gemini/config/skills`
+  ];
 
   try {
-    norm = path.resolve(norm).replace(/\\/g, "/").toLowerCase();
+    if (typeof getAgentDir === "function") {
+      const customAgentSkills = `${normalizePath(getAgentDir()).toLowerCase()}/skills`;
+      if (!skillDirs.includes(customAgentSkills)) {
+        skillDirs.push(customAgentSkills);
+      }
+    }
   } catch {
-    // Keep unnormalized if path.resolve fails
+    // Fallback to standard skill directories if getAgentDir fails
   }
 
-  const piSkills = `${home}/.pi/agent/skills`;
-  const agentsSkills = `${home}/.agents/skills`;
-  const geminiSkills = `${home}/.gemini/config/skills`;
+  return skillDirs.some(dir => norm === dir || norm.startsWith(`${dir}/`));
+}
 
-  return (
-    norm === piSkills ||
-    norm.startsWith(`${piSkills}/`) ||
-    norm === agentsSkills ||
-    norm.startsWith(`${agentsSkills}/`) ||
-    norm === geminiSkills ||
-    norm.startsWith(`${geminiSkills}/`)
-  );
+/**
+ * Checks if a target path is inside Pi's own installed package/releases directory
+ * (where Pi's README.md, docs/, examples/, schemas/, and dist/ reside).
+ */
+export function isPiDocsOrPackagePath(targetPath: string): boolean {
+  if (!targetPath) return false;
+
+  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
+  const norm = normalizePath(targetPath).toLowerCase();
+
+  const allowedDirs = [`${home}/.pi/agent/install/releases`];
+
+  try {
+    if (typeof getAgentDir === "function") {
+      const agentReleases = `${normalizePath(getAgentDir()).toLowerCase()}/install/releases`;
+      if (!allowedDirs.includes(agentReleases)) {
+        allowedDirs.push(agentReleases);
+      }
+    }
+    if (typeof getPackageDir === "function") {
+      const pkgDir = normalizePath(getPackageDir()).toLowerCase();
+      if (pkgDir && !allowedDirs.includes(pkgDir)) {
+        allowedDirs.push(pkgDir);
+      }
+    }
+  } catch {
+    // Fallback to standard release path if config helpers fail
+  }
+
+  return allowedDirs.some(dir => norm === dir || norm.startsWith(`${dir}/`));
+}
+
+/**
+ * Checks if a path is exempted for read-only inspection (global skills or Pi's own docs/package).
+ */
+export function isReadExemptPath(targetPath: string): boolean {
+  return isGlobalSkillPath(targetPath) || isPiDocsOrPackagePath(targetPath);
+}
+
+const SHELL_MUTATION_REGEX = /(?:^|[\s;|&()])(?:rm|mv|cp|mkdir|rmdir|touch|chmod|chown|ln|install|dd|shred|unlink|truncate|tee|Remove-Item|ri|del|erase|rd|Move-Item|mi|move|Copy-Item|cpi|copy|New-Item|ni|Set-Content|sc|Add-Content|ac|Clear-Content|clc|Out-File|Rename-Item|rni|ren)\b|\bsed\s+(?:-[a-zA-Z]*i|--in-place)\b|(?:^|[^<>&\d-])>{1,2}(?![>&=])/i;
+
+/**
+ * Detects whether a shell command performs filesystem writes/mutations or redirections.
+ */
+export function isMutatingShellCommand(command: string): boolean {
+  if (!command) return false;
+  return SHELL_MUTATION_REGEX.test(command);
 }
 
 const BENIGN_SHELL_PATHS = new Set([
@@ -308,8 +376,8 @@ export function extractPathTokens(command: string): string[] {
   // 1. Tildes & Home Env Vars: ~/foo, ~, $HOME/foo, $env:USERPROFILE\foo, %USERPROFILE%\foo
   // 2. Directory traversals: .. or ../ or ./.. or ./../foo or ../../foo
   // 3. Windows drives: C:\foo or C:/foo
-  // 4. Root/system paths: /c/foo, /etc/foo, /var/foo, /Users/foo, etc.
-  const pathRegex = /(?:^|[\s"'=<>|&;])((?:(?:\$env:(?:userprofile|home)|\$home|%userprofile%)(?:[\/\\][\w.\\\/-]+)+|~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
+  // 4. Root/system/shell paths: /c/foo, /mnt/c/foo, /cygdrive/c/foo, /etc/foo, /var/foo, /Users/foo, etc.
+  const pathRegex = /(?:^|[\s"'=<>|&;])((?:(?:\$env:(?:userprofile|home)|\$home|%userprofile%)(?:[\/\\][\w.\\\/-]+)+|~(?:\/[\w.-]+)*|(?:\.[\/\\])*\.\.(?:[\/\\][\w.\\\/-]*)?|[a-zA-Z]:[\\\/][\w.\\\/-]+|\/(?:(?:mnt|cygdrive)\/[a-zA-Z](?:\/|$)|[a-zA-Z]\/|etc|var|usr|home|tmp|opt|root|bin|sbin|boot|dev|sys|proc|windows|program files|users)[\w.\\\/-]*))/gi;
 
   const results: string[] = [];
   let match: RegExpExecArray | null;
@@ -379,11 +447,13 @@ export default function (pi: ExtensionAPI) {
   pi.on("tool_call", async (event, ctx) => {
     if (!gateEnabled) return;
 
+    const workspace = ctx?.cwd || getWorkspaceRoot();
+
     // --------------------------------------------------
     // A. Bash & PowerShell Tool Safety Inspection
     // --------------------------------------------------
-    if (isToolCallEventType("bash", event) || isToolCallEventType("powershell", event) || (event as any).toolName === "powershell") {
-      const command = (event.input as any).command || "";
+    if (isToolCallEventType("bash", event) || isToolCallEventType("powershell", event)) {
+      const command = event.input.command || "";
 
       // 1. Dangerous Command Regex Patterns
       for (const pattern of DANGEROUS_BASH_PATTERNS) {
@@ -435,6 +505,7 @@ export default function (pi: ExtensionAPI) {
 
       // 3. Out-of-Workspace & Sensitive System Path Access via Shell (rg, ck, sc, fd, find, cat, etc.)
       const pathTokens = extractPathTokens(command);
+      const mutatingShell = isMutatingShellCommand(command);
       for (const token of pathTokens) {
         if (isSensitiveSystemPath(token)) {
           if (!ctx.hasUI || !ctx.ui) {
@@ -459,8 +530,7 @@ export default function (pi: ExtensionAPI) {
           break;
         }
 
-        if (isOutsideWorkspace(token) && !isGlobalSkillPath(token)) {
-          const workspace = getWorkspaceRoot();
+        if (isOutsideWorkspace(token, workspace) && (mutatingShell || !isReadExemptPath(token))) {
           if (!ctx.hasUI || !ctx.ui) {
             return {
               block: true,
@@ -490,56 +560,74 @@ export default function (pi: ExtensionAPI) {
     // --------------------------------------------------
     if (
       isToolCallEventType("read", event) ||
-      (event as any).toolName === "grep" ||
-      (event as any).toolName === "find" ||
-      (event as any).toolName === "ls"
+      isToolCallEventType("grep", event) ||
+      isToolCallEventType("find", event) ||
+      isToolCallEventType("ls", event)
     ) {
-      const targetPath = (event.input as any).path || "";
+      const targetPath = event.input.path || "";
+      const rawGlob = (
+        isToolCallEventType("find", event)
+          ? event.input.pattern
+          : isToolCallEventType("grep", event)
+            ? event.input.glob
+            : ""
+      ) || "";
+      const cleanGlob = rawGlob.trim().replace(/^!+/, "");
+      const searchBase = targetPath ? normalizePath(targetPath, workspace) : workspace;
+      const globHasPathOrSecret = Boolean(
+        cleanGlob && (/[\/\\]|^~|^\$|^%|^[a-zA-Z]:|^\.\./.test(cleanGlob) || isCredentialFile(cleanGlob))
+      );
+      const resolvedGlobPath = globHasPathOrSecret ? normalizePath(cleanGlob, searchBase) : "";
+      const inspectTargets = [
+        ...(targetPath ? [{ raw: targetPath, resolved: targetPath }] : []),
+        ...(resolvedGlobPath ? [{ raw: rawGlob, resolved: resolvedGlobPath }] : [])
+      ];
 
-      // 1. Sensitive file / credential protection
-      if (targetPath && (isCredentialFile(targetPath) || isSensitiveSystemPath(targetPath))) {
-        if (!ctx.hasUI || !ctx.ui) {
-          return {
-            block: true,
-            reason: `[SECRET PROTECTION]: Access to sensitive path "${targetPath}" is blocked in headless mode.`
-          };
+      for (const item of inspectTargets) {
+        // 1. Sensitive file / credential protection
+        if (isCredentialFile(item.raw) || isCredentialFile(item.resolved) || isSensitiveSystemPath(item.resolved)) {
+          if (!ctx.hasUI || !ctx.ui) {
+            return {
+              block: true,
+              reason: `[SECRET PROTECTION]: Access to sensitive path "${item.raw}" is blocked in headless mode.`
+            };
+          }
+
+          const approved = await promptConfirmation(
+            ctx,
+            "🔒 Sensitive File Access",
+            `The agent wants to access sensitive path:\n\n${item.raw}\n\nAllow access?`
+          );
+
+          if (!approved) {
+            return {
+              block: true,
+              reason: `[SECRET PROTECTION BLOCKED BY USER]: Accessing "${item.raw}" was denied by user.`
+            };
+          }
         }
 
-        const approved = await promptConfirmation(
-          ctx,
-          "🔒 Sensitive File Access",
-          `The agent wants to access sensitive path:\n\n${targetPath}\n\nAllow access?`
-        );
+        // 2. Out of Workspace Read Confinement
+        if (isOutsideWorkspace(item.resolved, workspace) && !isReadExemptPath(item.resolved)) {
+          if (!ctx.hasUI || !ctx.ui) {
+            return {
+              block: true,
+              reason: `[WORKSPACE CONFINEMENT]: Accessing path "${item.raw}" outside active workspace "${workspace}". Blocked in headless mode.`
+            };
+          }
 
-        if (!approved) {
-          return {
-            block: true,
-            reason: `[SECRET PROTECTION BLOCKED BY USER]: Accessing "${targetPath}" was denied by user.`
-          };
-        }
-      }
+          const approved = await promptConfirmation(
+            ctx,
+            "⚠️ Out-of-Workspace Access",
+            `Target: ${item.raw}\nWorkspace: ${workspace}\n\nThe agent is attempting to access a path outside the project workspace.\n\nAllow access?`
+          );
 
-      // 2. Out of Workspace Read Confinement
-      if (targetPath && isOutsideWorkspace(targetPath) && !isGlobalSkillPath(targetPath)) {
-        const workspace = getWorkspaceRoot();
-        if (!ctx.hasUI || !ctx.ui) {
-          return {
-            block: true,
-            reason: `[WORKSPACE CONFINEMENT]: Accessing path "${targetPath}" outside active workspace "${workspace}". Blocked in headless mode.`
-          };
-        }
-
-        const approved = await promptConfirmation(
-          ctx,
-          "⚠️ Out-of-Workspace Access",
-          `Target: ${targetPath}\nWorkspace: ${workspace}\n\nThe agent is attempting to access a path outside the project workspace.\n\nAllow access?`
-        );
-
-        if (!approved) {
-          return {
-            block: true,
-            reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Access outside workspace "${workspace}" was denied.`
-          };
+          if (!approved) {
+            return {
+              block: true,
+              reason: `[WORKSPACE CONFINEMENT BLOCKED BY USER]: Access outside workspace "${workspace}" was denied.`
+            };
+          }
         }
       }
     }
@@ -574,8 +662,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // 2. Out of Workspace Confinement
-      if (isOutsideWorkspace(targetPath)) {
-        const workspace = getWorkspaceRoot();
+      if (isOutsideWorkspace(targetPath, workspace)) {
         if (!ctx.hasUI || !ctx.ui) {
           return {
             block: true,

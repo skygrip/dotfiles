@@ -34,6 +34,9 @@ export async function runPermissionsGateTests() {
     isCredentialFile,
     isSensitiveSystemPath,
     isGlobalSkillPath,
+    isPiDocsOrPackagePath,
+    isReadExemptPath,
+    isMutatingShellCommand,
     extractPathTokens,
     getWorkspaceRoot
   } = mod;
@@ -135,10 +138,12 @@ export async function runPermissionsGateTests() {
     assert.ok(isCredentialFile(".kube/config"), "Must identify Kubeconfig");
     assert.ok(isCredentialFile(".git-credentials"), "Must identify git credentials");
     assert.ok(isCredentialFile(".npmrc"), "Must identify npmrc auth");
+    assert.ok(isCredentialFile("~/.pi/agent/auth.json"), "Must identify Pi auth.json credentials");
     assert.ok(isCredentialFile("secrets/cert.pem"), "Must identify PEM certificates");
     assert.ok(isCredentialFile("service_account.json"), "Must identify service account JSON");
 
     assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.ssh/id_ed25519"));
+    assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("cat ~/.pi/agent/auth.json"));
     assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("grep KEY .env.production"));
     assert.ok(BASH_CREDENTIAL_ACCESS_REGEX.test("type %USERPROFILE%\\.aws\\credentials"));
   });
@@ -155,13 +160,20 @@ export async function runPermissionsGateTests() {
     assert.ok(isSensitiveSystemPath(`${home}/.cargo/credentials`));
   });
 
-  // Test 5: Global Skills Exemption
-  test("Skills Exemption: allows reading global skills without triggering out-of-workspace alerts", () => {
+  // Test 5: Global Skills & Pi Docs Read Exemption
+  test("Skills & Pi Docs Exemption: allows reading global skills and Pi package docs without triggering out-of-workspace alerts", () => {
     const home = os.homedir().replace(/\\/g, "/");
     assert.ok(isGlobalSkillPath("~/.agents/skills/git/SKILL.md"));
     assert.ok(isGlobalSkillPath(`${home}/.pi/agent/skills/my-skill/SKILL.md`));
+    assert.ok(isPiDocsOrPackagePath("~/.pi/agent/install/releases/1.5.0/node_modules/@earendil-works/pi-coding-agent/docs/extensions.md"));
+    assert.ok(isReadExemptPath("~/.pi/agent/install/releases/1.5.0/node_modules/@earendil-works/pi-coding-agent/README.md"));
     assert.equal(isGlobalSkillPath("~/.config/secret"), false, "Non-skill path must return false");
+    assert.equal(isReadExemptPath("~/.pi/agent/extensions/permissions-gate.ts"), false, "Active extensions dir must not be exempt");
     assert.equal(isGlobalSkillPath("/etc/passwd"), false);
+
+    assert.equal(isMutatingShellCommand("cat ~/.pi/agent/skills/git/SKILL.md 2>/dev/null"), false, "Read-only cat with 2>/dev/null must not be flagged as mutating");
+    assert.equal(isMutatingShellCommand("rm -f ~/.pi/agent/skills/git/SKILL.md"), true, "rm on skill path must be flagged as mutating");
+    assert.equal(isMutatingShellCommand("echo malicious > ~/.pi/agent/skills/git/SKILL.md"), true, "Stdout redirect on skill path must be flagged as mutating");
   });
 
   test("Path Token Extraction: parses sensitive paths from complex shell pipelines", () => {
@@ -180,6 +192,10 @@ export async function runPermissionsGateTests() {
 
     const tokens5 = extractPathTokens("Get-Content $env:USERPROFILE\\.config\\gcloud\\credentials.db");
     assert.ok(tokens5.some(t => t.toLowerCase().includes("$env:userprofile")), "Must extract PowerShell $env:USERPROFILE paths");
+
+    const tokens6 = extractPathTokens("cat /mnt/c/Windows/System32/drivers/etc/hosts /cygdrive/c/Users/admin/.ssh/id_rsa");
+    assert.ok(tokens6.some(t => t.includes("/mnt/c/Windows")), "Must extract WSL /mnt/c/ paths");
+    assert.ok(tokens6.some(t => t.includes("/cygdrive/c/Users")), "Must extract Cygwin /cygdrive/c/ paths");
   });
 
   // ----------------------------------------------------
@@ -191,9 +207,26 @@ export async function runPermissionsGateTests() {
 
     assert.equal(isOutsideWorkspace("src/app.ts"), false);
     assert.equal(isOutsideWorkspace("./README.md"), false);
+    assert.equal(isOutsideWorkspace("@src/app.ts"), false, "Must strip leading @ mention prefix");
+    assert.equal(isOutsideWorkspace("..hidden_file_in_workspace"), false, "Files starting with .. inside workspace must not be flagged as parent traversal");
     assert.equal(isOutsideWorkspace("../../other_workspace/file"), true);
     assert.equal(isOutsideWorkspace("~/.pi/agent/extensions"), true, "~/.pi/agent/extensions must resolve as outside project workspace");
     assert.equal(isOutsideWorkspace("$env:USERPROFILE/.pi/agent/extensions"), true, "$env:USERPROFILE/.pi/agent/extensions must resolve as outside project workspace");
+
+    // Custom ctx.cwd workspace root resolution
+    const customRoot = path.resolve(root, "subproject");
+    assert.equal(isOutsideWorkspace("index.ts", customRoot), false, "Relative path inside custom ctx.cwd must be allowed");
+    assert.equal(isOutsideWorkspace(path.join(customRoot, "src/main.ts"), customRoot), false, "Child path inside custom ctx.cwd must be allowed");
+    assert.equal(isOutsideWorkspace(path.join(root, "outside_subproject.ts"), customRoot), true, "Parent directory outside custom ctx.cwd must be flagged");
+
+    if (process.platform === "win32") {
+      const msysRoot = root.replace(/\\/g, "/").replace(/^([a-zA-Z]):/, (_, d) => `/${d.toLowerCase()}`);
+      const wslRoot = root.replace(/\\/g, "/").replace(/^([a-zA-Z]):/, (_, d) => `/mnt/${d.toLowerCase()}`);
+      const cygRoot = root.replace(/\\/g, "/").replace(/^([a-zA-Z]):/, (_, d) => `/cygdrive/${d.toLowerCase()}`);
+      assert.equal(isOutsideWorkspace(`${msysRoot}/src/app.ts`), false, "MSYS /c/ path inside workspace must be allowed");
+      assert.equal(isOutsideWorkspace(`${wslRoot}/src/app.ts`), false, "WSL /mnt/c/ path inside workspace must be allowed");
+      assert.equal(isOutsideWorkspace(`${cygRoot}/src/app.ts`), false, "Cygwin /cygdrive/c/ path inside workspace must be allowed");
+    }
   });
 
   // ----------------------------------------------------
@@ -267,6 +300,33 @@ export async function runPermissionsGateTests() {
       headlessCtx
     );
     assert.equal(res?.block, true, "Writing to .env must be blocked in headless mode");
+
+    // Reading Pi's own docs is allowed without prompt, but writing to Pi's docs is gated
+    const piDocPath = "~/.pi/agent/install/releases/1.5.0/node_modules/@earendil-works/pi-coding-agent/docs/extensions.md";
+    const resReadPiDoc = await toolCallHook(
+      { type: "tool_call", toolName: "read", name: "read", input: { path: piDocPath } },
+      headlessCtx
+    );
+    assert.equal(resReadPiDoc, undefined, "Reading Pi documentation must be allowed without gating");
+
+    const resWritePiDoc = await toolCallHook(
+      { type: "tool_call", toolName: "write", name: "write", input: { path: piDocPath, content: "modified" } },
+      headlessCtx
+    );
+    assert.equal(resWritePiDoc?.block, true, "Writing to Pi documentation must be blocked");
+
+    // Find glob traversal & mutating shell on skills must be blocked
+    const resFindTraversal = await toolCallHook(
+      { type: "tool_call", toolName: "find", name: "find", input: { pattern: "../../.ssh/*" } },
+      headlessCtx
+    );
+    assert.equal(resFindTraversal?.block, true, "find pattern traversing into .ssh must be blocked");
+
+    const resMutateSkill = await toolCallHook(
+      { type: "tool_call", toolName: "bash", name: "bash", input: { command: "echo pwn > ~/.pi/agent/skills/my-skill/SKILL.md" } },
+      headlessCtx
+    );
+    assert.equal(resMutateSkill?.block, true, "Shell write redirection into global skills must be blocked");
   });
 
   await asyncTest("Out-of-Workspace Shell Interception: tool_call hook intercepts 'ls -lh ~/.pi/agent/extensions/'", async () => {

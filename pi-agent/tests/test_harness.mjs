@@ -53,6 +53,7 @@ export function getJitiLoader() {
 
   const aliases = {
     "@earendil-works/pi-coding-agent": piCodingAgentBase,
+    "@earendil-works/pi-ai/compat": path.join(releaseNodeModules, "@earendil-works", "pi-ai", "dist", "compat.js"),
     "@earendil-works/pi-tui": path.join(releaseNodeModules, "@earendil-works", "pi-tui", "dist", "index.js"),
     "typebox": path.join(typeboxBase, "typebox", "build", "index.mjs"),
     "typebox/type": path.join(typeboxBase, "typebox", "build", "type", "index.mjs"),

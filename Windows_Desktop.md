@@ -97,10 +97,16 @@ powercfg /change standby-timeout-ac 0
 powercfg /change hibernate-timeout-ac 0
 ```
 
-Set display to never turn off
+Require password when the display turns off or wakes up
 
 ```powershell
-powercfg /change monitor-timeout-ac 0
+# Set display idle timeout
+powercfg /change monitor-timeout-ac 10
+
+# Require password when console resumes or display turns back on (1 = Yes, 0 = No)
+powercfg /setacvalueindex SCHEME_CURRENT SUB_NONE CONSOLELOCK 1
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_NONE CONSOLELOCK 1
+powercfg /setactive SCHEME_CURRENT
 ```
 
 Set the "When I close the lid" option to "Do nothing" for both On Battery and Plugged In
@@ -321,7 +327,8 @@ Also see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-ag
 | [mutool (MuPDF)](https://mupdf.com/)                                                                                         | winget install -e --id ArtifexSoftware.mutool                  |
 | [Microsoft SQL Server Management Studio](https://aka.ms/ssmsfullsetup)                                                       | winget install -e --id Microsoft.SQLServerManagementStudio     |
 | [Microsoft Visual Studio 2022 Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) | winget install -e --id Microsoft.VisualStudio.2022.BuildTools  |
-| [Microsoft Visual Studio 2026 Build Tools](https://visualstudio.microsoft.com/downloads/)                                    | winget install -e --id Microsoft.VisualStudio.2026.BuildTools  |
+| [Microsoft Visual Studio 2026 Build Tools](https://visualstudio.microsoft.com/downloads/)                                    | winget install -e --id Microsoft.VisualStudio.BuildTools        |
+| [Ninja](https://ninja-build.org/)                                                                                            | winget install -e --id Ninja-build.Ninja                       |
 | [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)                                                                   | winget install -e --id ShiningLight.OpenSSL.Dev                |
 | [Pandoc](https://pandoc.org/)                                                                                                | winget install -e --id JohnMacFarlane.Pandoc                   |
 | [Podman](https://github.com/containers/podman/)                                                                              | winget install -e --id RedHat.Podman                           |
@@ -335,7 +342,6 @@ Also see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-ag
 | [Rufus](https://github.com/pbatard/rufus)                                                                                    | winget install -e --id Rufus.Rufus                             |
 | [RunJS](https://runjs.app/?ref=winstall)                                                                                     | winget install -e --id lukehaas.RunJS --scope user             |
 | [Rust](https://www.rust-lang.org/tools/install)                                                                              | winget install -e --id Rustlang.Rustup                         |
-| [Semgrep](https://semgrep.dev/)                                                                                              | uv tool install semgrep                                        |
 | [Snyk CLI](https://snyk.io/)                                                                                                 | npm install -g snyk                                            |
 | [xh](https://github.com/ducaale/xh)                                                                                          | winget install -e --id ducaale.xh                              |
 | [yq](https://github.com/mikefarah/yq)                                                                                        | winget install -e --id MikeFarah.yq                            |
@@ -358,7 +364,6 @@ Also see [Google Antigravity Setup](./Antigravity.md), [Pi Coding Agent](./pi-ag
 | Application                                                                                       | Winget ID                                                    |
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [Arsenal Image Mounter](https://arsenalrecon.com/downloads/)                                      |                                                              |
-| [capa](https://github.com/mandiant/capa)                                                          | uv tool install flare-capa                                   |
 | [DB Browser for SQLite](https://sqlitebrowser.org/dl/)                                            | winget install -e --id DBBrowserForSQLite.DBBrowserForSQLite |
 | [Detect It Easy (diec)](https://github.com/horsicq/Detect-It-Easy)                                | winget install -e --id horsicq.DIE-engine                    |
 | [FLOSS](https://github.com/mandiant/flare-floss)                                                  | winget install -e --id Mandiant.FLOSS                        |
