@@ -72,7 +72,7 @@ Run the functions in [Win11-Setup.ps1](Win11-Setup.ps1) as Administrator:
 
 ### Manual Steps
 
-- Unpin default Start Menu app tiles.
+- Unpin default Start Menu app tiles (including any Store stub pins seeded during OOBE) and verify **Show recommendations for tips, shortcuts, new apps, and more** is off under `Settings > Personalization > Start`.
 - Ensure Hardware Accelerated GPU Scheduling is enabled. `System > Display > Graphics > Change default graphics settings`.
 - Enable Core Isolation.
 - Set Date/Time to ISO time and add a UTC clock.

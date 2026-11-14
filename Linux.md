@@ -8,7 +8,7 @@ Install the following basic tools
 
     pacman -Syu nano vim sudo wget curl networkmanager usbutils gdisk
     pacman -S dnsutils screen tree tmux lm_sensors hddtemp glances
-    pacman -S rsync fuse2 ssh-audit jq apprise inetutils
+    pacman -S rsync fuse2 ssh-audit jq apprise inetutils miniupnpc
 
 Install the fastest mirror
 
@@ -134,6 +134,38 @@ Restart sshd and confirm the settings with ssh-audit
 
     systemctl restart sshd
     ssh-audit localhost
+
+### On-Demand Port Forwarding via UPnP (miniupnpc)
+
+For secure remote access without leaving port 22 exposed to the public internet 24/7, use `miniupnpc` to dynamically negotiate an ephemeral, randomized external port on your router with an automatic lease timeout (e.g. 2 hours):
+
+Install `miniupnpc`:
+
+    pacman -S miniupnpc
+
+Create `~/open-ssh.sh`:
+
+    cat << 'EOF' > ~/open-ssh.sh
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    WAN_PORT=$(shuf -i 20000-60000 -n 1)
+    upnpc -a @ 22 "$WAN_PORT" TCP 7200
+    WAN_IP=$(upnpc -l 2>/dev/null | awk -F'=' '/ExternalIPAddress/ {print $2}' | tr -d ' ')
+
+    echo -e "\n=== Port Forward Active (2 hr lease) ==="
+    echo "Connect with: ssh -p $WAN_PORT $USER@$WAN_IP"
+    echo "To close early: upnpc -d $WAN_PORT TCP"
+    EOF
+    chmod +x ~/open-ssh.sh
+
+Run the script to request a random WAN port:
+
+    ~/open-ssh.sh
+
+To close the forward early before the 2-hour lease expires:
+
+    upnpc -d <PORT> TCP
 
 ## Setup fail2ban
 

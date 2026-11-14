@@ -102,6 +102,8 @@ Function DisableAppSuggestions {
 		New-Item -Path $registryPath -Force | Out-Null
 	}
 	Set-ItemProperty -Path $registryPath -Name "DisableWindowsConsumerFeatures" -Value 1 -Type DWord -Force
+	Set-ItemProperty -Path $registryPath -Name "DisableCloudOptimizedContent" -Value 1 -Type DWord -Force
+	Set-ItemProperty -Path $registryPath -Name "DisableSoftLanding" -Value 1 -Type DWord -Force
 	Set-ItemProperty -Path $registryPath -Name "DisableCopilotPinScreen" -Value 1 -Type DWord -Force
 	Set-ItemProperty -Path $registryPath -Name "DisableConsumerAccountStateContent" -Value 1 -Type DWord -Force
 	Set-ItemProperty -Path $registryPath -Name "DisableGetStarted" -Value 1 -Type DWord -Force
@@ -110,12 +112,19 @@ Function DisableAppSuggestions {
 		New-Item -Path $registryOEM -Force | Out-Null
 	}
 	Set-ItemProperty -Path $registryOEM -Name "ContentDeliveryAllowed" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "FeatureManagementEnabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "OemPreInstalledAppsEnabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "PreInstalledAppsEnabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "PreInstalledAppsEverEnabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "SilentInstalledAppsEnabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SoftLandingEnabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SystemPaneSuggestionsEnabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-338387Enabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-338388Enabled" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-338389Enabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-338393Enabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-353698Enabled" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path $registryOEM -Name "SubscribedContent-88000326Enabled" -Value 0 -Type DWord -Force
 }
 
 Function DisableTelemetry {
@@ -174,6 +183,7 @@ Function TweakExplorerAndUI {
 	# Start Menu: Disable recommendations, recently added apps, and account notifications (24H2-26H2)
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_IrisRecommendations" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_TrackDocs" -Value 0 -Type DWord -Force
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_TrackProgs" -Value 0 -Type DWord -Force
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_AccountNotifications" -Value 0 -Type DWord -Force
 
 	$startPolicy = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
@@ -181,6 +191,10 @@ Function TweakExplorerAndUI {
 	Set-ItemProperty -Path $startPolicy -Name "HideRecentlyAddedApps" -Value 1 -Type DWord -Force
 	Set-ItemProperty -Path $startPolicy -Name "HideRecommendedSection" -Value 1 -Type DWord -Force
 	Set-ItemProperty -Path $startPolicy -Name "HideTaskViewButton" -Value 1 -Type DWord -Force
+
+	$startPolicyMgr = "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
+	If (!(Test-Path $startPolicyMgr)) { New-Item -Path $startPolicyMgr -Force | Out-Null }
+	Set-ItemProperty -Path $startPolicyMgr -Name "HideRecommendedSection" -Value 1 -Type DWord -Force
 
 	# Accessibility: Disable Sticky Keys, Filter Keys, and Toggle Keys hotkeys
 	Set-ItemProperty -Path "HKCU:\Control Panel\Accessibility\StickyKeys" -Name "Flags" -Value "58" -Type String -Force
@@ -224,31 +238,88 @@ Function DisableSecurityQuestionsForLocalAccounts {
 }
 
 Function UninstallBloatware {
-	Write-Output "Removing pre-installed bloatware applications..."
+	Write-Output "Removing pre-installed bloatware and background stub applications..."
 	$bloatware = @(
-		# Productivity & Utilities
-		"*Microsoft.Office.Desktop*"
-		"*Clipchamp*"
-		"*GetHelp*"
-		"*Getstarted*"
-		"*WindowsFeedbackHub*"
-		"*MicrosoftStickyNotes*"
-		"*MicrosoftToDo*"
-		"*Windows.DevHome*"
-		# Media, Games & News
-		"*WindowsSoundRecorder*"
-		"*Microsoft.BingNews*"
-		"*Microsoft.BingWeather*"
-		"*Microsoft.BingSearch*"
-		"*Microsoft.MicrosoftSolitaireCollection*"
-		# Communication
-		"*OutlookForWindows*"
-		"*MicrosoftTeams*"
+		# Microsoft Hub, AI & Productivity Bloat
+		"Microsoft.MicrosoftOfficeHub"
+		"Microsoft.Todos"
+		"Microsoft.MicrosoftStickyNotes"
+		"Microsoft.PowerAutomateDesktop"
+		"Microsoft.Windows.DevHome"
+		"Microsoft.Whiteboard"
+		"Microsoft.GetHelp"
+		"Microsoft.Getstarted"
+		"Microsoft.WindowsFeedbackHub"
+		"Microsoft.549981C3F5F10" # Cortana
+
+		# Background Shell, Widgets & Cross-Device
+		"MicrosoftWindows.Client.WebExperience" # Widgets / MSN WebView2 host
+		"MicrosoftWindows.CrossDevice"
+		"Microsoft.YourPhone"
+
+		# Media, Maps, Games & Bing
+		"Microsoft.BingNews"
+		"Microsoft.BingWeather"
+		"Microsoft.BingSearch"
+		"Microsoft.BingFinance"
+		"Microsoft.BingSports"
+		"Microsoft.BingTravel"
+		"Microsoft.BingHealthAndFitness"
+		"Microsoft.BingFoodAndDrink"
+		"Microsoft.MicrosoftSolitaireCollection"
+		"Microsoft.WindowsSoundRecorder"
+		"Microsoft.WindowsMaps"
+		"Microsoft.ZuneMusic"
+		"Microsoft.ZuneVideo"
+		"Microsoft.MixedReality.Portal"
+		"Microsoft.Microsoft3DViewer"
+		"Microsoft.3DBuilder"
+		"Clipchamp.Clipchamp"
+
+		# Communication & Legacy Inbox Apps
+		"Microsoft.OutlookForWindows"
+		"Microsoft.WindowsCommunicationsApps"
+		"Microsoft.People"
+		"Microsoft.SkypeApp"
+		"MSTeams"
+		"MicrosoftTeams"
+
+		# Common OOBE Third-Party Store Stubs
+		"SpotifyAB.SpotifyMusic"
+		"Disney.*"
+		"BytedancePte.*" # TikTok
+		"Facebook.*"
+		"Instagram.*"
+		"Netflix.*"
+		"AmazonVideo.PrimeVideo"
+		"king.com.*"
+		"7EE7776C.LinkedInforWindows"
+
+		# Optional: Uncomment to remove Xbox / Game Bar if not using PC Game Pass
+		# "Microsoft.GamingApp"
+		# "Microsoft.XboxApp"
+		# "Microsoft.XboxGamingOverlay"
+		# "Microsoft.XboxGameOverlay"
+		# "Microsoft.XboxIdentityProvider"
+		# "Microsoft.XboxSpeechToTextOverlay"
+		# "Microsoft.Xbox.TCUI"
 	)
 
-	foreach ($app in $bloatware) {
-		Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
-		Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object DisplayName -Like $app | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null
+	$installedPackages = Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Where-Object { -not $_.IsFramework -and -not $_.NonRemovable }
+	$provisionedPackages = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+
+	foreach ($pkg in $installedPackages) {
+		if ($bloatware | Where-Object { $pkg.Name -like $_ }) {
+			Write-Output "  Removing Appx: $($pkg.Name)"
+			$pkg | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+		}
+	}
+
+	foreach ($prov in $provisionedPackages) {
+		if ($bloatware | Where-Object { $prov.DisplayName -like $_ }) {
+			Write-Output "  Deprovisioning Appx: $($prov.DisplayName)"
+			$prov | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null
+		}
 	}
 }
 
