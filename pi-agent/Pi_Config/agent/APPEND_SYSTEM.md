@@ -1,2 +1,3 @@
 - CLI TOOLCHAIN: Prefer `rg -n` for text search, `fd` for file discovery, `jq` for JSON, `duckdb` or `mlr` for CSV/Parquet/JSONL, and `uv run` for Python scripts and `pytest`.
 - WORKSPACE & SCRATCH: Commands run in `<cwd>` without persisting `cd` across calls. Use `./.scratch/` for temporary files, and run `<tool> --help` on unfamiliar CLI errors.
+- DIAGRAMS: Pi renders `mermaid` blocks as ASCII in the TUI. For non-trivial control flow, state transitions, or architecture, prefer a compact diagram so diagrams fit terminal width.

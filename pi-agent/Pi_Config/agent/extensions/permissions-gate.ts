@@ -340,10 +340,35 @@ export function isPiDocsOrPackagePath(targetPath: string): boolean {
 }
 
 /**
- * Checks if a path is exempted for read-only inspection (global skills or Pi's own docs/package).
+ * Checks if a target path is a Pi clipboard image paste stored in the OS/user temp directory.
+ * Only permits image files matching `pi-clipboard-<uuid>.<ext>` directly inside the temp root.
+ */
+export function isPiClipboardImagePath(targetPath: string): boolean {
+  if (!targetPath) return false;
+
+  const home = os.homedir().replace(/\\/g, "/").toLowerCase();
+  const norm = normalizePath(targetPath).toLowerCase();
+  const dir = path.posix.dirname(norm);
+  const base = path.posix.basename(norm);
+
+  if (!/^pi-clipboard-[0-9a-f-]+\.(?:png|jpe?g|gif|webp)$/i.test(base)) {
+    return false;
+  }
+
+  const tempDirs = new Set([
+    normalizePath(os.tmpdir()).toLowerCase(),
+    `${home}/appdata/local/temp`,
+    "/tmp"
+  ]);
+
+  return tempDirs.has(dir);
+}
+
+/**
+ * Checks if a path is exempted for read-only inspection (global skills, Pi's own docs/package, or Pi clipboard image pastes).
  */
 export function isReadExemptPath(targetPath: string): boolean {
-  return isGlobalSkillPath(targetPath) || isPiDocsOrPackagePath(targetPath);
+  return isGlobalSkillPath(targetPath) || isPiDocsOrPackagePath(targetPath) || isPiClipboardImagePath(targetPath);
 }
 
 const SHELL_MUTATION_REGEX = /(?:^|[\s;|&()])(?:rm|mv|cp|mkdir|rmdir|touch|chmod|chown|ln|install|dd|shred|unlink|truncate|tee|Remove-Item|ri|del|erase|rd|Move-Item|mi|move|Copy-Item|cpi|copy|New-Item|ni|Set-Content|sc|Add-Content|ac|Clear-Content|clc|Out-File|Rename-Item|rni|ren)\b|\bsed\s+(?:-[a-zA-Z]*i|--in-place)\b|(?:^|[^<>&\d-])>{1,2}(?![>&=])/i;

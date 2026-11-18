@@ -315,6 +315,41 @@ export async function runPermissionsGateTests() {
     );
     assert.equal(resWritePiDoc?.block, true, "Writing to Pi documentation must be blocked");
 
+    // Reading Pi clipboard image pastes in Temp is allowed without prompt (full os.tmpdir() path and ~ shorthand)
+    const clipboardFullPng = path.join(os.tmpdir(), "pi-clipboard-5d205eac-dd4d-43ed-82ca-f5177d8d4e72.png");
+    const clipboardPng = "~\\AppData\\Local\\Temp\\pi-clipboard-5d205eac-dd4d-43ed-82ca-f5177d8d4e72.png";
+    assert.equal(isReadExemptPath(clipboardFullPng), true, "Full os.tmpdir() Pi clipboard image paste must be read-exempt");
+    assert.equal(isReadExemptPath(clipboardPng), true, "Pi clipboard image paste must be read-exempt");
+    const resReadClipboardFull = await toolCallHook(
+      { type: "tool_call", toolName: "read", name: "read", input: { path: clipboardFullPng } },
+      headlessCtx
+    );
+    assert.equal(resReadClipboardFull, undefined, "Reading full-path Pi clipboard image paste must be allowed without gating");
+    const resReadClipboard = await toolCallHook(
+      { type: "tool_call", toolName: "read", name: "read", input: { path: clipboardPng } },
+      headlessCtx
+    );
+    assert.equal(resReadClipboard, undefined, "Reading Pi clipboard image paste must be allowed without gating");
+
+    // Writing to clipboard image path, non-image files in Temp, or traversal out of Temp must remain blocked
+    const resWriteClipboard = await toolCallHook(
+      { type: "tool_call", toolName: "write", name: "write", input: { path: clipboardPng, content: "x" } },
+      headlessCtx
+    );
+    assert.equal(resWriteClipboard?.block, true, "Writing to Pi clipboard image path must be blocked");
+
+    const resReadTempSecret = await toolCallHook(
+      { type: "tool_call", toolName: "read", name: "read", input: { path: "~\\AppData\\Local\\Temp\\secrets.txt" } },
+      headlessCtx
+    );
+    assert.equal(resReadTempSecret?.block, true, "Reading arbitrary files in Temp must be blocked");
+
+    const resReadTempTraversal = await toolCallHook(
+      { type: "tool_call", toolName: "read", name: "read", input: { path: "~\\AppData\\Local\\Temp\\..\\Roaming\\pi-clipboard-5d205eac-dd4d-43ed-82ca-f5177d8d4e72.png" } },
+      headlessCtx
+    );
+    assert.equal(resReadTempTraversal?.block, true, "Traversal out of Temp must be blocked");
+
     // Find glob traversal & mutating shell on skills must be blocked
     const resFindTraversal = await toolCallHook(
       { type: "tool_call", toolName: "find", name: "find", input: { pattern: "../../.ssh/*" } },
