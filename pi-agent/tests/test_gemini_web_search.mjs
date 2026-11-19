@@ -107,53 +107,41 @@ export async function runGeminiTests() {
   // Section 1: Extension Registration & Metadata
   // ==========================================================================
 
-  await test("Section 1: Registration: registers web_search tool, /search-gate command, and CLI flag", async () => {
-    assert.ok(registeredTools.has("web_search"), "web_search tool must be registered");
-    const tool = registeredTools.get("web_search");
-    assert.equal(tool.name, "web_search");
+  await test("Section 1: Registration: registers web_search_agent tool, /search-gate command, and CLI flag", async () => {
+    assert.ok(registeredTools.has("web_search_agent"), "web_search_agent tool must be registered");
+    const tool = registeredTools.get("web_search_agent");
+    assert.equal(tool.name, "web_search_agent");
     assert.ok(tool.description?.includes("Search Google"), "Tool must have accurate Google search description");
+    assert.ok("question" in tool.parameters.properties, "Schema must require 'question' parameter");
+    assert.ok(!("query" in tool.parameters.properties), "Schema must not use 'query' parameter");
+    assert.equal(tool.prepareArguments, undefined, "Tool must not define backup argument aliases");
 
     assert.ok(registeredCommands.has("search-gate"), "/search-gate command must be registered");
     assert.ok(registeredFlags.has("no-search-gate"), "--no-search-gate flag must be registered");
 
     // Strict absence of deprecated/legacy tools
+    assert.ok(!registeredTools.has("web_search"), "legacy web_search tool name must not be registered");
     assert.ok(!registeredTools.has("fetch_url"), "fetch_url must not be in gemini-web-search");
     assert.ok(!registeredCommands.has("web-gate"), "web-gate must not be registered");
   });
 
   // ==========================================================================
-  // Section 2: Parameter Sanitization & Tolerances
+  // Section 2: Strict Schema Validation
   // ==========================================================================
 
-  await test("Section 2: Parameter Tolerances: trims whitespace, handles 'q' and 'search' aliases", async () => {
-    const webSearch = registeredTools.get("web_search");
+  await test("Section 2: Strict Schema: rejects legacy 'query' or empty/whitespace 'question' before gate or network", async () => {
+    const webSearch = registeredTools.get("web_search_agent");
 
-    // Standard query pass-through
-    const res1 = webSearch.prepareArguments({ query: "typescript 5.6" });
-    assert.deepEqual(res1, { query: "typescript 5.6" });
+    const emptyRes = await webSearch.execute("call_empty", { question: "" }, undefined, undefined, mockCtx);
+    assert.ok(emptyRes.content[0].text.includes("Question cannot be empty"));
+    assert.equal(emptyRes.details?.error, "Empty question");
 
-    // Handles 'q' alias
-    const res2 = webSearch.prepareArguments({ q: "rust lang news" });
-    assert.deepEqual(res2, { query: "rust lang news" });
+    const wsRes = await webSearch.execute("call_ws", { question: "   " }, undefined, undefined, mockCtx);
+    assert.ok(wsRes.content[0].text.includes("Question cannot be empty"));
 
-    // Handles 'search' alias
-    const res3 = webSearch.prepareArguments({ search: "bun 1.2" });
-    assert.deepEqual(res3, { query: "bun 1.2" });
-
-    // Handles non-object inputs safely
-    assert.equal(webSearch.prepareArguments(null), null);
-    assert.equal(webSearch.prepareArguments(undefined), undefined);
-  });
-
-  await test("Section 2: Empty Query Validation: rejects empty or whitespace queries before gate or network", async () => {
-    const webSearch = registeredTools.get("web_search");
-
-    const emptyRes = await webSearch.execute("call_empty", { query: "" }, undefined, undefined, mockCtx);
-    assert.ok(emptyRes.content[0].text.includes("Query cannot be empty"));
-    assert.equal(emptyRes.details?.error, "Empty query");
-
-    const wsRes = await webSearch.execute("call_ws", { query: "   " }, undefined, undefined, mockCtx);
-    assert.ok(wsRes.content[0].text.includes("Query cannot be empty"));
+    const wrongKeyRes = await webSearch.execute("call_wrong_key", { query: "typescript 5.6" }, undefined, undefined, mockCtx);
+    assert.ok(wrongKeyRes.isError);
+    assert.equal(wrongKeyRes.details?.error, "Empty question");
   });
 
   // ==========================================================================
@@ -161,7 +149,7 @@ export async function runGeminiTests() {
   // ==========================================================================
 
   await test("Section 3: Permission Gate: interactive user denial halts execution with clean status", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
 
     const denyCtx = {
       ...mockCtx,
@@ -172,13 +160,13 @@ export async function runGeminiTests() {
       }
     };
 
-    const res = await webSearch.execute("call_deny", { query: "secret info" }, undefined, undefined, denyCtx);
+    const res = await webSearch.execute("call_deny", { question: "secret info" }, undefined, undefined, denyCtx);
     assert.ok(res.content[0].text.includes("User declined permission"));
     assert.equal(res.details?.denied, true);
   });
 
   await test("Section 3: Headless Safety: non-interactive mode (ctx.hasUI = false) safely auto-rejects", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
 
     const headlessCtx = {
       ...mockCtx,
@@ -186,7 +174,7 @@ export async function runGeminiTests() {
       ui: undefined
     };
 
-    const res = await webSearch.execute("call_headless", { query: "headless search" }, undefined, undefined, headlessCtx);
+    const res = await webSearch.execute("call_headless", { question: "headless search" }, undefined, undefined, headlessCtx);
     assert.ok(res.content[0].text.includes("User declined permission") || res.details?.denied === true);
     assert.equal(res.details?.denied, true);
   });
@@ -302,7 +290,7 @@ export async function runGeminiTests() {
   });
 
   await test("Section 5: Missing Auth Fast-Fail: returns actionable error when no API keys exist", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
     const prevGemini = process.env.GEMINI_API_KEY;
     const prevGoogle = process.env.GOOGLE_API_KEY;
 
@@ -320,7 +308,7 @@ export async function runGeminiTests() {
         }
       };
 
-      const res = await webSearch.execute("call_nokey", { query: "find something" }, undefined, undefined, noKeyCtx);
+      const res = await webSearch.execute("call_nokey", { question: "find something" }, undefined, undefined, noKeyCtx);
       assert.ok(res.content[0].text.includes("Gemini API Key not found"));
       assert.equal(res.details?.error, "Missing API Key");
     } finally {
@@ -334,7 +322,7 @@ export async function runGeminiTests() {
   // ==========================================================================
 
   await test("Section 6: Synthetic Search Synthesis: verifies API payload, citations, and usage calculation", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
     const originalFetch = globalThis.fetch;
 
     let capturedUrl = "";
@@ -375,11 +363,11 @@ export async function runGeminiTests() {
         modelRegistry: { async getApiKeyForProvider() { return "mock-synthetic-key"; } }
       };
 
-      const res = await webSearch.execute("call_synthetic", { query: "typescript 5.6 features" }, undefined, undefined, authCtx);
+      const res = await webSearch.execute("call_synthetic", { question: "typescript 5.6 features" }, undefined, undefined, authCtx);
 
       // Verify request payload
       assert.ok(capturedUrl.includes("generativelanguage.googleapis.com"));
-      assert.ok(capturedUrl.includes("gemini-flash-latest:generateContent"));
+      assert.ok(capturedUrl.includes("gemini-4-hydrogen:generateContent"));
       assert.equal(capturedHeaders["x-goog-api-key"], "mock-synthetic-key");
       assert.deepEqual(capturedBody.tools, [{ google_search: {} }]);
       assert.equal(capturedBody.contents[0].parts[0].text, "typescript 5.6 features");
@@ -389,18 +377,18 @@ export async function runGeminiTests() {
       assert.ok(res.content[0].text.includes("### Sources"));
       assert.ok(res.content[0].text.includes("[TypeScript 5.6 Release](https://devblogs.microsoft.com/typescript)"));
 
-      // Verify usage (includes $0.035 per-query Google Search grounding fee)
+      // Verify usage (includes $0.014 per-query Google Search grounding fee)
       assert.equal(res.usage.input, 150);
       assert.equal(res.usage.output, 50);
       assert.equal(res.usage.totalTokens, 200);
-      assert.ok(res.usage.cost.total >= 0.035, "Total cost must include $0.035 search query grounding fee");
+      assert.ok(res.usage.cost.total >= 0.014, "Total cost must include $0.014 search query grounding fee");
     } finally {
       globalThis.fetch = originalFetch;
     }
   });
 
   await test("Section 6: Safety Filters & Finish Reasons: handles safety blocks and non-200 HTTP responses", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
     const originalFetch = globalThis.fetch;
 
     const authCtx = {
@@ -422,7 +410,7 @@ export async function runGeminiTests() {
         }
       });
 
-      const safetyRes = await webSearch.execute("call_safety", { query: "blocked query" }, undefined, undefined, authCtx);
+      const safetyRes = await webSearch.execute("call_safety", { question: "blocked query" }, undefined, undefined, authCtx);
       assert.ok(safetyRes.content[0].text.includes("[Web Search Blocked]"));
       assert.ok(safetyRes.content[0].text.includes("SAFETY"));
 
@@ -433,7 +421,7 @@ export async function runGeminiTests() {
         async text() { return "Resource has been exhausted (quota exceeded)."; }
       });
 
-      const rateLimitRes = await webSearch.execute("call_rate", { query: "fast query" }, undefined, undefined, authCtx);
+      const rateLimitRes = await webSearch.execute("call_rate", { question: "fast query" }, undefined, undefined, authCtx);
       assert.ok(rateLimitRes.content[0].text.includes("Gemini API Error 429"));
       assert.ok(rateLimitRes.details?.error.includes("429"));
     } finally {
@@ -442,7 +430,7 @@ export async function runGeminiTests() {
   });
 
   await test("Section 6: In-Flight Abort: user cancellation returns clean '⊘ SEARCH ABORTED'", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
     const originalFetch = globalThis.fetch;
 
     const authCtx = {
@@ -462,7 +450,7 @@ export async function runGeminiTests() {
     try {
       const res = await webSearch.execute(
         "call_abort",
-        { query: "abort test" },
+        { question: "abort test" },
         abortController.signal,
         undefined,
         authCtx
@@ -519,15 +507,16 @@ export async function runGeminiTests() {
   // ==========================================================================
 
   await test("Section 8: TUI Rendering Matrix: renders call text, partial streaming, denied, aborted, and collapsed views", async () => {
-    const webSearch = registeredTools.get("web_search");
+    const webSearch = registeredTools.get("web_search_agent");
 
     // 1. renderCall
-    const callRender = webSearch.renderCall({ query: "deno vs node" }, mockCtx.ui.theme);
+    const callRender = webSearch.renderCall({ question: "deno vs node" }, mockCtx.ui.theme);
     assert.ok((callRender.text || callRender.toString()).includes("deno vs node"));
+    assert.ok((callRender.text || callRender.toString()).includes("web_search_agent"));
 
     // 2. renderResult isPartial (live streaming indicator)
     const partialRender = webSearch.renderResult(
-      { content: [{ type: "text", text: "Searching Google with gemini-flash-latest for 'deno'..." }] },
+      { content: [{ type: "text", text: "Searching Google with gemini-4-hydrogen for 'deno'..." }] },
       { isPartial: true },
       mockCtx.ui.theme
     );
@@ -535,7 +524,7 @@ export async function runGeminiTests() {
 
     // 3. renderResult Denied
     const deniedRender = webSearch.renderResult(
-      { content: [], details: { query: "deno", denied: true } },
+      { content: [], details: { question: "deno", denied: true } },
       { expanded: false },
       mockCtx.ui.theme
     );
@@ -543,7 +532,7 @@ export async function runGeminiTests() {
 
     // 4. renderResult Aborted
     const abortRender = webSearch.renderResult(
-      { content: [], details: { query: "deno", error: "Aborted" } },
+      { content: [], details: { question: "deno", error: "Aborted" } },
       { expanded: false },
       mockCtx.ui.theme
     );
@@ -553,14 +542,14 @@ export async function runGeminiTests() {
     const completedRender = webSearch.renderResult(
       {
         content: [{ type: "text", text: "Summary text\nLine 2\nLine 3" }],
-        details: { query: "deno", model: "gemini-flash-latest", durationMs: 1200, fullContent: "Full text" }
+        details: { question: "deno", model: "gemini-4-hydrogen", durationMs: 1200, fullContent: "Full text" }
       },
       { expanded: false },
       mockCtx.ui.theme
     );
     const completedStr = completedRender.text || completedRender.toString();
     assert.ok(completedStr.includes("SEARCH COMPLETED"));
-    assert.ok(completedStr.includes("gemini-flash-latest"));
+    assert.ok(completedStr.includes("gemini-4-hydrogen"));
     assert.ok(completedStr.includes("(1.2s)"));
 
     // 6. renderResult Collapsed View with ctrl+o hint
@@ -625,7 +614,7 @@ export async function runGeminiTests() {
   const liveKey = getLiveApiKey();
   if (liveKey && !isOfflineMode()) {
     await test("Section 9: Live End-to-End Search: performs live Google search grounding with Gemini API", async () => {
-      const webSearch = registeredTools.get("web_search");
+      const webSearch = registeredTools.get("web_search_agent");
       const liveCtx = {
         hasUI: true,
         ui: {
@@ -641,7 +630,7 @@ export async function runGeminiTests() {
       const streamedUpdates = [];
       const res = await webSearch.execute(
         "call_live_search",
-        { query: "What is the latest LTS version of Node.js?" },
+        { question: "What is the latest LTS version of Node.js?" },
         undefined,
         (upd) => {
           if (upd?.content?.[0]?.text) streamedUpdates.push(upd.content[0].text);

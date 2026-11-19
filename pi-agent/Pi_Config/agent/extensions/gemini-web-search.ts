@@ -6,18 +6,18 @@ import { Text } from "@earendil-works/pi-tui";
  * Lean Gemini Web Search Extension for Pi Coding Agent
  *
  * Tools & Commands:
- * - `web_search`: Google Search grounding via Gemini API with parallel citation resolution.
+ * - `web_search_agent`: Google Search grounding via Gemini API with parallel citation resolution.
  * - `/search-gate`: Slash command to toggle pre-request confirmation gate ([status|on|off|toggle]).
  *
  * Configuration & CLI Flags:
  * - Gemini API Key: Resolved from GEMINI_API_KEY / GOOGLE_API_KEY env vars or Pi ModelRegistry (google).
- * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-flash-latest").
+ * - `GEMINI_SEARCH_MODEL`: Grounding model override (default: "gemini-4-hydrogen").
  * - `--no-search-gate`: CLI flag to disable confirmation prompts for web search.
  * - `PI_SEARCH_GATE`: Environment variable override (set to "0" or "false" to disable).
  * - `PI_GATES`: Master environment variable override (set to "0" or "false" to disable all gates).
  */
 
-const DEFAULT_MODEL = "gemini-flash-latest";
+const DEFAULT_MODEL = "gemini-4-hydrogen";
 const DEFAULT_API_HOST = "https://generativelanguage.googleapis.com";
 const CONFIRM_TIMEOUT_MS = 30000; // 30s confirmation auto-dismiss
 const COLLAPSED_PREVIEW_LINES = 6;
@@ -25,10 +25,10 @@ const COLLAPSED_PREVIEW_LINES = 6;
 export const DEFAULT_MAX_LINES = 2000;
 export const DEFAULT_MAX_BYTES = 50 * 1024; // 50 KB output ceiling
 
-// Rates for gemini-flash-latest (USD per 1M tokens + per-query Google Search grounding fee)
-const INPUT_PRICE_PER_M = 0.30;
-const OUTPUT_PRICE_PER_M = 2.50;
-const SEARCH_QUERY_COST = 0.035; // $35 per 1,000 grounded search requests
+// Rates for gemini-4-hydrogen (USD per 1M tokens + per-query Google Search grounding fee)
+const INPUT_PRICE_PER_M = 1.50;
+const OUTPUT_PRICE_PER_M = 7.50;
+const SEARCH_QUERY_COST = 0.014; // $14 per 1,000 grounded search queries
 
 /**
  * Evaluates whether a gate should be active at startup based on CLI flags and environment variables.
@@ -143,7 +143,7 @@ function formatToolOutput(content: string, theme?: any, expanded?: boolean, maxL
 }
 
 export const WebSearchSchema = Type.Object({
-  query: Type.String({
+  question: Type.String({
     description: "A complete, grammatical natural-language question starting with How, What, Why, Which, or Does and ending with '?'. Include exact package names, version numbers, language/OS, and verbatim error messages (e.g. 'How do I configure custom TLS certificates in Bun fetch() when getting SELF_SIGNED_CERT_IN_CHAIN?')."
   })
 });
@@ -156,7 +156,7 @@ export interface SearchResultItem {
 }
 
 export interface WebSearchToolDetails {
-  query?: string;
+  question?: string;
   model?: string;
   sources?: SearchResultItem[];
   denied?: boolean;
@@ -261,7 +261,7 @@ async function promptPermission(
 }
 
 /**
- * Extension entrypoint registering web_search and /search-gate.
+ * Extension entrypoint registering web_search_agent and /search-gate.
  */
 export default function (pi: ExtensionAPI) {
   // ----------------------------------------------------
@@ -310,12 +310,12 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ----------------------------------------------------
-  // 2. Tool: web_search
+  // 2. Tool: web_search_agent
   // ----------------------------------------------------
   pi.registerTool({
-    name: "web_search",
-    label: "Web Search",
-    description: "Search Google via a grounded AI research model for current facts, live documentation, API signatures, and CLI/error troubleshooting. Formulate `query` as a complete, context-rich question ending in '?'.",
+    name: "web_search_agent",
+    label: "Web Search Agent",
+    description: "Search Google via a grounded AI research agent for current facts, live documentation, API signatures, and CLI/error troubleshooting. Formulate `question` as a complete, context-rich question ending in '?'.",
     annotations: {
       readOnlyHint: true,
       idempotentHint: true,
@@ -323,21 +323,13 @@ export default function (pi: ExtensionAPI) {
     },
     parameters: WebSearchSchema,
 
-    prepareArguments(args: any) {
-      if (!args || typeof args !== "object") return args;
-      const rawQuery = args.query ?? args.q ?? args.search ?? "";
-      return {
-        query: typeof rawQuery === "string" ? rawQuery : ""
-      };
-    },
-
     async execute(_toolCallId, params: WebSearchParams, signal, onUpdate, ctx) {
-      const query = (params.query || "").trim();
-      if (!query) {
+      const question = (params.question || "").trim();
+      if (!question) {
         return {
           isError: true,
-          content: [{ type: "text", text: "[Web Search Error]: Query cannot be empty." }],
-          details: { error: "Empty query" } as WebSearchToolDetails
+          content: [{ type: "text", text: "[Web Search Error]: Question cannot be empty." }],
+          details: { error: "Empty question" } as WebSearchToolDetails
         };
       }
 
@@ -346,15 +338,15 @@ export default function (pi: ExtensionAPI) {
       const allowed = await promptPermission(
         ctx,
         "🌐 Web Search Confirmation",
-        `Allow agent to search Google for:\n\n"${query}"\n\n(Auto-cancels in 30s)`,
+        `Allow agent to search Google for:\n\n"${question}"\n\n(Auto-cancels in 30s)`,
         gateEnabled,
         signal
       );
 
       if (!allowed) {
         return {
-          content: [{ type: "text", text: `[Web Search Denied by User]: User declined permission to search the web for "${query}".` }],
-          details: { query, denied: true } as WebSearchToolDetails
+          content: [{ type: "text", text: `[Web Search Denied by User]: User declined permission to search the web for "${question}".` }],
+          details: { question, denied: true } as WebSearchToolDetails
         };
       }
 
@@ -362,7 +354,7 @@ export default function (pi: ExtensionAPI) {
         return {
           isError: true,
           content: [{ type: "text", text: "[Web Search Aborted]" }],
-          details: { query, error: "Aborted" } as WebSearchToolDetails
+          details: { question, error: "Aborted" } as WebSearchToolDetails
         };
       }
 
@@ -373,17 +365,17 @@ export default function (pi: ExtensionAPI) {
             type: "text",
             text: "[Web Search Error]: Gemini API Key not found. Please set GEMINI_API_KEY or configure google in ~/.pi/agent/auth.json."
           }],
-          details: { query, error: "Missing API Key" } as WebSearchToolDetails
+          details: { question, error: "Missing API Key" } as WebSearchToolDetails
         };
       }
 
       const model = process.env.GEMINI_SEARCH_MODEL?.trim() || DEFAULT_MODEL;
-      onUpdate?.({ content: [{ type: "text", text: `Searching Google with ${model} for "${query}"...` }] });
+      onUpdate?.({ content: [{ type: "text", text: `Searching Google with ${model} for "${question}"...` }] });
 
       try {
         const url = `${DEFAULT_API_HOST}/v1beta/models/${model}:generateContent`;
         const body = {
-          contents: [{ role: "user", parts: [{ text: query }] }],
+          contents: [{ role: "user", parts: [{ text: question }] }],
           systemInstruction: {
             parts: [{
               text: "Synthesize an accurate, factual, and complete answer to the query using Google Search grounding. If the query contains a false premise, misconception, or non-existent entity, directly clarify the correction using grounded facts. Always format code snippets in fenced code blocks with explicit language identifiers. Preserve version numbers, CLI flags, and configuration keys verbatim. Be direct and concise without conversational filler or pleasantries. If no relevant information exists, reply with 'Information not found.'"
@@ -465,7 +457,7 @@ export default function (pi: ExtensionAPI) {
         return {
           content: [{ type: "text", text: truncation.content }],
           details: {
-            query,
+            question,
             model,
             sources: uniqueSources,
             durationMs,
@@ -479,21 +471,21 @@ export default function (pi: ExtensionAPI) {
           return {
             isError: true,
             content: [{ type: "text", text: "[Web Search Aborted]" }],
-            details: { query, error: "Aborted" } as WebSearchToolDetails
+            details: { question, error: "Aborted" } as WebSearchToolDetails
           };
         }
         const msg = err instanceof Error ? err.message : String(err);
         return {
           isError: true,
           content: [{ type: "text", text: `[Web Search Error]: ${msg}` }],
-          details: { query, error: msg } as WebSearchToolDetails
+          details: { question, error: msg } as WebSearchToolDetails
         };
       }
     },
 
     renderCall(args: any, theme) {
-      const q = typeof args?.query === "string" ? args.query : "Searching...";
-      return new Text(theme.fg("toolTitle", theme.bold("web_search")) + ` "${q}"`, 0, 0);
+      const q = typeof args?.question === "string" ? args.question : "Searching...";
+      return new Text(theme.fg("toolTitle", theme.bold("web_search_agent")) + ` "${q}"`, 0, 0);
     },
 
     renderResult(result, options, theme) {
@@ -505,11 +497,11 @@ export default function (pi: ExtensionAPI) {
 
       const details = result.details as WebSearchToolDetails | undefined;
       if (details?.denied) {
-        return new Text(theme.fg("muted", `⊘ SEARCH DENIED: "${details.query}"`), 0, 0);
+        return new Text(theme.fg("muted", `⊘ SEARCH DENIED: "${details.question}"`), 0, 0);
       }
 
       if (details?.error === "Aborted") {
-        return new Text(theme.fg("muted", `⊘ SEARCH ABORTED: "${details.query}"`), 0, 0);
+        return new Text(theme.fg("muted", `⊘ SEARCH ABORTED: "${details.question}"`), 0, 0);
       }
 
       if (details?.error) {
