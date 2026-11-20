@@ -1,0 +1,225 @@
+# Hardened, non-root Arch Linux sandbox image for Pi Coding Agent & subagents.
+# Includes CLI/Python dev toolchain, media tools, SAST/secret scanners, Ghidra/radare2,
+# malware/document triage tools, and Pi Coding Agent + Pi_Config (skills, prompts, extensions).
+#
+# Build:
+#   podman build -t pi-sandbox:latest -f Containerfile .
+#
+# Run examples:
+#   # Read-write workspace (full sandbox):
+#   podman run --rm -it --init --cap-drop=ALL --security-opt=no-new-privileges \
+#     -v "${PWD}:/workspace:rw" pi-sandbox:latest pi
+#
+#   # Copy-on-write overlay + writable .scratch (safe refactors/tests):
+#   podman run --rm -it --init --cap-drop=ALL --security-opt=no-new-privileges \
+#     -v "${PWD}:/workspace:O" -v "${PWD}\.scratch:/workspace/.scratch:rw" pi-sandbox:latest pi
+#
+#   # Read-only workspace + writable .scratch (audits/forensics):
+#   podman run --rm -it --init --cap-drop=ALL --security-opt=no-new-privileges \
+#     -v "${PWD}:/workspace:ro" -v "${PWD}\.scratch:/workspace/.scratch:rw" pi-sandbox:latest pi
+
+FROM docker.io/library/archlinux:latest
+
+# TruffleHog binary for secret-scanning skill (supports --no-verification offline)
+COPY --from=ghcr.io/trufflesecurity/trufflehog:latest /usr/bin/trufflehog /usr/local/bin/trufflehog
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PAGER=cat \
+    GIT_PAGER=cat \
+    UV_LINK_MODE=copy \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    GHIDRA_INSTALL_DIR=/opt/ghidra \
+    PATH="/home/pi/.pi/agent/bin:/home/pi/.local/bin:/opt/ghidra/support:/usr/bin/vendor_perl:${PATH}"
+
+# Core CLI toolchain, media tools, build essentials, Python libraries, Ghidra/radare2, and forensics tools
+RUN pacman -Syu --noconfirm --needed \
+        7zip \
+        ast-grep \
+        bandit \
+        base-devel \
+        bash \
+        bat \
+        binwalk \
+        bun \
+        ca-certificates \
+        cabextract \
+        clamav \
+        cmake \
+        curl \
+        duckdb \
+        eza \
+        fd \
+        ffmpeg \
+        file \
+        fzf \
+        gdb \
+        ghidra \
+        git \
+        github-cli \
+        go-yq \
+        imagemagick \
+        ipython \
+        jq \
+        lnav \
+        ltrace \
+        miller \
+        mupdf-tools \
+        ninja \
+        nodejs \
+        npm \
+        openscad \
+        openssh \
+        pandoc \
+        perl-image-exiftool \
+        poppler \
+        poppler-data \
+        procps-ng \
+        python \
+        python-beautifulsoup4 \
+        python-dotenv \
+        python-duckdb \
+        python-httpx \
+        python-loguru \
+        python-lxml \
+        python-numpy \
+        python-olefile \
+        python-openpyxl \
+        python-orjson \
+        python-pandas \
+        python-pefile \
+        python-pillow \
+        python-pyarrow \
+        python-pydantic \
+        python-pytest \
+        python-r2pipe \
+        python-requests \
+        python-rich \
+        python-tqdm \
+        python-yaml \
+        qpdf \
+        r2ghidra \
+        radare2 \
+        ripgrep \
+        rsync \
+        ruff \
+        shellcheck \
+        sqlite \
+        strace \
+        tree \
+        unzip \
+        upx \
+        uv \
+        wget \
+        xh \
+        yara \
+        zip \
+        zoxide \
+        zsh \
+    && npm install -g --allow-scripts=@beaconbay/ck-search @beaconbay/ck-search snyk \
+    && npm cache clean --force \
+    && pacman -Scc --noconfirm \
+    && rm -rf /var/cache/pacman/pkg/*
+
+# Enable useful bundled Ghidra extensions (Jython for .py headless scripts, ML, GNU disassembler, Z3)
+RUN mkdir -p /opt/ghidra/Ghidra/Extensions \
+    && for ext in /opt/ghidra/Extensions/Ghidra/ghidra_*_Jython.zip \
+                  /opt/ghidra/Extensions/Ghidra/ghidra_*_MachineLearning.zip \
+                  /opt/ghidra/Extensions/Ghidra/ghidra_*_GnuDisassembler.zip \
+                  /opt/ghidra/Extensions/Ghidra/ghidra_*_SymbolicSummaryZ3.zip; do \
+        [ -f "$ext" ] && unzip -qo "$ext" -d /opt/ghidra/Ghidra/Extensions || true; \
+    done
+
+# Didier Stevens Suite scripts for doc-malware-triage skill, plus vt-cli and Detect-It-Easy (diec)
+RUN curl -fsSL -o /tmp/oledump.zip https://didierstevens.com/files/software/oledump_V0_0_77.zip \
+    && unzip -j -o /tmp/oledump.zip "oledump.py" "plugin_*.py" -d /usr/local/bin \
+    && curl -fsSL -o /tmp/pdfid.zip https://didierstevens.com/files/software/pdfid_v0_2_8.zip \
+    && unzip -j -o /tmp/pdfid.zip "pdfid.py" -d /usr/local/bin \
+    && for script in pdf-parser.py pdftool.py zipdump.py emldump.py base64dump.py; do \
+        curl -fsSL -o "/usr/local/bin/${script}" "https://raw.githubusercontent.com/DidierStevens/DidierStevensSuite/master/${script}"; \
+    done \
+    && chmod +x /usr/local/bin/*.py \
+    && curl -fsSL -o /tmp/vt.zip https://github.com/VirusTotal/vt-cli/releases/latest/download/Linux64.zip \
+    && unzip -j -o /tmp/vt.zip "vt" -d /usr/local/bin \
+    && chmod +x /usr/local/bin/vt \
+    && die_url="$(curl -fsSL https://api.github.com/repos/horsicq/DIE-engine/releases/latest | jq -r '.assets[] | select(.name | endswith("-x86_64.AppImage")) | .browser_download_url' | head -n 1)" \
+    && die_deb_url="$(curl -fsSL https://api.github.com/repos/horsicq/DIE-engine/releases/latest | jq -r '.assets[] | select(.name | endswith("_amd64.deb")) | .browser_download_url' | head -n 1)" \
+    && curl -fsSL -o /tmp/die.AppImage "$die_url" \
+    && chmod +x /tmp/die.AppImage \
+    && (cd /tmp && /tmp/die.AppImage --appimage-extract >/dev/null) \
+    && mv /tmp/squashfs-root /opt/die \
+    && curl -fsSL -o /tmp/die.deb "$die_deb_url" \
+    && (cd /tmp && ar x /tmp/die.deb && bsdtar -xf data.tar.* -C /opt/die ./usr/bin/diec && rm -f debian-binary control.tar.* data.tar.*) \
+    && ln -sfn /opt/die/usr/lib/die /usr/lib/die \
+    && chmod -R a+rX /opt/die \
+    && printf '#!/bin/sh\nexec env LD_LIBRARY_PATH="/opt/die/usr/lib:${LD_LIBRARY_PATH:-}" /opt/die/usr/bin/diec "$@"\n' > /usr/local/bin/diec \
+    && chmod +x /usr/local/bin/diec \
+    && rm -f /tmp/oledump.zip /tmp/pdfid.zip /tmp/vt.zip /tmp/die.AppImage /tmp/die.deb
+
+# Create non-root user (UID/GID 1000 for rootless Podman) and workspace
+RUN groupadd -g 1000 pi \
+    && useradd -m -u 1000 -g 1000 -s /bin/zsh pi \
+    && mkdir -p /workspace /home/pi/.pi/agent/sessions /home/pi/.local/bin /home/pi/.cache \
+    && chown -R pi:pi /workspace /home/pi/.pi /home/pi/.local /home/pi/.cache
+
+USER pi
+
+# PyPI-only SAST, document/binary-triage, and docling CLIs isolated via uv tool
+# + BOSL2 library for OpenSCAD
+RUN uv tool install semgrep \
+    && uv tool install oletools \
+    && uv tool install xlmmacrodeobfuscator \
+    && uv tool install msoffcrypto-tool \
+    && uv tool install flare-capa \
+    && uv tool install flare-floss \
+    && uv tool install pdfx \
+    && uv tool install --extra-index-url https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match docling \
+    && uv cache clean \
+    && mkdir -p /home/pi/.local/share/OpenSCAD/libraries \
+    && git clone --depth=1 https://github.com/BelfrySCAD/BOSL2.git /home/pi/.local/share/OpenSCAD/libraries/BOSL2
+
+# Allow git operations on host-mounted /workspace (NTFS permissions & CRLF handling)
+# and keep project-level uv venvs in Linux-native storage, separate from Windows .venv
+RUN git config --global --add safe.directory '*'
+ENV UV_PROJECT_ENVIRONMENT=/home/pi/.venv \
+    GIT_CONFIG_COUNT=2 \
+    GIT_CONFIG_KEY_0=core.fileMode \
+    GIT_CONFIG_VALUE_0=false \
+    GIT_CONFIG_KEY_1=core.autocrlf \
+    GIT_CONFIG_VALUE_1=input
+
+# Install Pi Coding Agent and copy Pi_Config (placed last so config tweaks rebuild in seconds)
+RUN curl -fsSL https://pi.dev/install.sh | sh
+COPY --chown=pi:pi Pi_Config/agent/APPEND_SYSTEM.md /home/pi/.pi/agent/APPEND_SYSTEM.md
+COPY --chown=pi:pi Pi_Config/agent/extensions /home/pi/.pi/agent/extensions
+COPY --chown=pi:pi Pi_Config/agent/prompts /home/pi/.pi/agent/prompts
+COPY --chown=pi:pi Pi_Config/agent/skills /home/pi/.pi/agent/skills
+COPY --chown=pi:pi Pi_Config/agent/npm/package.json /home/pi/.pi/agent/npm/package.json
+
+# Remove host-side permissions-gate (container is the security boundary),
+# normalize CRLF in copied markdown files, write Linux settings.json (keeps bash),
+# install extension deps & pi-subagents, and update extensions
+RUN rm -f /home/pi/.pi/agent/extensions/permissions-gate.ts \
+    && sed -i 's/\r$//' /home/pi/.pi/agent/APPEND_SYSTEM.md /home/pi/.pi/agent/prompts/*.md \
+    && printf '{\n  "packages": [\n    "npm:pi-subagents"\n  ]\n}\n' > /home/pi/.pi/agent/settings.json \
+    && npm --prefix /home/pi/.pi/agent/npm install --no-fund --no-audit \
+    && pi install npm:pi-subagents \
+    && pi update \
+    && pi update --extensions \
+    && npm cache clean --force
+
+# Configure zsh prompt (shows sandbox name, current repo dir, and right-aligned mount/network mode)
+RUN printf '%s\n' \
+    'setopt PROMPT_SUBST HIST_IGNORE_DUPS' \
+    'HISTFILE=~/.zsh_history' \
+    'HISTSIZE=5000' \
+    'SAVEHIST=5000' \
+    'autoload -Uz compinit && compinit -C' \
+    'command -v zoxide >/dev/null && eval "$(zoxide init zsh)"' \
+    'PROMPT='\''%F{cyan}[${SANDBOX_NAME:-sandbox} %1~]%f %# '\''' \
+    'RPROMPT='\''%F{yellow}${SANDBOX_MODE}%f'\''' \
+    > /home/pi/.zshrc
+
+WORKDIR /workspace
+CMD ["/bin/zsh"]

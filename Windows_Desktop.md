@@ -963,6 +963,22 @@ wsl --install
 wsl --install -d ArchLinux
 ```
 
+### Global WSL2 Networking (`.wslconfig`)
+
+Configure WSL2 to use **mirrored networking** (`%USERPROFILE%\.wslconfig`) for bidirectional `localhost` access (e.g., reaching host `llama-swap` from WSL2/Podman), IPv6, and VPN compatibility:
+
+```powershell
+@"
+[wsl2]
+networkingMode=mirrored
+dnsTunneling=true
+autoProxy=true
+"@ | Set-Content -Path "$HOME\.wslconfig" -Encoding utf8
+
+# Restart WSL2 to apply networking changes
+wsl --shutdown
+```
+
 ### Post-Install Arch Linux Configuration
 
 Update the system and install the base development tools and shell environment.

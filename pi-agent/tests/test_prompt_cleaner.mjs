@@ -466,6 +466,115 @@ Pi documentation (read only when the user asks about pi itself):
     assert.ok(/^\{"path":"src\/core\/engine\.ts"/.test(rawString), `JSON string must start with path: ${rawString}`);
   });
 
+  // ----------------------------------------------------
+  // Section 6: OS-Aware Runtime Anchor & POSIX Path Normalization
+  // ----------------------------------------------------
+  test("OS-Aware: formatRuntimeAnchor formats Windows 11 + PowerShell version", () => {
+    const anchor = mod.formatRuntimeAnchor({
+      platform: "win32",
+      osLabel: "Windows 11 (10.0.26100)",
+      shellLabel: "PowerShell 7.5.0"
+    });
+    assert.equal(anchor, "- RUNTIME: Windows 11 (10.0.26100), PowerShell 7.5.0. Use PowerShell syntax.");
+  });
+
+  test("OS-Aware: formatRuntimeAnchor formats Arch Linux Podman container", () => {
+    const anchor = mod.formatRuntimeAnchor({
+      platform: "linux",
+      osLabel: "Arch Linux",
+      shellLabel: "bash",
+      container: "Podman"
+    });
+    assert.equal(anchor, "- RUNTIME: Arch Linux container (Podman, bash). Use POSIX/bash syntax.");
+  });
+
+  test("OS-Aware: detectRuntimeInfo returns valid host runtime info", () => {
+    const info = mod.detectRuntimeInfo();
+    assert.equal(info.platform, process.platform);
+    assert.ok(info.osLabel.length > 0, "osLabel must be non-empty");
+    assert.ok(info.shellLabel.length > 0, "shellLabel must be non-empty");
+  });
+
+  test("OS-Aware: prioritizePathFirst normalizes relative backslashes on Linux but preserves on Windows", () => {
+    const linuxRes = mod.prioritizePathFirst({ content: "x", path: "src\\utils\\app.ts" }, "linux");
+    assert.equal(linuxRes.path, "src/utils/app.ts");
+
+    const winRes = mod.prioritizePathFirst({ content: "x", path: "src\\utils\\app.ts" }, "win32");
+    assert.equal(winRes.path, "src\\utils\\app.ts");
+  });
+
+  await asyncTest("OS-Aware: before_agent_start appends - RUNTIME: once (idempotent)", async () => {
+    const registeredEvents = new Map();
+    const mockPi = {
+      on(event, handler) { registeredEvents.set(event, handler); }
+    };
+    extensionFactory(mockPi);
+
+    const hook = registeredEvents.get("before_agent_start");
+    const first = await hook({ type: "before_agent_start", systemPrompt: "You are Pi." });
+    assert.ok(first.systemPrompt.includes("- RUNTIME:"), `Expected - RUNTIME: anchor in: ${first.systemPrompt}`);
+
+    const second = await hook({ type: "before_agent_start", systemPrompt: first.systemPrompt });
+    const count = (second.systemPrompt.match(/- RUNTIME:/g) || []).length;
+    assert.equal(count, 1, "Runtime anchor must not be duplicated");
+  });
+
+  test("Prompt Hygiene: normalizes CRLF to LF, places - RUNTIME: inside <addendum>, and collapses multiline <description>", () => {
+    const rawPrompt = [
+      "<skill>",
+      "  <name>pi-subagents</name>",
+      "  <description>Delegate work to Pi subagents:\n  one child,\n  parallel workflows.\n  </description>",
+      "</skill>",
+      "<addendum>",
+      "- CLI TOOLCHAIN: Prefer rg.\r\n- WORKSPACE: Use .scratch/.\r\n</addendum>",
+      "<cwd>",
+      "/workspace",
+      "</cwd>"
+    ].join("\n");
+
+    const cleaned = mod.cleanSystemPrompt(
+      rawPrompt,
+      "- RUNTIME: Arch Linux container (Podman, bash). Use POSIX/bash syntax.",
+      false
+    );
+
+    assert.ok(!cleaned.includes("\r"), "All CRLF/CR line endings must be normalized to LF");
+    assert.ok(
+      cleaned.includes("<description>Delegate work to Pi subagents: one child, parallel workflows.</description>"),
+      `Multiline <description> should be collapsed to single line: ${cleaned}`
+    );
+    assert.ok(
+      cleaned.includes("- WORKSPACE: Use .scratch/.\n- RUNTIME: Arch Linux container (Podman, bash). Use POSIX/bash syntax.\n</addendum>"),
+      `Runtime anchor must be placed inside <addendum>: ${cleaned}`
+    );
+    assert.ok(
+      cleaned.trimEnd().endsWith("</cwd>"),
+      `Nothing should trail after </cwd>: ${cleaned}`
+    );
+  });
+
+  test("Prompt Hygiene: falls back to <env> wrapper when <addendum> is absent", () => {
+    const cleaned = mod.cleanSystemPrompt(
+      "<cwd>\n/workspace\n</cwd>",
+      "- RUNTIME: Arch Linux (bash). Use POSIX/bash syntax.",
+      false
+    );
+    assert.ok(
+      cleaned.includes("<env>\n- RUNTIME: Arch Linux (bash). Use POSIX/bash syntax.\n</env>"),
+      `Expected <env> wrapper fallback: ${cleaned}`
+    );
+  });
+
+  test("Prompt Hygiene: scopes <skills> absolute-path instruction to skill-relative files", () => {
+    const raw = "<skills>Relative paths resolve against the skill directory. Use absolute paths in tool calls.</skills>";
+    const cleaned = mod.cleanSystemPrompt(raw, "", false);
+    assert.ok(
+      cleaned.includes("Use absolute paths when referencing skill-relative files."),
+      `Expected scoped wording in: ${cleaned}`
+    );
+    assert.ok(!cleaned.includes("Use absolute paths in tool calls"));
+  });
+
   return results;
 }
 

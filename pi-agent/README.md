@@ -249,6 +249,44 @@ To configure the OpenSCAD MCP server with direct tool exposure, add it to `~/.pi
 
 ---
 
+### Podman Sandbox (`pi-sandbox.ps1`)
+
+Launch an isolated, rootless Arch Linux `zsh` container with the full Pi toolchain, skills, SAST/secret scanners, and forensics tools ([Containerfile](./Containerfile), [pi-sandbox.ps1](./pi-sandbox.ps1)). Requires **PowerShell 7+ (`pwsh`)** and **Podman**.
+
+#### Add `pi-sandbox` Alias to PowerShell Profile (`$PROFILE`)
+
+Run from the `pi-agent/` directory to register the `pi-sandbox` alias in your `pwsh` profile:
+
+```powershell
+if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force | Out-Null }
+Add-Content -Path $PROFILE -Value "Set-Alias pi-sandbox '$((Resolve-Path .\pi-sandbox.ps1).Path)'"
+. $PROFILE
+```
+
+#### Build & Usage
+
+```powershell
+# Build (or rebuild) the Arch Linux sandbox image
+pi-sandbox -Rebuild
+
+# Interactive menu (resume existing container or pick network, mount mode, .scratch, lifecycle)
+pi-sandbox
+
+# Direct CLI examples
+pi-sandbox -Mode overlay -Offline -Scratch
+pi-sandbox -Mode ro -Offline
+pi-sandbox -Mode rw -Name refactor-auth
+pi-sandbox -Resume refactor-auth
+pi-sandbox -List
+pi-sandbox -Remove refactor-auth   # or: pi-sandbox -Remove all
+pi-sandbox -h                      # also supports -Help, --help, /?
+
+# Run sandbox unit tests (mocked podman, no VM required)
+pwsh -NoProfile -File .\pi-sandbox.Tests.ps1
+```
+
+---
+
 ### General AI Skills Tool (`npx skills`)
 
 The `npx skills` command allows you to dynamically fetch and run pre-configured visual diagram and charting tools.

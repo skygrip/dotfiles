@@ -36,7 +36,10 @@ $portableSkills = Get-ChildItem -Directory (Join-Path $piSource "skills")
 
 foreach ($skill in $portableSkills) {
     $dest = Join-Path $geminiTarget $skill.Name
-    Copy-Item -Path $skill.FullName -Destination $dest -Recurse -Force
+    if (!(Test-Path $dest)) {
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    }
+    Copy-Item -Path (Join-Path $skill.FullName "*") -Destination $dest -Recurse -Force
 }
 
 # 5. Optional NPM install for Pi Agent extensions
